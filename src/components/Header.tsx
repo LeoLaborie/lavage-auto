@@ -2,6 +2,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import ReservationButton from './ReservationButton'
 
 interface HeaderProps {
   currentPage?: string
@@ -67,22 +68,16 @@ export default function Header({ currentPage }: HeaderProps) {
   }
 
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+     <header className="bg-white/60 backdrop-blur-sm border-b border-secondary/20 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">🚗</span>
-            </div>
-            <a href="/" className="ml-3 text-xl font-bold text-gray-900">Lavage Auto</a>
+        <div className="flex justify-between items-center py-2">
+          <div className="flex items-center -my-2">
+            <a href="/" className="w-32 h-16 rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity">
+              <img src="/klyn.png" alt="Logo" className="w-32 h-16 rounded-lg object-contain" />
+            </a>
           </div>
           
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <a href="/#services" className="text-gray-700 hover:text-blue-600 transition-colors">Services</a>
-            <a href="/#how-it-works" className="text-gray-700 hover:text-blue-600 transition-colors">Comment ça marche</a>
-            <a href="/contact" className={`transition-colors ${currentPage === 'contact' ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}>Contact</a>
-          </nav>
+
           {/* Desktop Actions */}
           <div className="hidden md:flex gap-3 items-center">
             {loading ? (
@@ -99,10 +94,10 @@ export default function Header({ currentPage }: HeaderProps) {
                     <img
                       src={getProfileImage()!}
                       alt="Profile"
-                      className="w-10 h-10 rounded-full object-cover border-2 border-blue-200"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-[#004aad]/20"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                     <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-medium text-sm shadow-lg">
                       {getUserInitials()}
                     </div>
                   )}
@@ -133,23 +128,21 @@ export default function Header({ currentPage }: HeaderProps) {
                 )}
               </div>
             ) : (
-              <a href="/login" className="border-2 border-blue-600 text-blue-600 px-6 py-2 rounded-lg hover:bg-blue-50 transition-colors inline-block">
+               <a href="/login" className="border-2 border-primary text-primary px-6 py-2 rounded-lg hover:bg-primary hover:text-white transition-all transform hover:scale-105 inline-block">
                 Se connecter
               </a>
             )}
             
-            {currentPage !== 'booking' && (
-              <a href="/reserver" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-block">
-                Réserver
-              </a>
-            )}
+              {currentPage !== 'booking' && (
+                <ReservationButton />
+              )}
             
             {currentPage === 'booking' && (
-              <span className="text-blue-600 font-medium px-6 py-2">Réservation</span>
+              <span className="text-[#004aad] font-medium px-6 py-2">Réservation</span>
             )}
             
             {currentPage === 'login' && (
-              <span className="text-blue-600 font-medium px-6 py-2">Connexion</span>
+              <span className="text-[#004aad] font-medium px-6 py-2">Connexion</span>
             )}
           </div>
 
@@ -168,10 +161,10 @@ export default function Header({ currentPage }: HeaderProps) {
                     <img
                       src={getProfileImage()!}
                       alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover border-2 border-blue-200"
+                      className="w-8 h-8 rounded-full object-cover border-2 border-[#004aad]/20"
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
+                    <div className="w-8 h-8 bg-[#004aad] rounded-full flex items-center justify-center text-white font-medium text-xs">
                       {getUserInitials()}
                     </div>
                   )}
@@ -202,7 +195,7 @@ export default function Header({ currentPage }: HeaderProps) {
                 )}
               </div>
             ) : (
-              <a href="/login" className="text-blue-600 text-sm px-3 py-1 border border-blue-600 rounded hover:bg-blue-50 transition-colors">
+              <a href="/login" className="text-[#004aad] text-sm px-3 py-1 border border-[#004aad] rounded hover:bg-[#004aad]/5 transition-colors">
                 Login
               </a>
             )}
@@ -226,33 +219,13 @@ export default function Header({ currentPage }: HeaderProps) {
         {isMobileMenuOpen && (
           <div ref={mobileMenuRef} className="md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm">
             <div className="px-4 py-6 space-y-4">
-              <a
-                href="/#services"
-                className="block text-gray-700 hover:text-blue-600 transition-colors text-lg py-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Services
-              </a>
-              <a
-                href="/#how-it-works"
-                className="block text-gray-700 hover:text-blue-600 transition-colors text-lg py-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Comment ça marche
-              </a>
-              <a
-                href="/contact"
-                className={`block transition-colors text-lg py-2 ${currentPage === 'contact' ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Contact
-              </a>
+
               
               <div className="pt-4 border-t border-gray-200">
                 {currentPage !== 'booking' && (
                   <a
                     href="/reserver"
-                    className="block w-full bg-blue-600 text-white text-center py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    className="block w-full bg-[#004aad] text-white text-center py-3 rounded-lg font-medium hover:bg-[#003c8a] transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Réserver maintenant
@@ -260,13 +233,13 @@ export default function Header({ currentPage }: HeaderProps) {
                 )}
                 
                 {currentPage === 'booking' && (
-                  <div className="text-blue-600 font-medium text-center py-3">
+                  <div className="text-[#004aad] font-medium text-center py-3">
                     Réservation en cours
                   </div>
                 )}
                 
                 {currentPage === 'login' && (
-                  <div className="text-blue-600 font-medium text-center py-3">
+                  <div className="text-[#004aad] font-medium text-center py-3">
                     Connexion
                   </div>
                 )}

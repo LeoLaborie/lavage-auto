@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
+import BackButton from '@/components/BackButton';
 import { validateBookingForm, validateDateTimeBooking, BookingFormData } from '@/lib/validation';
+import { AppleEmoji } from '@/components/AppleEmoji';
 
 interface Service {
   id: string;
@@ -21,7 +24,7 @@ const services: Service[] = [
     description: 'Nettoyage complet de l\'extérieur de votre véhicule avec des produits de qualité.',
     price: 25,
     duration: '30 min',
-    icon: '🧽'
+    icon: 'sponge'
   },
   {
     id: 'complete',
@@ -29,7 +32,7 @@ const services: Service[] = [
     description: 'Nettoyage intérieur et extérieur pour une voiture impeccable.',
     price: 45,
     duration: '60 min',
-    icon: '✨'
+    icon: 'sparkles'
   },
   {
     id: 'premium',
@@ -37,7 +40,7 @@ const services: Service[] = [
     description: 'Service complet avec cire, lustrage et traitement des plastiques.',
     price: 75,
     duration: '90 min',
-    icon: '💎'
+    icon: 'gem'
   }
 ];
 
@@ -49,32 +52,129 @@ const timeSlots = [
 
 export default function Reserver() {
   const searchParams = useSearchParams();
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-  const [address, setAddress] = useState('');
-  const [customerInfo, setCustomerInfo] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    carType: '',
-    notes: ''
+  const [selectedService, setSelectedService] = useState<Service | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('booking_service');
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
   });
-  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('booking_date') || '';
+    }
+    return '';
+  });
+  const [selectedTime, setSelectedTime] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('booking_time') || '';
+    }
+    return '';
+  });
+  const [address, setAddress] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('booking_address') || '';
+    }
+    return '';
+  });
+  const [customerInfo, setCustomerInfo] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('booking_customer_info');
+      return saved ? JSON.parse(saved) : {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        carType: '',
+        notes: ''
+      };
+    }
+    return {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      carType: '',
+      notes: ''
+    };
+  });
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return parseInt(localStorage.getItem('booking_step') || '1', 10);
+    }
+    return 1;
+  });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [dateTimeErrors, setDateTimeErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Load URL parameters
   useEffect(() => {
     const serviceParam = searchParams.get('service');
+    const addressParam = searchParams.get('address');
+    const timeParam = searchParams.get('time');
+    const dateParam = searchParams.get('date');
+    
     if (serviceParam) {
       const service = services.find(s => s.id === serviceParam);
       if (service) {
         setSelectedService(service);
-        setCurrentStep(2);
       }
     }
+
+    if (addressParam) {
+      setAddress(decodeURIComponent(addressParam));
+    }
+
+    if (timeParam && dateParam) {
+      setSelectedTime(decodeURIComponent(timeParam));
+      setSelectedDate(decodeURIComponent(dateParam));
+      setCurrentStep(3); // Passer directement à l'étape des informations personnelles
+    } else if (serviceParam) {
+      setCurrentStep(2); // Sinon aller à l'étape date/heure
+    }
   }, [searchParams]);
+
+  // Save state to localStorage
+  useEffect(() => {
+    if (selectedService) {
+      localStorage.setItem('booking_service', JSON.stringify(selectedService));
+    } else {
+      localStorage.removeItem('booking_service');
+    }
+  }, [selectedService]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      localStorage.setItem('booking_date', selectedDate);
+    } else {
+      localStorage.removeItem('booking_date');
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (selectedTime) {
+      localStorage.setItem('booking_time', selectedTime);
+    } else {
+      localStorage.removeItem('booking_time');
+    }
+  }, [selectedTime]);
+
+  useEffect(() => {
+    if (address) {
+      localStorage.setItem('booking_address', address);
+    } else {
+      localStorage.removeItem('booking_address');
+    }
+  }, [address]);
+
+  useEffect(() => {
+    localStorage.setItem('booking_customer_info', JSON.stringify(customerInfo));
+  }, [customerInfo]);
+
+  useEffect(() => {
+    localStorage.setItem('booking_step', currentStep.toString());
+  }, [currentStep]);
 
   const handleNext = () => {
     if (currentStep === 2) {
@@ -104,7 +204,7 @@ export default function Reserver() {
     setCurrentStep(prev => prev - 1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Final validation before submission
@@ -116,9 +216,67 @@ export default function Reserver() {
       setDateTimeErrors(dateTimeValidation.errors);
       return;
     }
+
+    setIsSubmitting(true);
     
-    // TODO: Submit to API
-    alert('Réservation confirmée ! Vous recevrez un email de confirmation.');
+    try {
+      // Validate time slot one last time
+      const timeSlotResponse = await fetch('/api/booking/validate-timeslot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: selectedDate,
+          time: selectedTime
+        })
+      });
+
+      if (!timeSlotResponse.ok) {
+        const error = await timeSlotResponse.json();
+        setDateTimeErrors({ time: error.error || 'Ce créneau n\'est plus disponible' });
+        return;
+      }
+
+      // Submit booking to API
+      const bookingResponse = await fetch('/api/booking/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service: selectedService?.id,
+          date: selectedDate,
+          time: selectedTime,
+          address,
+          ...customerInfo
+        })
+      });
+
+      if (!bookingResponse.ok) {
+        const error = await bookingResponse.json();
+        if (error.customerErrors) {
+          setFormErrors(error.customerErrors);
+        }
+        if (error.dateTimeErrors) {
+          setDateTimeErrors(error.dateTimeErrors);
+        }
+        throw new Error(error.error || 'Error submitting booking');
+      }
+
+      const result = await bookingResponse.json();
+      
+      // Clear stored booking data
+      localStorage.removeItem('booking_service');
+      localStorage.removeItem('booking_date');
+      localStorage.removeItem('booking_time');
+      localStorage.removeItem('booking_address');
+      localStorage.removeItem('booking_customer_info');
+      localStorage.removeItem('booking_step');
+      
+      alert('Réservation confirmée ! Vous recevrez un email de confirmation.');
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      alert('Une erreur est survenue lors de la réservation. Veuillez réessayer.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getTomorrowDate = () => {
@@ -136,15 +294,19 @@ export default function Reserver() {
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Réservez votre lavage
           </h1>
-          <div className="flex justify-center items-center space-x-4">
+          <div className="flex justify-center items-center">
             {[1, 2, 3, 4].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              <div key={step} className="flex items-center relative">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium relative z-10 ${
                   step <= currentStep ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
                 }`}>
                   {step}
                 </div>
-                {step < 4 && <div className={`w-12 h-0.5 ${step < currentStep ? 'bg-blue-600' : 'bg-gray-200'}`} />}
+                {step < 4 && (
+                  <div className={`w-[120px] h-0.5 absolute top-1/2 left-full -translate-y-1/2 ${
+                    step < currentStep ? 'bg-blue-600' : 'bg-gray-200'
+                  }`} />
+                )}
               </div>
             ))}
           </div>
@@ -176,7 +338,9 @@ export default function Reserver() {
                       handleNext();
                     }}
                   >
-                    <div className="text-4xl mb-4">{service.icon}</div>
+                    <div className="mb-4">
+                      <AppleEmoji name={service.icon} className="w-12 h-12" />
+                    </div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">{service.name}</h3>
                     <p className="text-gray-600 mb-4 text-sm">{service.description}</p>
                     <div className="flex justify-between items-center">
@@ -220,20 +384,17 @@ export default function Reserver() {
                   <label className="block text-sm font-medium text-gray-900 mb-3">
                     Adresse du service
                   </label>
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => {
-                      setAddress(e.target.value);
-                      if (dateTimeErrors.address) {
-                        setDateTimeErrors(prev => ({ ...prev, address: '' }));
-                      }
-                    }}
-                    placeholder="123 Rue de la République, Paris"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
-                      dateTimeErrors.address ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
+                  <div className={dateTimeErrors.address ? 'animate-shake' : ''}>
+                    <AddressAutocomplete
+                      value={address}
+                      onAddressSelect={(selectedAddress) => {
+                        setAddress(selectedAddress);
+                        if (dateTimeErrors.address) {
+                          setDateTimeErrors(prev => ({ ...prev, address: '' }));
+                        }
+                      }}
+                    />
+                  </div>
                   {dateTimeErrors.address && (
                     <p className="mt-1 text-sm text-red-600">{dateTimeErrors.address}</p>
                   )}
@@ -479,15 +640,31 @@ export default function Reserver() {
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="border-2 border-gray-300 text-gray-900 px-8 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                    disabled={isSubmitting}
+                    className={`border-2 border-gray-300 text-gray-900 px-8 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors ${
+                      isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
                     Retour
                   </button>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    disabled={isSubmitting}
+                    className={`bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-3 ${
+                      isSubmitting ? 'opacity-75 cursor-not-allowed' : ''
+                    }`}
                   >
-                    Confirmer la réservation
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Confirmation en cours...
+                      </>
+                    ) : (
+                      'Confirmer la réservation'
+                    )}
                   </button>
                 </div>
               </form>

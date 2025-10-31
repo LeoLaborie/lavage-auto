@@ -80,13 +80,13 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#004aad]/5 to-[#004aad]/10">
       <Header currentPage="login" />
 
       <main className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-[#004aad]/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">{isLogin ? '👋' : '✨'}</span>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -105,7 +105,7 @@ export default function Login() {
             <button
               onClick={() => setIsLogin(true)}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                isLogin ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+                isLogin ? 'bg-white text-[#004aad] shadow-sm' : 'text-gray-600'
               }`}
             >
               Connexion
@@ -113,7 +113,7 @@ export default function Login() {
             <button
               onClick={() => setIsLogin(false)}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                !isLogin ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+                !isLogin ? 'bg-white text-[#004aad] shadow-sm' : 'text-gray-600'
               }`}
             >
               Inscription
@@ -144,7 +144,7 @@ export default function Login() {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004aad] focus:border-[#004aad]"
                 placeholder="votre@email.com"
               />
             </div>
@@ -159,7 +159,7 @@ export default function Login() {
                 value={formData.password}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004aad] focus:border-[#004aad]"
                 placeholder="••••••••"
               />
               {!isLogin && (
@@ -179,7 +179,7 @@ export default function Login() {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004aad] focus:border-[#004aad]"
                     placeholder="Jean Dupont"
                   />
                 </div>
@@ -193,7 +193,7 @@ export default function Login() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004aad] focus:border-[#004aad]"
                     placeholder="06 12 34 56 78"
                   />
                 </div>
@@ -207,7 +207,7 @@ export default function Login() {
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004aad] focus:border-[#004aad]"
                     placeholder="123 Rue de la Paix, Paris"
                   />
                 </div>
@@ -217,7 +217,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#004aad] text-white py-3 px-4 rounded-lg hover:bg-[#003c8a] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading 
                 ? (isLogin ? 'Connexion...' : 'Création...') 
@@ -253,9 +253,9 @@ export default function Login() {
           {/* Benefits section - only show on login */}
           {isLogin && (
             <div className="mt-6">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-blue-900 mb-2">Pourquoi se connecter ?</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
+              <div className="bg-[#004aad]/5 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-[#004aad] mb-2">Pourquoi se connecter ?</h3>
+                <ul className="text-sm text-[#004aad]/90 space-y-1">
                   <li>• Suivre vos réservations en temps réel</li>
                   <li>• Historique de vos lavages</li>
                   <li>• Réserver plus rapidement</li>
@@ -267,7 +267,7 @@ export default function Login() {
         </div>
 
         <div className="text-center mt-6">
-          <a href="/" className="text-blue-600 hover:text-blue-700 transition-colors">
+          <a href="/" className="text-[#004aad] hover:text-blue-700 transition-colors">
             ← Retour à l&apos;accueil
           </a>
         </div>
