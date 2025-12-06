@@ -13,10 +13,31 @@ export default function Header({ currentPage }: HeaderProps) {
   const router = useRouter()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [dashboardUrl, setDashboardUrl] = useState<string | null>(null)
+  const desktopDropdownRef = useRef<HTMLDivElement>(null)
+  const mobileDropdownRef = useRef<HTMLDivElement>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
 
-
+  useEffect(() => {
+    const fetchRole = async () => {
+      if (user) {
+        try {
+          const res = await fetch('/api/auth/role')
+          if (res.ok) {
+            const data = await res.json()
+            if (data.role === 'CLIENT') {
+              setDashboardUrl('/dashboard/client')
+            } else if (data.role === 'WASHER') {
+              setDashboardUrl('/dashboard/laveur')
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching role:', error)
+        }
+      }
+    }
+    fetchRole()
+  }, [user])
 
   const handleLogout = async () => {
     try {
@@ -35,9 +56,15 @@ export default function Header({ currentPage }: HeaderProps) {
   // Close dropdown/menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
+      // Check desktop dropdown
+      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(event.target as Node)) {
+        // Only close if we're not clicking in the mobile dropdown (if it exists/is visible)
+        if (!mobileDropdownRef.current || !mobileDropdownRef.current.contains(event.target as Node)) {
+          setIsDropdownOpen(false)
+        }
       }
+
+      // Check mobile menu
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
         setIsMobileMenuOpen(false)
       }
@@ -68,7 +95,7 @@ export default function Header({ currentPage }: HeaderProps) {
   }
 
   return (
-     <header className="bg-white/60 backdrop-blur-sm border-b border-secondary/20 shadow-lg sticky top-0 z-50">
+    <header className="bg-white/60 backdrop-blur-sm border-b border-secondary/20 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-2">
           <div className="flex items-center -my-2">
@@ -76,7 +103,7 @@ export default function Header({ currentPage }: HeaderProps) {
               <img src="/klyn.png" alt="Logo" className="w-32 h-16 rounded-lg object-contain" />
             </a>
           </div>
-          
+
 
           {/* Desktop Actions */}
           <div className="hidden md:flex gap-3 items-center">
@@ -85,7 +112,7 @@ export default function Header({ currentPage }: HeaderProps) {
                 <div className="animate-pulse w-24 h-6 bg-gray-200 rounded"></div>
               </div>
             ) : user ? (
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative" ref={desktopDropdownRef}>
                 <button
                   onClick={toggleDropdown}
                   className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
@@ -97,12 +124,12 @@ export default function Header({ currentPage }: HeaderProps) {
                       className="w-10 h-10 rounded-full object-cover border-2 border-[#004aad]/20"
                     />
                   ) : (
-                     <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-medium text-sm shadow-lg">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-medium text-sm shadow-lg">
                       {getUserInitials()}
                     </div>
                   )}
                 </button>
-                
+
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-100">
@@ -111,13 +138,16 @@ export default function Header({ currentPage }: HeaderProps) {
                       </p>
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
-                    <a
-                      href="/mes-reservations"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                      onClick={() => setIsDropdownOpen(false)}
-                    >
-                      📅 Mes réservations
-                    </a>
+                    {dashboardUrl && (
+                      <a
+                        href={dashboardUrl}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
+                        📊 Tableau de bord
+                      </a>
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -128,19 +158,19 @@ export default function Header({ currentPage }: HeaderProps) {
                 )}
               </div>
             ) : (
-               <a href="/login" className="border-2 border-primary text-primary px-6 py-2 rounded-lg hover:bg-primary hover:text-white transition-all transform hover:scale-105 inline-block">
+              <a href="/login" className="border-2 border-primary text-primary px-6 py-2 rounded-lg hover:bg-primary hover:text-white transition-all transform hover:scale-105 inline-block">
                 Se connecter
               </a>
             )}
-            
-              {currentPage !== 'booking' && (
-                <ReservationButton />
-              )}
-            
+
+            {currentPage !== 'booking' && (
+              <ReservationButton />
+            )}
+
             {currentPage === 'booking' && (
               <span className="text-[#004aad] font-medium px-6 py-2">Réservation</span>
             )}
-            
+
             {currentPage === 'login' && (
               <span className="text-[#004aad] font-medium px-6 py-2">Connexion</span>
             )}
@@ -152,7 +182,7 @@ export default function Header({ currentPage }: HeaderProps) {
             {loading ? (
               <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
             ) : user ? (
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative" ref={mobileDropdownRef}>
                 <button
                   onClick={toggleDropdown}
                   className="flex items-center p-1 rounded-full hover:bg-gray-100 transition-colors"
@@ -169,7 +199,7 @@ export default function Header({ currentPage }: HeaderProps) {
                     </div>
                   )}
                 </button>
-                
+
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
                     <div className="px-4 py-3 border-b border-gray-100">
@@ -178,13 +208,16 @@ export default function Header({ currentPage }: HeaderProps) {
                       </p>
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
-                    <a
-                      href="/mes-reservations"
-                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                      onClick={() => setIsDropdownOpen(false)}
-                    >
-                      📅 Mes réservations
-                    </a>
+                    {dashboardUrl && (
+                      <a
+                        href={dashboardUrl}
+                        className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
+                        📊 Tableau de bord
+                      </a>
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -220,7 +253,7 @@ export default function Header({ currentPage }: HeaderProps) {
           <div ref={mobileMenuRef} className="md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm">
             <div className="px-4 py-6 space-y-4">
 
-              
+
               <div className="pt-4 border-t border-gray-200">
                 {currentPage !== 'booking' && (
                   <a
@@ -231,13 +264,13 @@ export default function Header({ currentPage }: HeaderProps) {
                     Réserver maintenant
                   </a>
                 )}
-                
+
                 {currentPage === 'booking' && (
                   <div className="text-[#004aad] font-medium text-center py-3">
                     Réservation en cours
                   </div>
                 )}
-                
+
                 {currentPage === 'login' && (
                   <div className="text-[#004aad] font-medium text-center py-3">
                     Connexion

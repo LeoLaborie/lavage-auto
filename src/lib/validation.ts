@@ -9,7 +9,10 @@ export interface BookingFormData {
   lastName: string
   email: string
   phone: string
-  carType: string
+  carType?: string // Deprecated
+  make?: string
+  model?: string
+  licensePlate: string
   notes: string
 }
 
@@ -56,6 +59,13 @@ export function validateBookingForm(data: BookingFormData): ValidationResult {
   // Optional validation for car type
   if (data.carType && data.carType.length > 50) {
     errors.carType = 'Le modèle de voiture ne peut pas dépasser 50 caractères'
+  }
+
+  // Required validation for license plate
+  if (!data.licensePlate?.trim()) {
+    errors.licensePlate = 'La plaque d\'immatriculation est requise'
+  } else if (data.licensePlate.trim().length > 20) {
+    errors.licensePlate = 'La plaque d\'immatriculation est trop longue'
   }
 
   // Optional validation for notes

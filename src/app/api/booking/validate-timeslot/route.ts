@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: Request) {
   try {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const hour = dateTime.getHours()
     const minutes = dateTime.getMinutes()
     const timeInMinutes = hour * 60 + minutes
-    
+
     if (timeInMinutes < 8 * 60 || timeInMinutes > 18.5 * 60) {
       return NextResponse.json(
         { error: 'Outside of business hours (8h-18h30)' },
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     // Get existing bookings for the selected date and time
     const existingBookings = await prisma.booking.findMany({
       where: {
-        date: dateTime,
+        scheduledDate: dateTime,
         status: {
           notIn: ['CANCELLED', 'COMPLETED']
         }

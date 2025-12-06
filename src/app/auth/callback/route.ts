@@ -13,37 +13,42 @@ export async function GET(request: NextRequest) {
     try {
       const supabase = await createClient()
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-      
-      console.log('Auth exchange result:', { user: data.user?.email, error })
-      
+
+      if (error) {
+        console.error('Auth exchange error:', error)
+        return NextResponse.redirect(`${origin}/auth/auth-code-error?error=${encodeURIComponent(error.message)}`)
+      }
+
+      console.log('Auth exchange success, user:', data.user?.email)
+
       if (!error && data.user) {
         try {
-          // Check if customer profile exists in our database
-          const existingCustomer = await prisma.customer.findUnique({
-            where: { supabaseUserId: data.user.id }
+          // Check if user is a Customer
+          const customer = await prisma.customer.findUnique({
+            where: { email: data.user.email! }
           })
 
-          if (!existingCustomer) {
-            // Create customer profile from Google auth data
-            await prisma.customer.create({
-              data: {
-                email: data.user.email!,
-                name: data.user.user_metadata.full_name || data.user.email!.split('@')[0],
-                profilePicture: data.user.user_metadata.avatar_url,
-                supabaseUserId: data.user.id,
-                emailVerified: true, // Google auth means email is verified
-              }
-            })
-            console.log('Customer profile created successfully')
-          } else {
-            console.log('Customer profile already exists')
+          if (customer) {
+            return NextResponse.redirect(`${origin}/dashboard/client`)
           }
-        } catch (dbError) {
-          console.error('Database error (will continue without profile creation):', dbError)
-          // Continue anyway - auth works, profile creation can be done later
-        }
 
-        return NextResponse.redirect(`${origin}${next}`)
+          // Check if user is a Washer
+          const washer = await prisma.washer.findUnique({
+            where: { email: data.user.email! }
+          })
+
+          if (washer) {
+            return NextResponse.redirect(`${origin}/dashboard/laveur`)
+          }
+
+          // If neither, redirect to onboarding
+          return NextResponse.redirect(`${origin}/onboarding`)
+
+        } catch (dbError) {
+          console.error('Database error in callback:', dbError)
+          // In case of error, redirect to onboarding as fallback
+          return NextResponse.redirect(`${origin}/onboarding`)
+        }
       } else {
         console.error('Auth exchange failed:', error)
       }
