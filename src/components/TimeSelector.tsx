@@ -1,201 +1,189 @@
 'use client'
-import { useState } from 'react'
-import type { ReactNode } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import Calendar from 'react-calendar'
+import 'react-calendar/dist/Calendar.css'
+import { format, addDays, isSameDay, parseISO } from 'date-fns'
+import { fr } from 'date-fns/locale'
 
 interface TimeSelectorProps {
   onSelect: (type: 'now' | 'later', time?: string, date?: string) => void
   isShaking?: boolean
 }
 
-interface TimeSlot {
-  time: string
-  date: Date
-  isToday: boolean
-}
-
 export default function TimeSelector({ onSelect, isShaking = false }: TimeSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [selected, setSelected] = useState<string>('Quand ?')
-  const [isLoading, setIsLoading] = useState(false)
-  const [_availableSlots, _setAvailableSlots] = useState<string[]>([])
-  const [infoMessage, setInfoMessage] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [availableSlots, setAvailableSlots] = useState<string[]>([])
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false)
+  const [displayText, setDisplayText] = useState('Quand ?')
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const getAvailableTimeSlots = async (date: Date): Promise<string[]> => {
-    const slots = []
-    // Horaires de service: 8h à 18h
-    for (let hour = 8; hour <= 18; hour++) {
-      for (const minutes of [0, 30]) {
-        const time = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-        try {
-          const response = await fetch('/api/booking/validate-timeslot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              date: date.toISOString().split('T')[0],
-              time: time
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const fetchTimeSlots = async (date: Date) => {
+    setIsLoadingSlots(true)
+    setAvailableSlots([])
+    try {
+      const slots = []
+      // Horaires de service: 8h à 18h
+      for (let hour = 8; hour <= 18; hour++) {
+        for (const minutes of [0, 30]) {
+          const time = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+          try {
+            const response = await fetch('/api/booking/validate-timeslot', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                date: format(date, 'yyyy-MM-dd'),
+                time: time
+              })
             })
-          })
-          
-          if (response.ok) {
-            slots.push(time)
+
+            if (response.ok) {
+              slots.push(time)
+            }
+          } catch (error) {
+            console.error('Error validating time slot:', error)
           }
-        } catch (error) {
-          console.error('Error validating time slot:', error)
         }
       }
-    }
-    return slots
-  }
-
-  const getNearestAvailableTime = async (): Promise<TimeSlot> => {
-    const now = new Date()
-    const currentHour = now.getHours()
-    const currentMinutes = now.getMinutes()
-    const currentTimeInMinutes = currentHour * 60 + currentMinutes
-
-    // Obtenir les créneaux pour aujourd'hui
-    const todaySlots = await getAvailableTimeSlots(now)
-    const todaySlotsInMinutes = todaySlots.map(time => {
-      const [hours, minutes] = time.split(':').map(Number)
-      return hours * 60 + minutes
-    })
-
-    // Trouver le prochain créneau disponible aujourd'hui (avec 30 minutes de marge)
-    const nextSlotToday = todaySlotsInMinutes.find(slot => slot > currentTimeInMinutes + 30)
-
-    if (nextSlotToday) {
-      // Un créneau est disponible aujourd'hui
-      const hours = Math.floor(nextSlotToday / 60)
-      const minutes = nextSlotToday % 60
-      const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-      return {
-        time,
-        date: now,
-        isToday: true
-      }
-    } else {
-      // Pas de créneau aujourd'hui, prendre le premier créneau demain
-      const tomorrow = new Date(now)
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      tomorrow.setHours(8, 0, 0, 0)
-      
-      const tomorrowSlots = await getAvailableTimeSlots(tomorrow)
-      return {
-        time: tomorrowSlots[0] || '08:00',
-        date: tomorrow,
-        isToday: false
-      }
+      setAvailableSlots(slots)
+    } catch (error) {
+      console.error('Error fetching slots:', error)
+    } finally {
+      setIsLoadingSlots(false)
     }
   }
 
-  const formatDate = (date: Date): string => {
-    return date.toISOString().split('T')[0] // Format YYYY-MM-DD
+  const handleDateChange = (value: any) => {
+    if (value instanceof Date) {
+      setSelectedDate(value)
+      setSelectedTime(null) // Reset time when date changes
+
+      // Update display text immediately with the selected date
+      let dateDisplay = format(value, 'EEEE d MMMM', { locale: fr })
+      if (isSameDay(value, new Date())) dateDisplay = "Aujourd'hui"
+      else if (isSameDay(value, addDays(new Date(), 1))) dateDisplay = "Demain"
+
+      setDisplayText(dateDisplay)
+
+      fetchTimeSlots(value)
+
+      // Notify parent component with the selected date (without time for now)
+      const dateStr = format(value, 'yyyy-MM-dd')
+      onSelect('later', undefined, dateStr)
+
+      // Close the calendar after selecting a date
+      setIsOpen(false)
+    }
   }
 
-  const formatDisplayDate = (date: Date, isToday: boolean): string => {
-    if (isToday) {
-      return "Aujourd'hui"
-    }
-    
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    if (date.toDateString() === tomorrow.toDateString()) {
-      return "Demain"
-    }
-    
-    return new Intl.DateTimeFormat('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long'
-    }).format(date)
-  }
+  const handleTimeSelect = (time: string) => {
+    if (!selectedDate) return
 
-  const handleSelect = async (type: 'now' | 'later') => {
-    if (type === 'now') {
-      setIsLoading(true)
-      setInfoMessage(null)
-      try {
-        const nearestSlot = await getNearestAvailableTime()
-        const displayDate = formatDisplayDate(nearestSlot.date, nearestSlot.isToday)
-        const selectedTime = nearestSlot.time
-        
-        // Mettre à jour le message sélectionné
-        setSelected(`${displayDate} ${selectedTime}`)
-        
-        // Afficher le message d'information
-        if (nearestSlot.isToday) {
-          setInfoMessage(`Un laveur peut être chez vous dans 30 minutes ! Le prochain créneau disponible est à ${selectedTime}.`)
-        } else {
-          setInfoMessage(`Tous les créneaux d'aujourd'hui sont pris. Le prochain créneau disponible est demain à ${selectedTime}.`)
-        }
-        
-        onSelect('now', selectedTime, formatDate(nearestSlot.date))
-      } catch (error) {
-        console.error('Error handling time selection:', error)
-        setSelected('Erreur de chargement')
-        setInfoMessage('Désolé, une erreur est survenue lors de la recherche des créneaux disponibles.')
-      } finally {
-        setIsLoading(false)
-      }
-    } else {
-      setSelected('Planifier')
-      setInfoMessage(null)
-      onSelect('later')
-    }
+    setSelectedTime(time)
+    const dateStr = format(selectedDate, 'yyyy-MM-dd')
+
+    // Update display text
+    let dateDisplay = format(selectedDate, 'EEEE d MMMM', { locale: fr })
+    if (isSameDay(selectedDate, new Date())) dateDisplay = "Aujourd'hui"
+    else if (isSameDay(selectedDate, addDays(new Date(), 1))) dateDisplay = "Demain"
+
+    setDisplayText(`${dateDisplay} à ${time}`)
+
+    // Determine if it's "now" (today within next hour) or "later"
+    // For simplicity, we'll just use 'later' for specific bookings unless it's very soon, 
+    // but the backend handles the logic. Let's pass 'later' as it is a specific scheduled time.
+    onSelect('later', time, dateStr)
     setIsOpen(false)
   }
 
+  // Custom tile disabled logic (disable past dates)
+  const tileDisabled = ({ date }: { date: Date }) => {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    return date < yesterday
+  }
+
   return (
-    <div className={`relative ${isShaking ? 'shake-animation' : ''}`}>
-      <button 
-        onClick={() => !isLoading && setIsOpen(!isOpen)}
-        disabled={isLoading}
-        className={`w-full pl-12 pr-6 py-4 rounded-lg bg-white/60 backdrop-blur-sm text-lg text-[#004aad] focus:outline-none focus:ring-2 focus:ring-[#004aad] border-none shadow-md text-left flex justify-between items-center ${
-          isLoading ? 'cursor-not-allowed opacity-75' : ''
-        }`}
+    <div className={`relative ${isShaking ? 'shake-animation' : ''}`} ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full pl-12 pr-6 py-4 rounded-lg bg-white/60 backdrop-blur-sm text-lg text-[#004aad] focus:outline-none focus:ring-2 focus:ring-[#004aad] border-none shadow-md text-left flex justify-between items-center"
       >
-         <span>{selected}</span>
-        {isLoading && (
-          <svg className="animate-spin h-5 w-5 text-[#004aad]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        )}
+        <span className="capitalize">{displayText}</span>
+        <svg
+          className={`w-5 h-5 text-[#004aad] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
       </button>
-      {infoMessage && (
-        <div className="absolute left-0 right-0 mt-2">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-            {infoMessage}
-          </div>
-        </div>
-      )}
-      <svg 
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#004aad]" 
-        fill="none" 
-        stroke="currentColor" 
+
+      <svg
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#004aad]"
+        fill="none"
+        stroke="currentColor"
         viewBox="0 0 24 24"
       >
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 z-50">
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <button 
-              onClick={() => handleSelect('now')}
-              className="w-full px-6 py-3 text-left text-primary hover:bg-primary hover:text-white transition-all flex items-center gap-3"
-            >
-              <span className="text-xl">⚡</span>
-              Laver sa voiture maintenant
-            </button>
-              <button 
-              onClick={() => handleSelect('later')}
-              className="w-full px-6 py-3 text-left text-primary hover:bg-primary hover:text-white transition-all flex items-center gap-3"
-            >
-              <span className="text-xl">📅</span>
-              Planifier son lavage
-            </button>
+        <div className="absolute left-0 right-0 mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-100 p-4 animate-fade-in-up">
+          <div className="mb-4">
+            <Calendar
+              onChange={handleDateChange}
+              value={selectedDate}
+              locale="fr-FR"
+              tileDisabled={tileDisabled}
+              className="w-full border-none !font-sans"
+              tileClassName="rounded-lg hover:bg-blue-50 focus:bg-blue-100"
+            />
           </div>
+
+          {selectedDate && (
+            <div className="border-t border-gray-100 pt-4">
+              <h4 className="text-sm font-semibold text-gray-500 mb-3">
+                Horaires disponibles pour le {format(selectedDate, 'd MMMM', { locale: fr })}
+              </h4>
+
+              {isLoadingSlots ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : availableSlots.length > 0 ? (
+                <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                  {availableSlots.map((time) => (
+                    <button
+                      key={time}
+                      onClick={() => handleTimeSelect(time)}
+                      className={`px-2 py-2 text-sm rounded-md transition-colors ${selectedTime === time
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-primary'
+                        }`}
+                    >
+                      {time}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-red-500 text-center py-2">Aucun créneau disponible pour cette date.</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -29,15 +29,15 @@ export default function ReservationPopup({ isOpen, onClose, address, selectedTim
         </button>
 
         <h2 className="text-2xl font-bold text-[#004aad] mb-6">Réserver un lavage</h2>
-        
+
         <div className="mb-6">
           <p className="text-gray-600 mb-2">Adresse sélectionnée :</p>
           <p className="text-[#004aad] font-medium">{address}</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-8" style={{ minHeight: '250px' }}>
-          <a 
-            href={`/reserver?service=exterior&address=${encodeURIComponent(address)}${selectedTime?.type === 'now' ? `&time=${encodeURIComponent(selectedTime.time || '')}&date=${encodeURIComponent(selectedTime.date || '')}` : ''}`}
+          <a
+            href={`/reserver?service=exterior&address=${encodeURIComponent(address)}${selectedTime?.date ? `&date=${encodeURIComponent(selectedTime.date)}` : ''}${selectedTime?.time ? `&time=${encodeURIComponent(selectedTime.time)}` : ''}`}
             className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-[#004aad]/10"
           >
             <div className="w-12 h-12 bg-[#004aad]/10 rounded-lg flex items-center justify-center mb-4">
@@ -48,8 +48,8 @@ export default function ReservationPopup({ isOpen, onClose, address, selectedTim
             <p className="text-xl font-bold text-[#004aad]">25€</p>
           </a>
 
-          <a 
-            href={`/reserver?service=complete&address=${encodeURIComponent(address)}${selectedTime?.type === 'now' ? `&time=${encodeURIComponent(selectedTime.time || '')}&date=${encodeURIComponent(selectedTime.date || '')}` : ''}`}
+          <a
+            href={`/reserver?service=complete&address=${encodeURIComponent(address)}${selectedTime?.date ? `&date=${encodeURIComponent(selectedTime.date)}` : ''}${selectedTime?.time ? `&time=${encodeURIComponent(selectedTime.time)}` : ''}`}
             className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-[#004aad]/10"
           >
             <div className="w-12 h-12 bg-[#004aad]/10 rounded-lg flex items-center justify-center mb-4">
@@ -60,8 +60,8 @@ export default function ReservationPopup({ isOpen, onClose, address, selectedTim
             <p className="text-xl font-bold text-[#004aad]">45€</p>
           </a>
 
-          <a 
-            href={`/reserver?service=premium&address=${encodeURIComponent(address)}${selectedTime?.type === 'now' ? `&time=${encodeURIComponent(selectedTime.time || '')}&date=${encodeURIComponent(selectedTime.date || '')}` : ''}`}
+          <a
+            href={`/reserver?service=premium&address=${encodeURIComponent(address)}${selectedTime?.date ? `&date=${encodeURIComponent(selectedTime.date)}` : ''}${selectedTime?.time ? `&time=${encodeURIComponent(selectedTime.time)}` : ''}`}
             className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-[#004aad]/10"
           >
             <div className="w-12 h-12 bg-[#004aad]/10 rounded-lg flex items-center justify-center mb-4">

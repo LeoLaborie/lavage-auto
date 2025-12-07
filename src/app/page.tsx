@@ -2,10 +2,10 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
+import Header from '@/components/Header'
+import AddressAutocomplete from '@/components/AddressAutocomplete'
+import TimeSelector from '@/components/TimeSelector'
 
-const Header = dynamic(() => import('@/components/Header'), { ssr: false })
-const AddressAutocomplete = dynamic(() => import('@/components/AddressAutocomplete'), { ssr: false })
-const TimeSelector = dynamic(() => import('@/components/TimeSelector'), { ssr: false })
 const ReservationPopup = dynamic(() => import('@/components/ReservationPopup'), { ssr: false })
 
 export default function Home() {
@@ -48,181 +48,312 @@ export default function Home() {
       <Header />
 
       {/* Full Screen Hero Section */}
-      <section className="h-[70vh] overflow-hidden relative">
-          <Image 
-            src="/banner.png" 
-            alt="Clean luxury car" 
+      <section className="relative h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/banner.png"
+            alt="Clean luxury car"
             className="w-full h-full object-cover object-center"
             width={1920}
             height={1080}
             priority
           />
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="max-w-4xl w-full px-4 mb-8 flex flex-col items-center">
-              <h1 className="text-3xl md:text-4xl font-bold text-primary text-center mb-8 title-font">
-                Voiture propre en un click
-              </h1>
-          
-              <div className="flex flex-col md:flex-row gap-4 items-center max-w-4xl w-full">
-                <div className={`w-full md:w-3/5 ${shakingAddress ? 'shake-animation' : ''}`}>
-                  <AddressAutocomplete onAddressSelect={handleAddressSelect} />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 title-font drop-shadow-lg animate-fade-in-up">
+            Voiture propre<br className="md:hidden" /> en un click
+          </h1>
+          <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-2xl drop-shadow-md font-light">
+            Le service de lavage auto à domicile n°1 en France.
+          </p>
+
+          <div className="bg-white p-4 rounded-2xl shadow-2xl w-full max-w-4xl transform transition-all hover:scale-[1.01]">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <div className={`w-full md:w-2/5 ${shakingAddress ? 'shake-animation' : ''}`}>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-400">📍</span>
+                  </div>
+                  <div className="[&>div>input]:pl-10 [&>div>input]:h-14 [&>div>input]:bg-gray-50 [&>div>input]:border-gray-200 [&>div>input]:rounded-xl">
+                    <AddressAutocomplete onAddressSelect={handleAddressSelect} />
+                  </div>
                 </div>
-                
-                <div className="w-full md:w-1/5">
-                  <TimeSelector 
+              </div>
+
+              <div className="w-full md:w-2/5">
+                <div className={`relative h-14 ${shakingTime ? 'shake-animation' : ''}`}>
+                  <TimeSelector
                     onSelect={(type, time, date) => setSelectedTime({ type, time, date })}
                     isShaking={shakingTime}
                   />
                 </div>
-              
-                <button 
-                  onClick={handleSearch}
-                  className={`w-full md:w-1/5 bg-accent text-primary px-8 py-4 rounded-lg text-lg font-bold transition-all shadow-md transform hover:scale-105 ${
-                    !selectedAddress || !selectedTime 
-                      ? 'opacity-70 cursor-not-allowed' 
-                      : 'hover:shadow-lg hover:bg-accent'
-                  }`}
-                >
-                  Rechercher
-                </button>
-                
-                 <ReservationPopup
-                  isOpen={showReservation}
-                  onClose={() => setShowReservation(false)}
-                  address={selectedAddress}
-                  selectedTime={selectedTime}
-                />
               </div>
+
+              <button
+                onClick={handleSearch}
+                className={`w-full md:w-1/5 h-14 bg-accent hover:bg-yellow-400 text-primary rounded-xl text-lg font-bold transition-all shadow-md flex items-center justify-center gap-2 ${!selectedAddress || !selectedTime
+                  ? 'opacity-70 cursor-not-allowed'
+                  : 'hover:shadow-lg transform active:scale-95'
+                  }`}
+              >
+                <span>Rechercher</span>
+                <span className="text-xl">→</span>
+              </button>
             </div>
           </div>
-        </section>
+
+          <ReservationPopup
+            isOpen={showReservation}
+            onClose={() => setShowReservation(false)}
+            address={selectedAddress}
+            selectedTime={selectedTime}
+          />
+        </div>
+      </section>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 relative z-10">
-        
-        <section id="services" className="py-16 bg-white rounded-t-[2.5rem] shadow-lg">
-          <h2 className="text-3xl font-bold text-center text-primary mb-12 title-font">Nos Services</h2>
+
+        <section id="services" className="py-24 bg-white">
+          <div className="text-center mb-16">
+            <span className="text-accent font-bold tracking-wider uppercase text-sm">Nos Services</span>
+            <h2 className="text-4xl font-bold text-primary mt-2 title-font">Formules de Lavage</h2>
+            <p className="text-gray-500 mt-4 max-w-2xl mx-auto">Des solutions adaptées à tous les besoins et tous les budgets.</p>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-8">
-            <a href="/reserver?service=exterior" className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 cursor-pointer block border-2 border-transparent hover:border-secondary/20">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg flex items-center justify-center mb-6 transform transition-transform group-hover:rotate-6">
-                <span className="text-2xl">🧽</span>
+            <a href="/reserver?service=exterior" className="group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
+              <div className="w-16 h-16 bg-blue-50 text-primary rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
+                🧽
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Lavage Extérieur</h3>
-              <p className="text-gray-600 mb-4">Nettoyage complet de l'extérieur de votre véhicule avec des produits de qualité.</p>
-              <p className="text-2xl font-bold text-accent">À partir de 25€</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Lavage Extérieur</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">Nettoyage complet de la carrosserie, vitres extérieures et jantes avec des produits écologiques.</p>
+              <div className="flex items-center justify-between mt-auto">
+                <p className="text-2xl font-bold text-primary">dès 25€</p>
+                <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-accent group-hover:text-primary transition-colors">→</span>
+              </div>
             </a>
-            <a href="/reserver?service=complete" className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 cursor-pointer block border-2 border-transparent hover:border-secondary/20">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg flex items-center justify-center mb-6 transform transition-transform group-hover:rotate-6">
-                <span className="text-2xl">✨</span>
+
+            <a href="/reserver?service=complete" className="group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden ring-2 ring-accent/20">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
+              <div className="absolute top-4 right-4 bg-accent text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Populaire</div>
+              <div className="w-16 h-16 bg-yellow-50 text-accent-dark rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-sm group-hover:bg-accent group-hover:text-primary transition-colors">
+                ✨
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Lavage Complet</h3>
-              <p className="text-gray-600 mb-4">Nettoyage intérieur et extérieur pour une voiture impeccable.</p>
-              <p className="text-2xl font-bold text-accent">À partir de 45€</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Lavage Complet</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">Le meilleur des deux mondes : nettoyage intérieur et extérieur pour une voiture comme neuve.</p>
+              <div className="flex items-center justify-between mt-auto">
+                <p className="text-2xl font-bold text-primary">dès 45€</p>
+                <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-accent group-hover:text-primary transition-colors">→</span>
+              </div>
             </a>
-            <a href="/reserver?service=premium" className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 cursor-pointer block border-2 border-transparent hover:border-secondary/20">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg flex items-center justify-center mb-6 transform transition-transform group-hover:rotate-6">
-                <span className="text-2xl">💎</span>
+
+            <a href="/reserver?service=premium" className="group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
+              <div className="w-16 h-16 bg-cyan-50 text-secondary rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-sm group-hover:bg-secondary group-hover:text-white transition-colors">
+                💎
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Lavage Premium</h3>
-              <p className="text-gray-600 mb-4">Service complet avec cire, lustrage et traitement des plastiques.</p>
-              <p className="text-2xl font-bold text-accent">À partir de 75€</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Lavage Premium</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">Service d'exception avec cire de protection, lustrage et traitement des plastiques et cuirs.</p>
+              <div className="flex items-center justify-between mt-auto">
+                <p className="text-2xl font-bold text-primary">dès 75€</p>
+                <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-accent group-hover:text-primary transition-colors">→</span>
+              </div>
             </a>
           </div>
         </section>
 
-        <section id="applications" className="py-16 bg-white rounded-2xl">
-          <h2 className="text-3xl font-bold text-center text-primary mb-12 title-font">Applications</h2>
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 px-4">
-            <div className="flex flex-col items-start p-8 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 bg-white border-2 border-transparent hover:border-secondary/20 min-h-[200px]">
-              <div className="w-full">
-                <div className="flex gap-4">
-                  <div className="flex flex-col gap-4">
-                    <a href="#" className="inline-block flex-shrink-0">
-                      <Image
-                        src="/images/apps/app-store.png"
-                        alt="Télécharger sur l'App Store"
-                        width={200}
-                        height={60}
-                        className="w-[200px] h-[60px] object-contain rounded-xl overflow-hidden"
-                      />
-                    </a>
-                  </div>
-                  <div className="flex flex-col">
-                    <h3 className="text-2xl font-bold text-primary title-font mb-2">KLYN</h3>
-                    <p className="text-gray-600">Simplifiez votre routine avec notre application client dédiée :</p>
-                    <ul className="text-gray-600 mt-2 list-disc pl-4">
-                      <li>Réservation rapide et intuitive</li>
-                      <li>Suivi en temps réel de votre laveur</li>
-                      <li>Paiement sécurisé intégré</li>
-                      <li>Historique de vos services</li>
-                    </ul>
+        <section id="applications" className="py-24 bg-gray-50 rounded-[3rem] my-12">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="grid md:grid-cols-2 gap-16 items-center mb-24">
+              <div className="order-2 md:order-1">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent rounded-full blur-3xl transform -translate-x-10 translate-y-10"></div>
+                  <Image
+                    src="/images/apps/app-mockup.png"
+                    alt="Application Client KLYN"
+                    width={600}
+                    height={800}
+                    className="relative z-10 w-full max-w-md mx-auto drop-shadow-2xl transform hover:scale-[1.02] transition-transform duration-500"
+                    style={{ objectFit: 'contain' }}
+                  />
+                  {/* Fallback if image doesn't exist, we might need to use a generic phone frame or just the store buttons nicely arranged */}
+                </div>
+              </div>
+              <div className="order-1 md:order-2">
+                <span className="text-primary font-bold tracking-wider uppercase text-sm">Pour les clients</span>
+                <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">L'application KLYN</h2>
+                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                  Simplifiez votre routine avec notre application dédiée. Réservez, suivez et payez en toute sécurité, le tout depuis votre poche.
+                </p>
+
+                <ul className="space-y-4 mb-10">
+                  {[
+                    "Réservation ultra-rapide en 3 clics",
+                    "Suivi GPS de votre laveur en temps réel",
+                    "Paiement sécurisé et factures automatiques",
+                    "Historique complet de vos entretiens"
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-center gap-3 text-gray-700">
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm">✓</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="flex flex-wrap gap-4">
+                  <a href="#" className="transition-transform hover:scale-105 hover:shadow-lg rounded-xl overflow-hidden">
+                    <Image src="/images/apps/app-store.png" alt="App Store" width={160} height={50} className="h-12 w-auto" />
+                  </a>
+                  <a href="#" className="transition-transform hover:scale-105 hover:shadow-lg rounded-xl overflow-hidden">
+                    <Image src="/images/apps/play-store.png" alt="Google Play" width={160} height={50} className="h-12 w-auto" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-16 items-center">
+              <div>
+                <span className="text-secondary font-bold tracking-wider uppercase text-sm">Pour les professionnels</span>
+                <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">KLYN OPERATORS</h2>
+                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                  Rejoignez le réseau KLYN et développez votre activité de lavage auto avec nos outils professionnels.
+                </p>
+
+                <ul className="space-y-4 mb-10">
+                  {[
+                    "Planning intelligent et optimisé",
+                    "Navigation GPS intégrée vers les clients",
+                    "Gestion simplifiée de vos revenus",
+                    "Support dédié 7j/7"
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-center gap-3 text-gray-700">
+                      <span className="w-6 h-6 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-sm">✓</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="flex flex-wrap gap-4">
+                  <a href="#" className="transition-transform hover:scale-105 hover:shadow-lg rounded-xl overflow-hidden">
+                    <Image src="/images/apps/app-store.png" alt="App Store" width={160} height={50} className="h-12 w-auto" />
+                  </a>
+                  <a href="#" className="transition-transform hover:scale-105 hover:shadow-lg rounded-xl overflow-hidden">
+                    <Image src="/images/apps/play-store.png" alt="Google Play" width={160} height={50} className="h-12 w-auto" />
+                  </a>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-tl from-secondary/20 to-transparent rounded-full blur-3xl transform translate-x-10 translate-y-10"></div>
+                {/* Placeholder for Operator App Image */}
+                <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-6 border border-gray-100 transform rotate-2 hover:rotate-0 transition-all duration-500 max-w-sm mx-auto">
+                  <div className="aspect-[9/16] bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800"></div>
+                    <div className="text-white text-center p-6 relative z-10">
+                      <div className="w-16 h-16 bg-secondary rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl">🚀</div>
+                      <h3 className="font-bold text-xl mb-2">Espace Pro</h3>
+                      <p className="text-sm text-gray-400">Gérez vos courses en toute simplicité</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-start p-8 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 bg-white border-2 border-transparent hover:border-secondary/20 min-h-[200px]">
-              <div className="w-full">
-                <div className="flex gap-4">
-                  <div className="flex flex-col gap-4">
-                    <a href="#" className="inline-block flex-shrink-0">
-                      <Image
-                        src="/images/apps/play-store.png"
-                        alt="Télécharger sur Google Play"
-                        width={200}
-                        height={60}
-                        className="w-[200px] h-[60px] object-contain rounded-xl overflow-hidden"
-                      />
-                    </a>
+          </div>
+        </section>
+
+        <section id="how-it-works" className="py-24 bg-white">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-primary mb-4 title-font">Comment ça marche ?</h2>
+            <p className="text-gray-500">Un processus simple et transparent.</p>
+          </div>
+
+          <div className="relative grid md:grid-cols-3 gap-12 max-w-6xl mx-auto px-4">
+            {/* Connecting line for desktop */}
+            <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20 -z-10"></div>
+
+            <div className="relative text-center group">
+              <div className="w-24 h-24 bg-white border-4 border-primary/10 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg transform transition-all group-hover:scale-110 group-hover:border-primary">
+                <span className="text-primary text-3xl font-bold">1</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Réservez</h3>
+              <p className="text-gray-600 leading-relaxed">Indiquez votre localisation et choisissez le créneau qui vous convient le mieux.</p>
+            </div>
+
+            <div className="relative text-center group">
+              <div className="w-24 h-24 bg-white border-4 border-secondary/10 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg transform transition-all group-hover:scale-110 group-hover:border-secondary">
+                <span className="text-secondary text-3xl font-bold">2</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Relaxez-vous</h3>
+              <p className="text-gray-600 leading-relaxed">Nos laveurs professionnels interviennent directement chez vous ou à votre bureau.</p>
+            </div>
+
+            <div className="relative text-center group">
+              <div className="w-24 h-24 bg-white border-4 border-accent/10 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg transform transition-all group-hover:scale-110 group-hover:border-accent">
+                <span className="text-accent text-3xl font-bold">3</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Profitez</h3>
+              <p className="text-gray-600 leading-relaxed">Retrouvez votre véhicule étincelant sans avoir bougé le petit doigt.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-24 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4">
+            <h2 className="text-4xl font-bold text-center text-primary mb-16 title-font">Ils nous font confiance</h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  name: "Sophie M.",
+                  role: "Cliente fidèle",
+                  content: "Un gain de temps incroyable ! Le laveur est arrivé à l'heure et ma voiture n'a jamais été aussi propre. Je recommande vivement.",
+                  stars: 5
+                },
+                {
+                  name: "Thomas D.",
+                  role: "Professionnel",
+                  content: "Service impeccable pour ma flotte de véhicules. La facturation est simple et le résultat toujours au rendez-vous.",
+                  stars: 5
+                },
+                {
+                  name: "Marie L.",
+                  role: "Maman occupée",
+                  content: "Plus besoin de faire la queue à la station de lavage le week-end. KLYN s'occupe de tout pendant que je profite de ma famille.",
+                  stars: 5
+                }
+              ].map((testimonial, i) => (
+                <div key={i} className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                  <div className="flex text-accent mb-4">
+                    {[...Array(testimonial.stars)].map((_, i) => (
+                      <span key={i}>★</span>
+                    ))}
                   </div>
-                  <div className="flex flex-col">
-                    <h3 className="text-2xl font-bold text-primary title-font mb-2">KLYN OPERATORS</h3>
-                    <p className="text-gray-600">L'outil essentiel pour nos laveurs professionnels :</p>
-                    <ul className="text-gray-600 mt-2 list-disc pl-4">
-                      <li>Gestion optimisée des rendez-vous</li>
-                      <li>Navigation GPS intégrée</li>
-                      <li>Suivi des prestations réalisées</li>
-                      <li>Communication directe avec les clients</li>
-                    </ul>
+                  <p className="text-gray-600 mb-6 italic">"{testimonial.content}"</p>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl font-bold text-gray-500">
+                      {testimonial.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900">{testimonial.name}</p>
+                      <p className="text-sm text-gray-500">{testimonial.role}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
 
-        <section id="how-it-works" className="py-16 bg-white rounded-2xl">
-          <h2 className="text-3xl font-bold text-center text-primary mb-12 title-font">Fonctionnement</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-               <div className="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-6 transform transition-transform hover:scale-110">
-                <span className="text-white text-2xl font-bold">1</span>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Réservez</h3>
-              <p className="text-gray-600">Choisissez votre service et votre créneau horaire en quelques clics.</p>
-            </div>
-            <div className="text-center">
-               <div className="w-20 h-20 bg-gradient-to-br from-secondary to-accent rounded-full flex items-center justify-center mx-auto mb-6 transform transition-transform hover:scale-110">
-                <span className="text-white text-2xl font-bold">2</span>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Relaxez-vous</h3>
-              <p className="text-gray-600">Un laveur professionnel se rend chez vous avec tout le matériel nécessaire.</p>
-            </div>
-            <div className="text-center">
-               <div className="w-20 h-20 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center mx-auto mb-6 transform transition-transform hover:scale-110">
-                <span className="text-white text-2xl font-bold">3</span>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Profitez</h3>
-              <p className="text-gray-600">Votre voiture est propre et vous n'avez pas bougé de chez vous.</p>
-            </div>
-          </div>
-        </section>
+        <section className="py-24 text-center">
+          <div className="bg-gradient-to-br from-primary to-secondary rounded-[3rem] p-12 md:p-24 text-white relative overflow-hidden shadow-2xl mx-4">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
 
-        <section className="py-16 text-center">
-          <div className="bg-gradient-to-br from-primary to-secondary rounded-2xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-accent/20 rounded-full -translate-y-32 translate-x-32 blur-3xl"></div>
-            <div className="relative z-10">
-            <h2 className="text-3xl font-bold mb-4 title-font">Reserve ton lavage ici</h2>
-            <p className="text-xl mb-8 opacity-90">En moins de une minute c'est fait !</p>
-              <a href="/reserver" className="bg-accent text-primary px-8 py-4 rounded-lg text-lg font-medium hover:bg-accent transition-all transform hover:scale-105 inline-block shadow-lg">
+            <div className="relative z-10 max-w-3xl mx-auto">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 title-font">Prêt à faire briller votre voiture ?</h2>
+              <p className="text-xl mb-10 opacity-90 font-light">Rejoignez des milliers de clients satisfaits et redécouvrez le plaisir de conduire une voiture propre.</p>
+              <a href="/reserver" className="bg-white text-primary px-10 py-5 rounded-xl text-xl font-bold hover:bg-gray-50 transition-all transform hover:scale-105 inline-block shadow-xl">
                 Réserver maintenant
               </a>
             </div>
@@ -230,133 +361,74 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="bg-primary text-white py-16">
+      <footer className="bg-gray-900 text-white pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Première colonne - Contact */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+            {/* Première colonne - Brand */}
             <div>
-              <h3 className="text-lg font-bold mb-4 text-accent">Contactez-nous</h3>
-              <div className="space-y-2">
-                <p className="flex items-center gap-2 hover:text-secondary transition-all group">
-                  <span className="bg-secondary/20 p-2 rounded-full group-hover:bg-secondary/30 transition-all">📞</span>
-                  <span>+33 1 23 45 67 89</span>
-                </p>
-                <p className="flex items-center gap-2 hover:text-secondary transition-all group">
-                  <span className="bg-secondary/20 p-2 rounded-full group-hover:bg-secondary/30 transition-all">✉️</span>
-                  <span>contact@klyn.fr</span>
-                </p>
-                <p className="flex items-center gap-2 hover:text-secondary transition-all group">
-                  <span className="bg-secondary/20 p-2 rounded-full group-hover:bg-secondary/30 transition-all">📍</span>
-                  <span>Disponible partout en France</span>
-                </p>
-              </div>
-              <div className="mt-6 bg-secondary/10 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2 text-accent">Support 24/7</h4>
-                <p className="text-white/80">Disponible par chat et téléphone</p>
+              <h3 className="text-2xl font-bold mb-6 text-white title-font">KLYN</h3>
+              <p className="text-gray-400 mb-6 leading-relaxed">
+                La référence du lavage auto à domicile. Qualité, écologie et satisfaction client sont nos priorités.
+              </p>
+              <div className="flex gap-4">
+                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-primary transition-colors">
+                  <Image src="/images/social/linkedin.svg" alt="LinkedIn" width={20} height={20} className="invert" />
+                </a>
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-primary transition-colors">
+                  <Image src="/images/social/instagram.svg" alt="Instagram" width={20} height={20} className="invert" />
+                </a>
               </div>
             </div>
 
             {/* Deuxième colonne - Services */}
             <div>
-              <h3 className="text-lg font-bold mb-4 text-accent">Services</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="/blog" className="hover:text-secondary transition-all flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:w-3 transition-all"></span>
-                    <span>Blog</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/entreprise" className="hover:text-secondary transition-all flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:w-3 transition-all"></span>
-                    <span>Solutions pour votre entreprise</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/services" className="hover:text-secondary transition-all flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:w-3 transition-all"></span>
-                    <span>Lavage auto et moto à domicile</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/premium" className="hover:text-secondary transition-all flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:w-3 transition-all"></span>
-                    <span>Services Premium</span>
-                  </a>
-                </li>
+              <h3 className="text-lg font-bold mb-6 text-white">Services</h3>
+              <ul className="space-y-4">
+                <li><a href="/reserver?service=exterior" className="text-gray-400 hover:text-accent transition-colors">Lavage Extérieur</a></li>
+                <li><a href="/reserver?service=complete" className="text-gray-400 hover:text-accent transition-colors">Lavage Complet</a></li>
+                <li><a href="/reserver?service=premium" className="text-gray-400 hover:text-accent transition-colors">Lavage Premium</a></li>
+                <li><a href="/entreprise" className="text-gray-400 hover:text-accent transition-colors">Solutions Entreprises</a></li>
               </ul>
             </div>
 
-            {/* Troisième colonne - Légal */}
+            {/* Troisième colonne - Informations */}
             <div>
-              <h3 className="text-lg font-bold mb-4 text-accent">Informations</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="/faq" className="hover:text-secondary transition-all flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:w-3 transition-all"></span>
-                    <span>FAQ</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/privacy" className="hover:text-secondary transition-all flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:w-3 transition-all"></span>
-                    <span>Politique de confidentialité</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/cookies" className="hover:text-secondary transition-all flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:w-3 transition-all"></span>
-                    <span>Politique des cookies</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/conditions" className="hover:text-secondary transition-all flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:w-3 transition-all"></span>
-                    <span>Conditions générales</span>
-                  </a>
-                </li>
+              <h3 className="text-lg font-bold mb-6 text-white">Informations</h3>
+              <ul className="space-y-4">
+                <li><a href="/faq" className="text-gray-400 hover:text-accent transition-colors">FAQ</a></li>
+                <li><a href="/blog" className="text-gray-400 hover:text-accent transition-colors">Blog</a></li>
+                <li><a href="/contact" className="text-gray-400 hover:text-accent transition-colors">Contact</a></li>
+                <li><a href="/recrutement" className="text-gray-400 hover:text-accent transition-colors">Devenir Laveur</a></li>
               </ul>
             </div>
 
-            {/* Quatrième colonne - Réseaux sociaux */}
+            {/* Quatrième colonne - Contact */}
             <div>
-              <h3 className="text-lg font-bold mb-4 text-accent">Suivez-nous</h3>
-              <div className="flex gap-4">
-                <a 
-                  href="https://linkedin.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block bg-secondary/20 p-3 rounded-full hover:bg-secondary/30 transition-all"
-                >
-                  <Image 
-                    src="/images/social/linkedin.svg"
-                    alt="LinkedIn"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6"
-                  />
-                </a>
-                <a 
-                  href="https://instagram.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block bg-secondary/20 p-3 rounded-full hover:bg-secondary/30 transition-all"
-                >
-                  <Image 
-                    src="/images/social/instagram.svg"
-                    alt="Instagram"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6"
-                  />
-                </a>
-              </div>
+              <h3 className="text-lg font-bold mb-6 text-white">Nous contacter</h3>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3 text-gray-400">
+                  <span className="mt-1">📍</span>
+                  <span>123 Avenue des Champs-Élysées<br />75008 Paris</span>
+                </li>
+                <li className="flex items-center gap-3 text-gray-400">
+                  <span>📞</span>
+                  <a href="tel:+33123456789" className="hover:text-white transition-colors">+33 1 23 45 67 89</a>
+                </li>
+                <li className="flex items-center gap-3 text-gray-400">
+                  <span>✉️</span>
+                  <a href="mailto:contact@klyn.fr" className="hover:text-white transition-colors">contact@klyn.fr</a>
+                </li>
+              </ul>
             </div>
           </div>
 
-          {/* Copyright */}
-          <div className="mt-12 pt-8 border-t border-secondary/20 text-center">
-            <p className="text-white/60">&copy; 2025 KLYN. Tous droits réservés.</p>
+          <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-gray-500 text-sm">&copy; 2025 KLYN. Tous droits réservés.</p>
+            <div className="flex gap-6 text-sm text-gray-500">
+              <a href="/privacy" className="hover:text-white transition-colors">Confidentialité</a>
+              <a href="/conditions" className="hover:text-white transition-colors">CGV</a>
+              <a href="/cookies" className="hover:text-white transition-colors">Cookies</a>
+            </div>
           </div>
         </div>
       </footer>

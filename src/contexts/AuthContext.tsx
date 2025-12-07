@@ -77,6 +77,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Avoid hydration mismatch by not rendering children until mounted
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return null
+  }
+
   return (
     <AuthContext.Provider value={{ user, loading, signOut }}>
       {children}

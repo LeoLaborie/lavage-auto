@@ -3,17 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --primary: #004aad;
   --secondary: #19c0c6;
   --accent: #ffcc53;
-  --primary-light: #004aad20;
-  --secondary-light: #19c0c620;
-  --accent-light: #ffcc5320;
+  --primary-light: #004aad10;
+  --secondary-light: #19c0c610;
+  --accent-light: #ffcc5310;
 }
-
-
 
 @font-face {
   font-family: 'Intro Rust';
@@ -24,9 +22,21 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-2px); }
-  40%, 80% { transform: translateX(2px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-2px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(2px);
+  }
 }
 
 .shake-animation {
@@ -37,9 +47,27 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Font family will be handled by Next.js font optimization in layout.tsx */
 }
 
 .title-font {
   font-family: 'Intro Rust', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
