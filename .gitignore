@@ -30,20 +30,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (keep .env.example for documentation)
 .env*
+!.env.example
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 /src/generated/prisma
-
-
-
-client_secret_590590591077-agom4tabcpkeab0ujdgrc4b7l9risatk.apps.googleusercontent.com.json
-
-AGENTS.mdscripts/

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: Request) {
     try {
         const supabase = await createClient()
@@ -15,7 +17,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json()
-        const { role, email, name, avatarUrl } = body
+        const { role, name, avatarUrl } = body
 
         if (!role || !['CLIENT', 'WASHER'].includes(role)) {
             return NextResponse.json(

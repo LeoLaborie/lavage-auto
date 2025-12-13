@@ -4,7 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { ServiceType } from '@prisma/client'
 
-// Helper to map frontend service ID to Prisma Enum
+export const dynamic = 'force-dynamic'
+
 const getServiceType = (id: string): ServiceType | null => {
   switch (id) {
     case 'exterior': return 'EXTERIOR'
