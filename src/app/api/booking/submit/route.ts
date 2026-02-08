@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { validateBookingForm, validateDateTimeBooking } from '@/lib/validation'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
-import { ServiceType } from '@prisma/client'
+import { ServiceType, Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,121 +113,152 @@ export async function POST(request: Request) {
       )
     }
 
-    // 4. Time Slot Availability Check
-    const dateTime = new Date(`${date}T${time}:00`)
-    const existingBookings = await prisma.booking.findMany({
-      where: {
-        scheduledDate: dateTime,
-        status: {
-          notIn: ['CANCELLED', 'COMPLETED']
-        }
-      }
-    })
-
-    if (existingBookings.length >= 3) {
-      return NextResponse.json(
-        { error: 'Ce créneau n\'est plus disponible' },
-        { status: 409 }
-      )
-    }
-
-    // 5. Get or Create Service
-    const serviceType = getServiceType(serviceId)
-    if (!serviceType) {
-      return NextResponse.json(
-        { error: 'Service invalide' },
-        { status: 400 }
-      )
-    }
-
-    let service = await prisma.service.findUnique({
-      where: { type: serviceType }
-    })
-
-    if (!service) {
-      const details = getServiceDetails(serviceType)
-      service = await prisma.service.create({
-        data: {
-          type: serviceType,
-          name: details.name,
-          description: details.description,
-          basePrice: details.price,
-          estimatedDuration: details.duration,
-          features: [],
-          requirements: []
+    // 4. Execute Booking Transaction (Serializable to prevent race conditions)
+    const booking = await prisma.$transaction(async (tx) => {
+      // 4a. Time Slot Availability Check (Re-check inside transaction)
+      const dateTime = new Date(`${date}T${time}:00`)
+      const existingBookings = await tx.booking.count({
+        where: {
+          scheduledDate: dateTime,
+          status: {
+            notIn: ['CANCELLED', 'COMPLETED']
+          }
         }
       })
-    }
 
-    // 6. Handle Car (Create or Get)
-    let finalCarId = carId
-
-    // If carId is provided, verify it belongs to the customer
-    if (finalCarId) {
-      const existingCar = await prisma.car.findUnique({
-        where: { id: finalCarId }
-      })
-
-      if (!existingCar || existingCar.customerId !== customer.id) {
-        return NextResponse.json(
-          { error: 'Invalid car selection' },
-          { status: 400 }
-        )
-      }
-    } else {
-      // Create new car
-      // Validate required fields for new car
-      if (!make || !model || !licensePlate) {
-        return NextResponse.json(
-          { error: 'Make, model and license plate are required for new vehicles' },
-          { status: 400 }
-        )
+      if (existingBookings >= 3) {
+        throw new Error('SLOT_FULL')
       }
 
-      const car = await prisma.car.create({
-        data: {
-          customerId: customer.id,
-          make: make,
-          model: model,
-          licensePlate: licensePlate,
-          vehicleType: 'sedan', // Default type
-        }
-      })
-      finalCarId = car.id
-    }
+      // 5. Get or Create Service
+      const serviceType = getServiceType(serviceId)
+      if (!serviceType) {
+        throw new Error('INVALID_SERVICE')
+      }
 
-    // 7. Update Customer Phone if provided and different
-    if (phone) {
-      const cleanPhone = phone.replace(/[\s.-]/g, '')
-      if (customer.phone !== cleanPhone) {
-        await prisma.customer.update({
-          where: { id: customer.id },
-          data: { phone: cleanPhone }
+      let service = await tx.service.findUnique({
+        where: { type: serviceType }
+      })
+
+      if (!service) {
+        const details = getServiceDetails(serviceType)
+        service = await tx.service.create({
+          data: {
+            type: serviceType,
+            name: details.name,
+            description: details.description,
+            basePrice: details.price,
+            estimatedDuration: details.duration,
+            features: [],
+            requirements: []
+          }
         })
       }
-    }
 
-    // 8. Create Booking
-    const booking = await prisma.booking.create({
-      data: {
-        customerId: customer.id,
-        serviceId: service.id,
-        carId: finalCarId,
-        scheduledDate: dateTime,
-        serviceAddress: address,
-        finalPrice: service.basePrice,
-        status: 'PENDING',
-        customerNotes: notes
+      // 6. Handle Car (Create or Get)
+      let finalCarId = carId
+
+      // If carId is provided, verify it belongs to the customer
+      if (finalCarId) {
+        const existingCar = await tx.car.findUnique({
+          where: { id: finalCarId }
+        })
+
+        if (!existingCar || existingCar.customerId !== customer.id) {
+          throw new Error('INVALID_CAR')
+        }
+      } else {
+        // Create new car
+        // Validate required fields for new car
+        if (!make || !model || !licensePlate) {
+          throw new Error('MISSING_CAR_DETAILS')
+        }
+
+        const car = await tx.car.create({
+          data: {
+            customerId: customer.id,
+            make: make,
+            model: model,
+            licensePlate: licensePlate,
+            vehicleType: 'sedan', // Default type
+          }
+        })
+        finalCarId = car.id
       }
+
+      // 7. Update Customer Phone if provided and different
+      if (phone) {
+        const cleanPhone = phone.replace(/[\s.-]/g, '')
+        if (customer.phone !== cleanPhone) {
+          await tx.customer.update({
+            where: { id: customer.id },
+            data: { phone: cleanPhone }
+          })
+        }
+      }
+
+      // 8. Create Booking
+      return await tx.booking.create({
+        data: {
+          customerId: customer.id,
+          serviceId: service.id,
+          carId: finalCarId,
+          scheduledDate: dateTime,
+          serviceAddress: address,
+          finalPrice: service.basePrice,
+          status: 'PENDING',
+          customerNotes: notes
+        }
+      })
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+    })
+
+    // 9. Create Stripe Checkout Session
+    // Use the booking we just created
+    const serviceDetails = getServiceDetails(getServiceType(serviceId)!)
+
+    // Ensure we have an absolute URL
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+    // Import stripe dynamically to avoid circular deps if any (though standard import is fine)
+    const { stripe } = await import('@/lib/stripe')
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: serviceDetails!.name,
+              description: serviceDetails!.description,
+            },
+            unit_amount: Math.round(serviceDetails!.price * 100), // Stripe expects cents
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${appUrl}/dashboard/client?success=true`,
+      cancel_url: `${appUrl}/api/booking/cancel?bookingId=${booking.id}`,
+      customer_email: email,
+      metadata: {
+        bookingId: booking.id,
+      },
     })
 
     return NextResponse.json({
       success: true,
-      bookingId: booking.id
+      bookingId: booking.id,
+      checkoutUrl: session.url
     })
 
   } catch (error: any) {
     console.error('Error submitting booking:', error)
+    if (error.message === 'SLOT_FULL') {
+      return NextResponse.json({ error: 'Ce créneau n\'est plus disponible' }, { status: 409 });
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

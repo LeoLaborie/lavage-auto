@@ -388,6 +388,21 @@ function ReserverContent() {
 
       const result = await bookingResponse.json();
 
+      if (result.checkoutUrl) {
+        // Clear stored booking data BEFORE redirecting
+        localStorage.removeItem('booking_service');
+        localStorage.removeItem('booking_date');
+        localStorage.removeItem('booking_time');
+        localStorage.removeItem('booking_address');
+        localStorage.removeItem('booking_customer_info');
+        localStorage.removeItem('booking_step');
+
+        // Redirect to Stripe
+        window.location.href = result.checkoutUrl;
+        return;
+      }
+
+      // Fallback if no checkout URL (shouldn't happen with new logic but safe to keep)
       // Clear stored booking data
       localStorage.removeItem('booking_service');
       localStorage.removeItem('booking_date');
@@ -492,8 +507,8 @@ function ReserverContent() {
                       }`} />
 
                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm transition-colors overflow-hidden border-2 ${selectedService?.id === service.id
-                        ? 'bg-primary text-white border-primary'
-                        : 'bg-gray-100 text-gray-600 border-gray-100 group-hover:bg-primary group-hover:text-white group-hover:border-primary'
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-gray-100 text-gray-600 border-gray-100 group-hover:bg-primary group-hover:text-white group-hover:border-primary'
                       }`}>
                       <AppleEmoji name={service.icon} className="w-full h-full object-contain" />
                     </div>

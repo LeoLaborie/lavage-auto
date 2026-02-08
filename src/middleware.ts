@@ -31,7 +31,21 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Protected routes
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+  }
+
+  // Washer only routes
+  if (request.nextUrl.pathname.startsWith('/dashboard/laveur')) {
+    // Ideally we should check if the user is a washer here, but we'll leave that to the page/API for now
+    // to avoid extra DB calls in middleware, relying on the page's check.
+    // However, basic auth check is done above.
+  }
 
   return response
 }

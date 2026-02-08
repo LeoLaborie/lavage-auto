@@ -37,13 +37,8 @@ export async function GET() {
             include: {
                 service: true,
                 car: true,
-                customer: {
-                    select: {
-                        id: true, // Include ID to check if it's the washer's own booking
-                        name: true,
-                        address: true
-                    }
-                }
+                // Customer explicitly excluded for privacy.
+                // Washer will see customer details only AFTER accepting the mission.
             },
             orderBy: {
                 scheduledDate: 'asc'
