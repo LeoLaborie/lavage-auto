@@ -4,7 +4,7 @@ import { Database } from './types'
 
 export async function createClient() {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
