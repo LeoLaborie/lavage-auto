@@ -219,7 +219,7 @@ export async function POST(request: Request) {
     const serviceDetails = getServiceDetails(getServiceType(serviceId)!)
 
     // Ensure we have an absolute URL
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
 
     // Import stripe dynamically to avoid circular deps if any (though standard import is fine)
     const { stripe } = await import('@/lib/stripe')
