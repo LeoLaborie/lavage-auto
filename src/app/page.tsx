@@ -48,8 +48,8 @@ export default function Home() {
       <Header />
 
       {/* Full Screen Hero Section */}
-      <section className="relative h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
+      <section className="relative h-[85vh] min-h-[600px] flex items-center justify-center">
+        <div className="absolute inset-0 z-0 overflow-hidden">
           <Image
             src="/banner.png"
             alt="Clean luxury car"
@@ -61,7 +61,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
+        <div className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 title-font drop-shadow-lg animate-fade-in-up">
             Voiture propre<br className="md:hidden" /> en un click
           </h1>
@@ -103,13 +103,6 @@ export default function Home() {
               </button>
             </div>
           </div>
-
-          <ReservationPopup
-            isOpen={showReservation}
-            onClose={() => setShowReservation(false)}
-            address={selectedAddress}
-            selectedTime={selectedTime}
-          />
         </div>
       </section>
 
@@ -432,6 +425,13 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <ReservationPopup
+        isOpen={showReservation}
+        onClose={() => setShowReservation(false)}
+        address={selectedAddress}
+        selectedTime={selectedTime}
+      />
     </div>
   );
 }
