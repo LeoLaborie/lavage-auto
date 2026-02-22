@@ -24,15 +24,8 @@ export async function GET(request: NextRequest) {
           })
 
           if (dbUser) {
-            if (dbUser.role === 'CLIENT') {
-              return NextResponse.redirect(`${origin}/dashboard`)
-            }
-            if (dbUser.role === 'LAVEUR') {
-              return NextResponse.redirect(`${origin}/laveur`)
-            }
-            if (dbUser.role === 'ADMIN') {
-              return NextResponse.redirect(`${origin}/admin`)
-            }
+            // All roles use the unified dashboard
+            return NextResponse.redirect(`${origin}/dashboard`)
           }
 
           // No profile found, redirect to onboarding
