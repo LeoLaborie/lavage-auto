@@ -25,10 +25,12 @@ export default function Header({ currentPage }: HeaderProps) {
           const res = await fetch('/api/auth/role')
           if (res.ok) {
             const data = await res.json()
-            if (data.role === 'CLIENT') {
-              setDashboardUrl('/dashboard/client')
-            } else if (data.role === 'WASHER') {
-              setDashboardUrl('/dashboard/laveur')
+            if (data.success && data.data) {
+              if (data.data.role === 'CLIENT') {
+                setDashboardUrl('/dashboard')
+              } else if (data.data.role === 'LAVEUR') {
+                setDashboardUrl('/dashboard')
+              }
             }
           }
         } catch (error) {

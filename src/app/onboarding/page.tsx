@@ -10,7 +10,7 @@ export default function Onboarding() {
     const [error, setError] = useState('')
     const supabase = createClient()
 
-    const handleRoleSelection = async (role: 'CLIENT' | 'WASHER') => {
+    const handleRoleSelection = async (role: 'CLIENT' | 'LAVEUR') => {
         setLoading(true)
         setError('')
 
@@ -29,31 +29,29 @@ export default function Onboarding() {
                 },
                 body: JSON.stringify({
                     role,
-                    email: user.email,
                     name: user.user_metadata.full_name || user.email?.split('@')[0],
-                    avatarUrl: user.user_metadata.avatar_url
                 }),
             })
 
-            if (!response.ok) {
-                throw new Error('Failed to create profile')
-            }
+            const data = await response.json()
 
-            // Refresh session to ensure middleware picks up new role/data if needed
-            await supabase.auth.refreshSession()
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Échec de la création du profil')
+            }
 
             // Redirect based on role
             if (role === 'CLIENT') {
-                router.push('/dashboard/client')
+                router.push('/dashboard')
             } else {
-                router.push('/dashboard/laveur')
+                // Laveur goes to a pending page until validated
+                router.push('/dashboard')
             }
 
             router.refresh()
 
         } catch (err) {
             console.error('Error selecting role:', err)
-            setError('Une erreur est survenue lors de la création de votre profil.')
+            setError(err instanceof Error ? err.message : 'Une erreur est survenue lors de la création de votre profil.')
         } finally {
             setLoading(false)
         }
@@ -67,7 +65,7 @@ export default function Onboarding() {
                         Bienvenue sur Klyn !
                     </h1>
                     <p className="text-xl text-gray-600">
-                        Comment souhaitez-vous utiliser l'application ?
+                        Comment souhaitez-vous utiliser l&apos;application ?
                     </p>
                 </div>
 
@@ -82,7 +80,7 @@ export default function Onboarding() {
                     <button
                         onClick={() => handleRoleSelection('CLIENT')}
                         disabled={loading}
-                        className="group relative bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left border-2 border-transparent hover:border-[#004aad]"
+                        className="group relative bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left border-2 border-transparent hover:border-[#004aad] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <div className="h-full flex flex-col items-center text-center">
                             <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6 group-hover:bg-[#004aad]/10 transition-colors">
@@ -95,16 +93,16 @@ export default function Onboarding() {
                                 Réservez un lavage professionnel à domicile ou au bureau en quelques clics.
                             </p>
                             <div className="w-full py-3 px-6 bg-[#004aad] text-white rounded-lg font-medium opacity-90 group-hover:opacity-100 transition-opacity">
-                                Continuer comme Client
+                                {loading ? 'Création...' : 'Continuer comme Client'}
                             </div>
                         </div>
                     </button>
 
-                    {/* Washer Card */}
+                    {/* Laveur Card */}
                     <button
-                        onClick={() => handleRoleSelection('WASHER')}
+                        onClick={() => handleRoleSelection('LAVEUR')}
                         disabled={loading}
-                        className="group relative bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left border-2 border-transparent hover:border-green-500"
+                        className="group relative bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left border-2 border-transparent hover:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <div className="h-full flex flex-col items-center text-center">
                             <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mb-6 group-hover:bg-green-100 transition-colors">
@@ -117,7 +115,7 @@ export default function Onboarding() {
                                 Rejoignez notre réseau de professionnels, gérez votre emploi du temps et augmentez vos revenus.
                             </p>
                             <div className="w-full py-3 px-6 bg-green-600 text-white rounded-lg font-medium opacity-90 group-hover:opacity-100 transition-opacity">
-                                Continuer comme Laveur
+                                {loading ? 'Création...' : 'Continuer comme Laveur'}
                             </div>
                         </div>
                     </button>

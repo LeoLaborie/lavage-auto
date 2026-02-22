@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({
             request: {
               headers: request.headers,
@@ -31,20 +31,24 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Refresh session — MUST be called to keep session alive
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protected routes
-  if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
+  // Protected routes — redirect unauthenticated users to /login
+  const protectedPaths = ['/dashboard', '/laveur', '/admin', '/onboarding']
+  const isProtected = protectedPaths.some(path =>
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  if (isProtected && !user) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
-  // Washer only routes
-  if (request.nextUrl.pathname.startsWith('/dashboard/laveur')) {
-    // Ideally we should check if the user is a washer here, but we'll leave that to the page/API for now
-    // to avoid extra DB calls in middleware, relying on the page's check.
-    // However, basic auth check is done above.
+  // Redirect authenticated users away from login
+  if (request.nextUrl.pathname === '/login' && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response
@@ -57,8 +61,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * - api (API routes handle their own auth)
+     * - auth (auth callback routes)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
