@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
+import { UserRole, ProfileStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,67 +12,82 @@ export async function POST(request: Request) {
 
         if (!user) {
             return NextResponse.json(
-                { error: 'Unauthorized' },
+                { success: false, error: 'Unauthorized' },
                 { status: 401 }
             )
         }
 
-        const body = await request.json()
-        const { role, name, avatarUrl } = body
-
-        if (!role || !['CLIENT', 'WASHER'].includes(role)) {
+        // Validate email exists (could be null for phone-based auth)
+        if (!user.email) {
             return NextResponse.json(
-                { error: 'Invalid role' },
+                { success: false, error: 'Email is required for registration.' },
                 { status: 400 }
             )
         }
 
-        // Check if profile already exists to prevent duplicates
-        const existingCustomer = await prisma.customer.findUnique({
-            where: { email: user.email! }
-        })
+        const body = await request.json()
+        const { role, name, siret } = body
 
-        const existingWasher = await prisma.washer.findUnique({
-            where: { email: user.email! }
-        })
-
-        if (existingCustomer || existingWasher) {
+        if (!role || !['CLIENT', 'LAVEUR'].includes(role)) {
             return NextResponse.json(
-                { error: 'Profile already exists' },
+                { success: false, error: 'Invalid role. Must be CLIENT or LAVEUR.' },
+                { status: 400 }
+            )
+        }
+
+        // Validate SIRET format for Laveurs (must be exactly 14 digits)
+        if (role === 'LAVEUR' && siret) {
+            const siretClean = siret.replace(/\s/g, '')
+            if (!/^\d{14}$/.test(siretClean)) {
+                return NextResponse.json(
+                    { success: false, error: 'Invalid SIRET format. Must be exactly 14 digits.' },
+                    { status: 400 }
+                )
+            }
+        }
+
+        // Check if user already exists
+        const existingUser = await prisma.user.findUnique({
+            where: { authId: user.id }
+        })
+
+        if (existingUser) {
+            return NextResponse.json(
+                { success: false, error: 'Profile already exists' },
                 { status: 409 }
             )
         }
 
-        let profile
+        // Determine profile status based on role
+        const profileStatus: ProfileStatus = role === 'LAVEUR'
+            ? ProfileStatus.VALIDATION_PENDING
+            : ProfileStatus.VALIDATED
 
-        if (role === 'CLIENT') {
-            profile = await prisma.customer.create({
-                data: {
-                    email: user.email!,
-                    name: name || user.email!.split('@')[0],
-                    supabaseUserId: user.id,
-                    profilePicture: avatarUrl,
-                    emailVerified: true // Google auth implies verified email
+        // Create User + Profile in a transaction
+        const newUser = await prisma.user.create({
+            data: {
+                authId: user.id,
+                email: user.email,
+                role: role as UserRole,
+                profile: {
+                    create: {
+                        firstName: name || user.email.split('@')[0],
+                        status: profileStatus,
+                        ...(role === 'LAVEUR' && siret
+                            ? { siret: siret.replace(/\s/g, '') }
+                            : {}),
+                    }
                 }
-            })
-        } else {
-            profile = await prisma.washer.create({
-                data: {
-                    email: user.email!,
-                    name: name || user.email!.split('@')[0],
-                    phone: '', // Phone is required in schema but not available from Google, setting empty for now
-                    profilePicture: avatarUrl,
-                    status: 'AVAILABLE'
-                }
-            })
-        }
+            },
+            include: { profile: true }
+        })
 
-        return NextResponse.json({ success: true, profile })
+        return NextResponse.json({ success: true, data: newUser })
 
     } catch (error) {
         console.error('Error creating profile:', error)
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         )
     }

@@ -1,459 +1,201 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// ===========================================
+// klyn - Prisma Schema (Story 1.1)
+// ===========================================
+// Conventions:
+//   - Models: PascalCase singular
+//   - Tables: snake_case plural via @@map
+//   - Fields: camelCase, mapped to snake_case via @map
+//   - Money: ALWAYS Int in cents (e.g., 25€ = 2500)
+//   - Dates: DateTime (ISO 8601 in API layer)
+// ===========================================
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")  // Required for prisma migrate (bypasses PgBouncer)
 }
 
 // ========================================
-// ENUMS - Define business domain values
+// ENUMS
 // ========================================
 
-enum ServiceType {
-  EXTERIOR  // €15 - Basic wash and dry
-  COMPLETE  // €25 - Exterior + interior cleaning
-  PREMIUM   // €35 - Complete + wax + detail
+enum UserRole {
+  CLIENT
+  LAVEUR
+  ADMIN
+}
+
+enum ProfileStatus {
+  VALIDATION_PENDING
+  VALIDATED
+  REJECTED
 }
 
 enum BookingStatus {
-  PENDING      // Initial booking created, payment processing
-  CONFIRMED    // Payment successful, service scheduled
-  ASSIGNED     // Washer assigned to booking
-  IN_PROGRESS  // Service actively being performed
-  COMPLETED    // Service finished successfully
-  CANCELLED    // Booking cancelled by customer or system
-  REFUNDED     // Payment refunded after cancellation
-}
-
-enum NotificationType {
-  EMAIL
-  SMS
-  PUSH
-  IN_APP
-}
-
-enum NotificationStatus {
-  PENDING
-  SENT
-  DELIVERED
-  FAILED
-  READ
-}
-
-enum WasherStatus {
-  AVAILABLE
-  BUSY
-  OFFLINE
-  SUSPENDED
+  PENDING       // Booking created, awaiting payment or confirmation
+  CONFIRMED     // Payment received, waiting for laveur
+  ACCEPTED      // Laveur has accepted the mission
+  EN_ROUTE      // Laveur is on the way
+  IN_PROGRESS   // Washing in progress
+  COMPLETED     // Service finished and validated by client
+  CANCELLED     // Cancelled by client (>24h before) or system
 }
 
 enum PaymentStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-  REFUNDED
-  PARTIALLY_REFUNDED
-}
-
-enum PaymentMethod {
-  CREDIT_CARD
-  DEBIT_CARD
-  PAYPAL
-  APPLE_PAY
-  GOOGLE_PAY
-  BANK_TRANSFER
+  PENDING              // Payment not yet initiated
+  PROCESSING           // Stripe session created, awaiting completion
+  SUCCEEDED            // Payment captured / funds held
+  FAILED               // Payment attempt failed
+  REFUNDED             // Full refund issued
+  PARTIALLY_REFUNDED   // Partial refund issued
 }
 
 // ========================================
-// CORE ENTITIES
+// CORE MODELS
 // ========================================
 
-model Customer {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String
-  phone       String?
-  address     String?
-  profilePicture String?
-  
-  // Authentication fields
-  hashedPassword String?
-  emailVerified  Boolean @default(false)
-  
-  // Supabase auth integration
-  supabaseUserId String? @unique
-  
-  // Customer preferences
-  preferredLanguage String @default("fr")
-  marketingConsent  Boolean @default(false)
-  
-  // Customer stats
-  totalBookings     Int @default(0)
-  completedBookings Int @default(0)
-  totalSpent        Decimal @default(0)
-  averageRating     Float?
-  
-  // Relationships
-  cars              Car[]
-  bookings          Booking[]
-  reviews           Review[]
-  notifications     Notification[]
-  loyaltyPoints     LoyaltyPoint[]
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+/// Unified user entity linked to Supabase Auth.
+/// Role determines access (CLIENT, LAVEUR, ADMIN) enforced via middleware.
+model User {
+  id        String   @id @default(cuid())
+  authId    String   @unique @map("auth_id")  // Supabase Auth UUID
+  email     String   @unique
+  role      UserRole @default(CLIENT)
 
-  @@map("customers")
+  // Relationships
+  profile   Profile?
+  bookingsAsClient  Booking[]  @relation("ClientBookings")
+  bookingsAsLaveur  Booking[]  @relation("LaveurBookings")
+  payments  Payment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@map("users")
 }
 
-model Car {
-  id           String   @id @default(cuid())
-  customerId   String
-  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  // Vehicle details
-  make         String   // Marque (Peugeot, Renault, etc.)
-  model        String   // Modèle (208, Clio, etc.)
-  year         Int?
-  color        String?
-  licensePlate String?  @unique
-  
-  // Vehicle specifications for service customization
-  vehicleType  String?  // "compact", "sedan", "suv", "van"
-  isElectric   Boolean @default(false)
-  
-  // Car maintenance info
-  lastServiceDate DateTime?
-  serviceCount    Int @default(0)
-  
-  // Relationships
-  bookings     Booking[]
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+/// Extended profile information.
+/// For Laveurs: stores SIRET, validation status, and Stripe Connect account.
+model Profile {
+  id        String   @id @default(cuid())
 
-  @@map("cars")
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Common fields
+  firstName       String?  @map("first_name")
+  lastName        String?  @map("last_name")
+  phone           String?  @map("phone")
+  avatarUrl       String?  @map("avatar_url")
+
+  // Laveur-specific fields
+  siret           String?  @unique @map("siret")   // SIRET for professional verification (14 digits)
+  companyName     String?  @map("company_name")
+  status          ProfileStatus  @map("status")    // Set explicitly: VALIDATED for Clients, VALIDATION_PENDING for Laveurs
+  stripeAccountId String?  @unique @map("stripe_account_id")  // Stripe Connect
+
+  // Laveur work preferences
+  workRadius      Float?   @map("work_radius")   // Service radius in km
+  workAddress     String?  @map("work_address")   // Base location
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@map("profiles")
 }
 
-model Washer {
-  id          String      @id @default(cuid())
-  email       String      @unique
-  name        String
-  phone       String
-  address     String?
-  profilePicture String?
-  
-  // Professional details
-  licenseNumber String?    @unique
-  experience    Int?       // Years of experience
-  specialties   String[]   // ["premium", "electric", "luxury"]
-  
-  // Work preferences
-  workRadius    Float?     // Service radius in kilometers
-  workDays      String[]   // ["monday", "tuesday", ...]
-  workHours     Json?      // { "start": "08:00", "end": "18:00" }
-  
-  // Performance metrics
-  status           WasherStatus @default(AVAILABLE)
-  averageRating    Float?
-  totalBookings    Int @default(0)
-  completedBookings Int @default(0)
-  totalEarnings    Decimal @default(0)
-  
-  // Location tracking
-  currentLat       Float?
-  currentLng       Float?
-  lastLocationUpdate DateTime?
-  
-  // Relationships
-  bookings         BookingAssignment[]
-  reviews          Review[]
-  notifications    Notification[]
-  
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@map("washers")
-}
-
-model Service {
-  id            String      @id @default(cuid())
-  type          ServiceType
-  name          String
-  description   String
-  basePrice     Decimal
-  
-  // Service details
-  estimatedDuration Int       // Duration in minutes
-  features      String[]     // ["exterior_wash", "interior_vacuum", "wax"]
-  requirements  String[]     // ["water_source", "power_outlet"]
-  
-  // Pricing modifiers
-  vehicleTypeMultipliers Json? // { "suv": 1.2, "van": 1.5 }
-  
-  // Service availability
-  isActive      Boolean @default(true)
-  
-  // Relationships
-  bookings      Booking[]
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([type])
-  @@map("services")
-}
-
+/// A booking represents a single car wash reservation.
+/// Lifecycle: PENDING -> CONFIRMED -> ACCEPTED -> EN_ROUTE -> IN_PROGRESS -> COMPLETED
 model Booking {
-  id         String   @id @default(cuid())
-  
-  // Core relationships
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  carId      String
-  car        Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
-  
-  serviceId  String
-  service    Service  @relation(fields: [serviceId], references: [id])
-  
-  // Booking details
-  status        BookingStatus @default(PENDING)
-  finalPrice    Decimal
-  currency      String @default("EUR")
-  
-  // Scheduling
-  scheduledDate DateTime
-  startedAt     DateTime?
-  completedAt   DateTime?
-  estimatedDuration Int?        // Duration in minutes
-  
-  // Location details
-  serviceAddress    String
-  serviceLatitude   Float?
-  serviceLongitude  Float?
-  accessInstructions String?    // Parking, gate codes, etc.
-  
-  // Service execution
-  beforePhotos      String[]    // Array of photo URLs
-  afterPhotos       String[]    // Array of photo URLs
-  washerNotes       String?     // Notes from washer during service
-  customerNotes     String?     // Special instructions from customer
-  
-  // Quality assurance
-  qualityCheckPassed Boolean?
-  qualityNotes      String?
-  
-  // Cancellation details
-  cancellationReason String?
-  cancellationDate   DateTime?
-  refundAmount       Decimal?
-  
-  // Relationships
-  assignment     BookingAssignment?
-  payment        Payment?
-  review         Review?
-  notifications  Notification[]
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id        String   @id @default(cuid())
 
+  // Client who made the booking
+  clientId  String   @map("client_id")
+  client    User     @relation("ClientBookings", fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Laveur assigned to the mission (nullable until accepted)
+  laveurId  String?  @map("laveur_id")
+  laveur    User?    @relation("LaveurBookings", fields: [laveurId], references: [id])
+
+  // Service details
+  serviceName     String  @map("service_name")    // e.g. "Lavage Basique", "Lavage Premium"
+  amountCents     Int     @map("amount_cents")     // Price in cents (e.g., 2500 = 25€)
+  currency        String  @default("EUR") @map("currency")
+
+  // Scheduling
+  scheduledDate   DateTime @map("scheduled_date")  // Date + time of the appointment
+  status          BookingStatus @default(PENDING)
+
+  // Location
+  serviceAddress  String   @map("service_address")
+  serviceLat      Float?   @map("service_lat")
+  serviceLng      Float?   @map("service_lng")
+  accessNotes     String?  @map("access_notes")     // Parking, gate codes, etc.
+
+  // Photos (Supabase Storage URLs)
+  beforePhotoUrl  String?  @map("before_photo_url")
+  afterPhotoUrl   String?  @map("after_photo_url")
+
+  // Cancellation
+  cancelledAt     DateTime? @map("cancelled_at")
+  cancellationReason String? @map("cancellation_reason")
+
+  // Completion
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  validatedAt     DateTime? @map("validated_at")    // When client validated the job
+
+  // Relationships
+  payment Payment?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([clientId, status])
+  @@index([laveurId, status])
+  @@index([status])
   @@map("bookings")
 }
 
-model BookingAssignment {
-  id         String   @id @default(cuid())
-  
-  bookingId  String   @unique
-  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  
-  washerId   String
-  washer     Washer   @relation(fields: [washerId], references: [id])
-  
-  // Assignment details
-  assignedAt     DateTime @default(now())
-  acceptedAt     DateTime?
-  rejectedAt     DateTime?
-  estimatedArrival DateTime?
-  actualArrival   DateTime?
-  
-  // Assignment status
-  isAccepted     Boolean @default(false)
-  rejectionReason String?
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("booking_assignments")
-}
-
+/// Payment record linked to a Booking, tracking Stripe transactions.
+/// All amounts stored in cents (Int).
 model Payment {
-  id         String   @id @default(cuid())
-  
-  bookingId  String   @unique
-  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  
-  // Payment details
-  amount          Decimal
-  currency        String @default("EUR")
-  method          PaymentMethod
-  status          PaymentStatus @default(PENDING)
-  
-  // External payment data
-  stripePaymentId    String?
-  paypalPaymentId    String?
-  externalReference  String?
-  
-  // Transaction details
-  processedAt        DateTime?
-  failureReason      String?
-  refundAmount       Decimal @default(0)
-  refundDate         DateTime?
-  
-  // Fee breakdown
-  serviceFee         Decimal @default(0)
-  platformFee        Decimal @default(0)
-  taxAmount          Decimal @default(0)
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id        String   @id @default(cuid())
 
+  bookingId String   @unique @map("booking_id")
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  // Payer
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Financial
+  amountCents     Int          @map("amount_cents")    // Amount in cents
+  currency        String       @default("EUR") @map("currency")
+  status          PaymentStatus @default(PENDING) @map("status")
+
+  // Stripe references
+  stripeSessionId   String?  @unique @map("stripe_session_id")    // Checkout Session ID
+  stripePaymentIntentId String? @unique @map("stripe_payment_intent_id")
+  stripeTransferId  String?  @unique @map("stripe_transfer_id")   // Payout transfer to Laveur
+
+  // Refund tracking
+  refundAmountCents Int?     @map("refund_amount_cents")
+  refundedAt        DateTime? @map("refunded_at")
+  refundReason      String?  @map("refund_reason")
+
+  // Payout tracking
+  paidOutAt         DateTime? @map("paid_out_at")     // When funds were transferred to Laveur
+
+  processedAt       DateTime? @map("processed_at")    // When payment was confirmed
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([userId])
   @@map("payments")
-}
-
-model Review {
-  id         String   @id @default(cuid())
-  
-  // Relationships
-  bookingId  String   @unique
-  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  washerId   String
-  washer     Washer   @relation(fields: [washerId], references: [id])
-  
-  // Review content
-  rating          Int          // 1-5 stars
-  comment         String?
-  serviceQuality  Int?         // 1-5 rating for service quality
-  punctuality     Int?         // 1-5 rating for punctuality
-  communication   Int?         // 1-5 rating for communication
-  
-  // Review metadata
-  isVerified      Boolean @default(false)
-  isPublic        Boolean @default(true)
-  washerResponse  String?
-  responseDate    DateTime?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@map("reviews")
-}
-
-model Notification {
-  id         String   @id @default(cuid())
-  
-  // Recipient (can be customer or washer)
-  customerId String?
-  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  washerId   String?
-  washer     Washer?   @relation(fields: [washerId], references: [id], onDelete: Cascade)
-  
-  bookingId  String?
-  booking    Booking?  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  
-  // Notification content
-  type       NotificationType
-  title      String
-  message    String
-  actionUrl  String?
-  
-  // Delivery details
-  status     NotificationStatus @default(PENDING)
-  sentAt     DateTime?
-  deliveredAt DateTime?
-  readAt     DateTime?
-  
-  // Channel-specific data
-  emailData  Json?    // Email template data
-  smsData    Json?    // SMS content
-  pushData   Json?    // Push notification payload
-  
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@map("notifications")
-}
-
-model LoyaltyPoint {
-  id         String   @id @default(cuid())
-  
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  // Points details
-  points     Int
-  reason     String   // "booking_completed", "referral", "review_submitted"
-  reference  String?  // Reference to booking ID, etc.
-  
-  // Point lifecycle
-  earnedDate DateTime @default(now())
-  expiryDate DateTime?
-  usedDate   DateTime?
-  isUsed     Boolean @default(false)
-  
-  createdAt  DateTime @default(now())
-
-  @@map("loyalty_points")
-}
-
-// ========================================
-// SYSTEM ENTITIES
-// ========================================
-
-model SystemSetting {
-  id         String   @id @default(cuid())
-  key        String   @unique
-  value      Json
-  description String?
-  
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@map("system_settings")
-}
-
-model AuditLog {
-  id         String   @id @default(cuid())
-  
-  // Entity tracking
-  entityType String   // "Customer", "Booking", "Payment", etc.
-  entityId   String
-  
-  // Action details
-  action     String   // "CREATE", "UPDATE", "DELETE"
-  changes    Json?    // JSON of changed fields
-  
-  // User context
-  userId     String?  // ID of user who made the change
-  userType   String?  // "customer", "washer", "admin", "system"
-  ipAddress  String?
-  userAgent  String?
-  
-  createdAt  DateTime @default(now())
-
-  @@map("audit_logs")
 }

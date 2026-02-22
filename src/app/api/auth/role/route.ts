@@ -11,38 +11,29 @@ export async function GET() {
 
         if (!user) {
             return NextResponse.json(
-                { error: 'Unauthorized' },
+                { success: false, error: 'Unauthorized' },
                 { status: 401 }
             )
         }
 
-        // Check if user is a customer
-        const customer = await prisma.customer.findUnique({
-            where: { email: user.email! }
+        const dbUser = await prisma.user.findUnique({
+            where: { authId: user.id },
+            select: { role: true }
         })
 
-        if (customer) {
-            return NextResponse.json({ role: 'CLIENT' })
+        if (!dbUser) {
+            return NextResponse.json(
+                { success: false, error: 'Profile not found' },
+                { status: 404 }
+            )
         }
 
-        // Check if user is a washer
-        const washer = await prisma.washer.findUnique({
-            where: { email: user.email! }
-        })
-
-        if (washer) {
-            return NextResponse.json({ role: 'WASHER' })
-        }
-
-        return NextResponse.json(
-            { error: 'Profile not found' },
-            { status: 404 }
-        )
+        return NextResponse.json({ success: true, data: { role: dbUser.role } })
 
     } catch (error) {
         console.error('Error fetching role:', error)
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         )
     }

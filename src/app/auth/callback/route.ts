@@ -5,9 +5,6 @@ import { prisma } from '@/lib/prisma'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
-
-  console.log('Auth callback received code:', code)
 
   if (code) {
     try {
@@ -19,44 +16,37 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${origin}/auth/auth-code-error?error=${encodeURIComponent(error.message)}`)
       }
 
-      console.log('Auth exchange success, user:', data.user?.email)
-
-      if (!error && data.user) {
+      if (data.user && data.user.id) {
         try {
-          // Check if user is a Customer
-          const customer = await prisma.customer.findUnique({
-            where: { email: data.user.email! }
+          const dbUser = await prisma.user.findUnique({
+            where: { authId: data.user.id },
+            select: { role: true }
           })
 
-          if (customer) {
-            return NextResponse.redirect(`${origin}/dashboard/client`)
+          if (dbUser) {
+            if (dbUser.role === 'CLIENT') {
+              return NextResponse.redirect(`${origin}/dashboard`)
+            }
+            if (dbUser.role === 'LAVEUR') {
+              return NextResponse.redirect(`${origin}/laveur`)
+            }
+            if (dbUser.role === 'ADMIN') {
+              return NextResponse.redirect(`${origin}/admin`)
+            }
           }
 
-          // Check if user is a Washer
-          const washer = await prisma.washer.findUnique({
-            where: { email: data.user.email! }
-          })
-
-          if (washer) {
-            return NextResponse.redirect(`${origin}/dashboard/laveur`)
-          }
-
-          // If neither, redirect to onboarding
+          // No profile found, redirect to onboarding
           return NextResponse.redirect(`${origin}/onboarding`)
 
         } catch (dbError) {
           console.error('Database error in callback:', dbError)
-          // In case of error, redirect to onboarding as fallback
           return NextResponse.redirect(`${origin}/onboarding`)
         }
-      } else {
-        console.error('Auth exchange failed:', error)
       }
     } catch (authError) {
       console.error('Auth callback error:', authError)
     }
   }
 
-  // Return the user to an error page with instructions
   return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 }
