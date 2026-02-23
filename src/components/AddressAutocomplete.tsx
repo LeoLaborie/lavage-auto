@@ -84,20 +84,20 @@ export default function AddressAutocomplete({ onAddressSelect, value = '' }: Pro
       const sortedSuggestions = uniqueSuggestions.sort((a, b) => {
         const aStartsWithNumber = /^\d/.test(a.properties.label)
         const bStartsWithNumber = /^\d/.test(b.properties.label)
-        
+
         if (aStartsWithNumber && !bStartsWithNumber) return -1
         if (!aStartsWithNumber && bStartsWithNumber) return 1
-        
+
         // Si les deux commencent par un numéro, comparer la pertinence
         if (aStartsWithNumber && bStartsWithNumber) {
           const aNumber = parseInt(a.properties.label.match(/^\d+/)?.[0] || '0')
           const bNumber = parseInt(b.properties.label.match(/^\d+/)?.[0] || '0')
           const searchNumber = parseInt(searchValue.match(/^\d+/)?.[0] || '0')
-          
+
           if (aNumber === searchNumber && bNumber !== searchNumber) return -1
           if (bNumber === searchNumber && aNumber !== searchNumber) return 1
         }
-        
+
         return a.properties.label.localeCompare(b.properties.label)
       })
 
@@ -126,6 +126,11 @@ export default function AddressAutocomplete({ onAddressSelect, value = '' }: Pro
     <div className="relative w-full">
       <input
         type="text"
+        role="combobox"
+        aria-expanded={showSuggestions && suggestions.length > 0}
+        aria-controls="address-suggestions"
+        aria-autocomplete="list"
+        aria-label="Rechercher une adresse"
         value={input}
         onChange={handleInputChange}
         placeholder="Saisissez votre adresse"
@@ -152,17 +157,26 @@ export default function AddressAutocomplete({ onAddressSelect, value = '' }: Pro
       </svg>
 
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden z-50">
+        <ul
+          id="address-suggestions"
+          role="listbox"
+          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden z-50 m-0 p-0 list-none"
+        >
           {suggestions.map((suggestion, index) => (
-            <button
+            <li
               key={index}
-              onClick={() => handleSelect(suggestion.properties.label)}
-              className="w-full px-4 py-3 hover:bg-gray-50 cursor-pointer text-left border-b border-gray-100 last:border-b-0"
+              role="option"
+              aria-selected={false}
             >
-              <span className="text-[#004aad]">{suggestion.properties.label}</span>
-            </button>
+              <button
+                onClick={() => handleSelect(suggestion.properties.label)}
+                className="w-full px-4 py-3 hover:bg-gray-50 cursor-pointer text-left border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
+              >
+                <span className="text-[#004aad]">{suggestion.properties.label}</span>
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   )

@@ -118,7 +118,11 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
   return (
     <div className={`relative ${isShaking ? 'shake-animation' : ''}`} ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        aria-label={`Sélectionner une date et heure, actuel: ${displayText}`}
         className="w-full pl-12 pr-6 py-4 rounded-lg bg-white/60 backdrop-blur-sm text-lg text-[#004aad] focus:outline-none focus:ring-2 focus:ring-[#004aad] border-none shadow-md text-left flex justify-between items-center"
       >
         <span className="capitalize">{displayText}</span>
@@ -142,7 +146,11 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
       </svg>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-100 p-4 animate-fade-in-up">
+        <div
+          role="dialog"
+          aria-label="Sélection de la date et de l'heure"
+          className="absolute left-0 right-0 mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-100 p-4 animate-fade-in-up"
+        >
           <div className="mb-4">
             <Calendar
               onChange={handleDateChange}
@@ -169,8 +177,10 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
                   {availableSlots.map((time) => (
                     <button
                       key={time}
+                      type="button"
                       onClick={() => handleTimeSelect(time)}
-                      className={`px-2 py-2 text-sm rounded-md transition-colors ${selectedTime === time
+                      aria-pressed={selectedTime === time}
+                      className={`px-2 py-2 text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${selectedTime === time
                         ? 'bg-primary text-white'
                         : 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-primary'
                         }`}
