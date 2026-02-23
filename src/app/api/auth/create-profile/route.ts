@@ -25,12 +25,35 @@ export async function POST(request: Request) {
             )
         }
 
-        const body = await request.json()
+        let body;
+        try {
+            body = await request.json()
+        } catch (e) {
+            return NextResponse.json(
+                { success: false, error: 'Requête JSON invalide.' },
+                { status: 400 }
+            )
+        }
+
         const { role, name, siret, companyName } = body
 
-        if (!role || !['CLIENT', 'LAVEUR'].includes(role)) {
+        if (!role || typeof role !== 'string' || !['CLIENT', 'LAVEUR'].includes(role)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid role. Must be CLIENT or LAVEUR.' },
+                { status: 400 }
+            )
+        }
+
+        if (name !== undefined && typeof name !== 'string') {
+            return NextResponse.json(
+                { success: false, error: 'Nom invalide.' },
+                { status: 400 }
+            )
+        }
+
+        if (companyName !== undefined && (typeof companyName !== 'string' || companyName.length > 255)) {
+            return NextResponse.json(
+                { success: false, error: 'Nom d\'entreprise invalide ou trop long (max 255 caractères).' },
                 { status: 400 }
             )
         }
@@ -40,6 +63,13 @@ export async function POST(request: Request) {
             if (!siret) {
                 return NextResponse.json(
                     { success: false, error: 'Le numéro SIRET est obligatoire pour les laveurs.' },
+                    { status: 400 }
+                )
+            }
+
+            if (typeof siret !== 'string') {
+                return NextResponse.json(
+                    { success: false, error: 'Format SIRET invalide.' },
                     { status: 400 }
                 )
             }

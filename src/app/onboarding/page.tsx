@@ -215,7 +215,7 @@ export default function Onboarding() {
                                             : 'border-gray-300'
                                         }`}
                                     disabled={loading}
-                                    maxLength={17} // 14 digits + 3 spaces
+                                    maxLength={22} // Increased to prevent paste truncation with spaces
                                     autoComplete="off"
                                 />
                                 {siretError && (
