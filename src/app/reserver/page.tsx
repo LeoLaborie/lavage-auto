@@ -352,9 +352,14 @@ function ReserverContent() {
       }
 
       // Submit booking to API
-      // Submit booking to API
+      // Combine date + time into ISO 8601 scheduledAt
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const scheduledAtDate = new Date(selectedDate);
+      scheduledAtDate.setHours(hours, minutes, 0, 0);
+
       const bookingData: any = {
         service: selectedService?.id,
+        scheduledAt: scheduledAtDate.toISOString(),
         date: selectedDate,
         time: selectedTime,
         address,
@@ -388,7 +393,7 @@ function ReserverContent() {
 
       const result = await bookingResponse.json();
 
-      if (result.checkoutUrl) {
+      if (result.data?.checkoutUrl) {
         // Clear stored booking data BEFORE redirecting
         localStorage.removeItem('booking_service');
         localStorage.removeItem('booking_date');
@@ -398,7 +403,7 @@ function ReserverContent() {
         localStorage.removeItem('booking_step');
 
         // Redirect to Stripe
-        window.location.href = result.checkoutUrl;
+        window.location.href = result.data.checkoutUrl;
         return;
       }
 
@@ -416,7 +421,7 @@ function ReserverContent() {
       // Redirect to client dashboard
       // Note: Even if the user is a washer, when they book a service they are acting as a client
       // so redirecting to client dashboard is appropriate.
-      window.location.href = '/dashboard/client';
+      window.location.href = '/dashboard';
 
     } catch (error) {
       console.error('Error submitting booking:', error);
@@ -426,11 +431,7 @@ function ReserverContent() {
     }
   };
 
-  const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">

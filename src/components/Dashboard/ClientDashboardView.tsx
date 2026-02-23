@@ -1,7 +1,5 @@
 'use client'
 
-
-
 import Header from '@/components/Header'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -35,7 +33,7 @@ interface Car {
     licensePlate?: string
 }
 
-export default function ClientDashboard() {
+export default function ClientDashboardView() {
     const { user, loading } = useAuth()
     const router = useRouter()
     const [bookings, setBookings] = useState<Booking[]>([])
@@ -43,12 +41,6 @@ export default function ClientDashboard() {
     const [isLoadingData, setIsLoadingData] = useState(true)
     const [showAddCarModal, setShowAddCarModal] = useState(false)
     const [newCar, setNewCar] = useState({ make: '', model: '', licensePlate: '' })
-
-    useEffect(() => {
-        if (!loading && !user) {
-            router.push('/login')
-        }
-    }, [user, loading, router])
 
     const fetchData = async () => {
         setIsLoadingData(true)
@@ -226,7 +218,7 @@ export default function ClientDashboard() {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="font-bold text-gray-900 mb-2">{booking.finalPrice} €</p>
-                                                    {booking.status === 'PENDING' || booking.status === 'ASSIGNED' ? (
+                                                    {booking.status === 'PENDING' || booking.status === 'ASSIGNED' || booking.status === 'CONFIRMED' ? (
                                                         <button
                                                             onClick={() => handleCancelBooking(booking.id)}
                                                             className="text-sm text-red-600 hover:text-red-800 font-medium underline"

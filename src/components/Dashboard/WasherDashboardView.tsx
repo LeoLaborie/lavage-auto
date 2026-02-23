@@ -24,7 +24,7 @@ interface Mission {
     }
 }
 
-export default function WasherDashboard() {
+export default function WasherDashboardView() {
     const { user, loading } = useAuth()
     const router = useRouter()
     const [isAvailable, setIsAvailable] = useState(true)
@@ -35,12 +35,6 @@ export default function WasherDashboard() {
 
     const [isLoading, setIsLoading] = useState(true)
     const [acceptingId, setAcceptingId] = useState<string | null>(null)
-
-    useEffect(() => {
-        if (!loading && !user) {
-            router.push('/login')
-        }
-    }, [user, loading, router])
 
     const fetchMissions = async () => {
         setIsLoading(true)
