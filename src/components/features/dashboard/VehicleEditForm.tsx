@@ -18,6 +18,7 @@ interface VehicleEditFormProps {
 export default function VehicleEditForm({ car, onClose }: VehicleEditFormProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -27,12 +28,13 @@ export default function VehicleEditForm({ car, onClose }: VehicleEditFormProps) 
         const formData = new FormData(event.currentTarget);
         const result = await updateVehicle(car.id, formData);
 
+        setLoading(false);
         if (result.success) {
-            onClose();
+            setSuccess(true);
+            setTimeout(() => onClose(), 800);
         } else {
             setError(result.error || "Une erreur est survenue");
         }
-        setLoading(false);
     }
 
     return (
@@ -100,6 +102,12 @@ export default function VehicleEditForm({ car, onClose }: VehicleEditFormProps) 
                     {error && (
                         <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg">
                             {error}
+                        </div>
+                    )}
+
+                    {success && (
+                        <div className="p-3 text-sm text-green-600 bg-green-50 rounded-lg">
+                            Véhicule mis à jour avec succès.
                         </div>
                     )}
 

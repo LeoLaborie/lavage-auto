@@ -53,7 +53,7 @@ export async function addVehicle(formData: FormData) {
             },
         });
 
-        revalidatePath("/dashboard/garage");
+        revalidatePath("/dashboard");
         return { success: true, data: car };
     } catch (error) {
         console.error("Error adding vehicle:", error);
@@ -62,6 +62,9 @@ export async function addVehicle(formData: FormData) {
 }
 
 export async function updateVehicle(carId: string, formData: FormData) {
+    if (!carId) {
+        return { success: false, error: "Véhicule non trouvé" };
+    }
     try {
         const supabase = await createClient();
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
@@ -112,9 +115,10 @@ export async function updateVehicle(carId: string, formData: FormData) {
                 model,
                 plate: plate || null,
             },
+            select: { id: true },
         });
 
-        revalidatePath("/dashboard/garage");
+        revalidatePath("/dashboard");
         return { success: true, data: car };
     } catch (error) {
         console.error("Error updating vehicle:", error);
@@ -123,6 +127,9 @@ export async function updateVehicle(carId: string, formData: FormData) {
 }
 
 export async function deleteVehicle(carId: string) {
+    if (!carId) {
+        return { success: false, error: "Véhicule non trouvé" };
+    }
     try {
         const supabase = await createClient();
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
@@ -146,7 +153,7 @@ export async function deleteVehicle(carId: string) {
             },
         });
 
-        revalidatePath("/dashboard/garage");
+        revalidatePath("/dashboard");
         return { success: true };
     } catch (error) {
         console.error("Error deleting vehicle:", error);

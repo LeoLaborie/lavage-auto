@@ -17,10 +17,15 @@ interface VehicleListProps {
 
 export default function VehicleList({ cars }: VehicleListProps) {
     const [editingCar, setEditingCar] = useState<Car | null>(null);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     async function handleDelete(carId: string) {
         if (!confirm("Voulez-vous vraiment supprimer ce véhicule ?")) return;
-        await deleteVehicle(carId);
+        setDeleteError(null);
+        const result = await deleteVehicle(carId);
+        if (!result.success) {
+            setDeleteError(result.error || "Erreur lors de la suppression du véhicule");
+        }
     }
 
     if (cars.length === 0) {
@@ -33,6 +38,11 @@ export default function VehicleList({ cars }: VehicleListProps) {
 
     return (
         <>
+            {deleteError && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg">
+                    {deleteError}
+                </div>
+            )}
             <div className="space-y-3">
                 {cars.map((car) => (
                     <div
