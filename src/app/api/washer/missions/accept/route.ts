@@ -6,9 +6,17 @@ export const POST = withWasherGuard(async (req, user, profile) => {
     try {
         const { bookingId } = await req.json()
 
-        if (!bookingId) {
+        if (!bookingId || typeof bookingId !== 'string') {
             return NextResponse.json(
-                { success: false, error: 'bookingId est requis' },
+                { success: false, error: 'bookingId est requis et doit être une chaîne' },
+                { status: 400 }
+            )
+        }
+
+        // Basic CUID/ID format check to prevent unnecessary DB hits
+        if (bookingId.length < 20) {
+            return NextResponse.json(
+                { success: false, error: 'Format de bookingId invalide' },
                 { status: 400 }
             )
         }
