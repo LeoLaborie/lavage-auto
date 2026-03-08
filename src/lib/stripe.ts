@@ -70,3 +70,41 @@ export async function createAccountLink(stripeAccountId: string) {
         type: 'account_onboarding',
     });
 }
+
+/**
+ * Captures a previously authorized (manual-capture) PaymentIntent.
+ * This releases the funds from escrow. Must be called before createTransfer.
+ */
+export async function capturePaymentIntent(
+    paymentIntentId: string
+): Promise<Stripe.PaymentIntent> {
+    return await stripe.paymentIntents.capture(paymentIntentId);
+}
+
+/**
+ * Creates a Stripe Transfer from the platform account to a connected Laveur account.
+ * Uses source_transaction to link the transfer to the original charge for reconciliation.
+ * Includes an idempotency key to prevent duplicate transfers on retries.
+ */
+export async function createTransfer(
+    amountCents: number,
+    stripeAccountId: string,
+    paymentIntentId: string,
+    bookingId: string
+): Promise<Stripe.Transfer> {
+    return await stripe.transfers.create(
+        {
+            amount: amountCents,
+            currency: 'eur',
+            destination: stripeAccountId,
+            source_transaction: paymentIntentId,
+            metadata: {
+                bookingId,
+                paymentIntentId,
+            },
+        },
+        {
+            idempotencyKey: `booking-${bookingId}-transfer`,
+        }
+    );
+}

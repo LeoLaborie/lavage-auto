@@ -36,35 +36,19 @@ interface Car {
 }
 
 interface ClientDashboardViewProps {
+    initialBookings: Booking[]
     initialCars: Car[]
 }
 
-export default function ClientDashboardView({ initialCars }: ClientDashboardViewProps) {
+export default function ClientDashboardView({ initialBookings, initialCars }: ClientDashboardViewProps) {
     const { user, loading } = useAuth()
     const router = useRouter()
-    const [bookings, setBookings] = useState<Booking[]>([])
-    const [isLoadingData, setIsLoadingData] = useState(true)
+    const [bookings, setBookings] = useState<Booking[]>(initialBookings)
 
-    const fetchData = async () => {
-        setIsLoadingData(true)
-        try {
-            const bookingsRes = await fetch('/api/customer/bookings')
-            if (bookingsRes.ok) {
-                const data = await bookingsRes.json()
-                setBookings(data.bookings)
-            }
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error)
-        } finally {
-            setIsLoadingData(false)
-        }
-    }
-
+    // Sync with props when navigation/revalidation happens
     useEffect(() => {
-        if (user) {
-            fetchData()
-        }
-    }, [user])
+        setBookings(initialBookings)
+    }, [initialBookings])
 
     const handleCancelBooking = async (bookingId: string) => {
         if (!confirm('Êtes-vous sûr de vouloir annuler cette réservation ?')) return
@@ -78,7 +62,7 @@ export default function ClientDashboardView({ initialCars }: ClientDashboardView
 
             if (res.ok) {
                 alert('Réservation annulée avec succès')
-                fetchData()
+                router.refresh()
             } else {
                 const data = await res.json()
                 alert(data.error || 'Erreur lors de l\'annulation')
@@ -131,9 +115,7 @@ export default function ClientDashboardView({ initialCars }: ClientDashboardView
                         {/* Active Bookings */}
                         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                             <h2 className="text-xl font-semibold mb-4">Mes réservations en cours</h2>
-                            {isLoadingData ? (
-                                <div className="text-center py-8 text-gray-500">Chargement...</div>
-                            ) : activeBookings.length === 0 ? (
+                            {activeBookings.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500">
                                     Aucune réservation en cours
                                 </div>
@@ -222,7 +204,7 @@ export default function ClientDashboardView({ initialCars }: ClientDashboardView
                         </div>
                     </div>
                 </div>
-            </main >
-        </div >
+            </main>
+        </div>
     )
 }

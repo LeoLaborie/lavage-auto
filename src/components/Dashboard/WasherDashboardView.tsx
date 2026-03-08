@@ -37,6 +37,16 @@ interface WasherDashboardProps {
     }
 }
 
+interface EarningsSummary {
+    validatedEarningsCents: number
+    pendingEarningsCents: number
+    completedMissionsCount: number
+}
+
+function formatEuros(amountCents: number): string {
+    return (amountCents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
+}
+
 export default function WasherDashboardView({ user: initialUser }: WasherDashboardProps) {
     const { user, loading } = useAuth()
     const router = useRouter()
@@ -49,6 +59,9 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
     const [isLoading, setIsLoading] = useState(true)
     const [acceptingId, setAcceptingId] = useState<string | null>(null)
     const [isOnboarding, setIsOnboarding] = useState(false)
+
+    const [earnings, setEarnings] = useState<EarningsSummary | null>(null)
+    const [isEarningsLoading, setIsEarningsLoading] = useState(false)
 
     const fetchMissions = async () => {
         setIsLoading(true)
@@ -78,6 +91,29 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
             fetchMissions()
         }
     }, [user])
+
+    const fetchEarnings = async () => {
+        setIsEarningsLoading(true)
+        try {
+            const res = await fetch('/api/washer/earnings')
+            if (res.ok) {
+                const data = await res.json()
+                if (data.success) {
+                    setEarnings(data.data)
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching earnings:', error)
+        } finally {
+            setIsEarningsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        if (user && activeTab === 'payments' && earnings === null) {
+            fetchEarnings()
+        }
+    }, [user, activeTab])
 
     const handleAcceptMission = async (missionId: string) => {
         setAcceptingId(missionId)
@@ -162,8 +198,10 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
                 <div className="grid md:grid-cols-4 gap-6 mb-8">
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm text-gray-500 mb-1">Gains du jour</p>
-                        <p className="text-2xl font-bold text-gray-900">0,00 €</p>
+                        <p className="text-sm text-gray-500 mb-1">Gains validés</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                            {earnings ? formatEuros(earnings.validatedEarningsCents) : '0,00 €'}
+                        </p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <p className="text-sm text-gray-500 mb-1">Lavages réalisés</p>
@@ -263,6 +301,37 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                     </p>
                                 </div>
                             )}
+
+                            <div className="mt-10">
+                                <h2 className="text-xl font-bold text-gray-900 mb-4">Récapitulatif des gains</h2>
+                                {isEarningsLoading ? (
+                                    <div className="text-gray-500 text-sm">Chargement des données...</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div className="bg-green-50 border border-green-100 rounded-xl p-5">
+                                            <p className="text-sm text-green-700 mb-1">Gains validés</p>
+                                            <p className="text-2xl font-bold text-green-900">
+                                                {earnings ? formatEuros(earnings.validatedEarningsCents) : '0,00 €'}
+                                            </p>
+                                            <p className="text-xs text-green-600 mt-1">Virements effectués</p>
+                                        </div>
+                                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
+                                            <p className="text-sm text-amber-700 mb-1">En attente de versement</p>
+                                            <p className="text-2xl font-bold text-amber-900">
+                                                {earnings ? formatEuros(earnings.pendingEarningsCents) : '0,00 €'}
+                                            </p>
+                                            <p className="text-xs text-amber-600 mt-1">En cours de traitement</p>
+                                        </div>
+                                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+                                            <p className="text-sm text-blue-700 mb-1">Missions complétées</p>
+                                            <p className="text-2xl font-bold text-blue-900">
+                                                {earnings ? earnings.completedMissionsCount : 0}
+                                            </p>
+                                            <p className="text-xs text-blue-600 mt-1">Au total</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <>

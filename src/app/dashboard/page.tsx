@@ -37,7 +37,40 @@ export default async function Dashboard() {
     }
 
     if (dbUser.role === 'CLIENT') {
-        return <ClientDashboardView initialCars={dbUser.cars} />
+        const bookings = await prisma.booking.findMany({
+            where: { clientId: dbUser.id },
+            orderBy: { scheduledDate: 'desc' },
+            include: {
+                laveur: {
+                    include: { profile: true }
+                },
+                car: true
+            }
+        })
+
+        // Serialize for Client Component
+        const serializedBookings = bookings.map((b: any) => ({
+            id: b.id,
+            scheduledDate: b.scheduledDate.toISOString(),
+            status: b.status === 'ACCEPTED' ? 'ASSIGNED' : b.status,
+            finalPrice: b.amountCents / 100,
+            service: { name: b.serviceName },
+            car: b.car ? {
+                make: b.car.make,
+                model: b.car.model
+            } : {
+                make: '—',
+                model: '—'
+            },
+            assignment: b.laveur ? {
+                washer: {
+                    name: `${b.laveur.profile?.firstName || ''} ${b.laveur.profile?.lastName || ''}`.trim() || b.laveur.email,
+                    phone: b.laveur.profile?.phone || ''
+                }
+            } : undefined
+        }))
+
+        return <ClientDashboardView initialBookings={serializedBookings} initialCars={dbUser.cars} />
     }
 
     if (dbUser.role === 'LAVEUR') {
