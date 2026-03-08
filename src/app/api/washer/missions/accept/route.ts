@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { withWasherGuard } from '@/lib/auth/washerGuard'
 import { prisma } from '@/lib/prisma'
 
-export const POST = withWasherGuard(async (req, user, profile) => {
+export const POST = withWasherGuard(async (req, _user, profile) => {
     try {
         const { bookingId } = await req.json()
 
@@ -23,7 +23,7 @@ export const POST = withWasherGuard(async (req, user, profile) => {
                 status: { in: ['PENDING', 'CONFIRMED'] }
             },
             data: {
-                laveurId: user.id, // Use authenticated user ID directly
+                laveurId: profile.userId, // FK to User.id (cuid), not Supabase Auth UUID
                 status: 'ACCEPTED'
             }
         })

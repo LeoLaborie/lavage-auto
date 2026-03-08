@@ -11,10 +11,10 @@ import PhotoUploader from '@/components/features/laveur/PhotoUploader'
 
 interface Mission {
     id: string
+    status: string  // e.g. 'ACCEPTED' | 'EN_ROUTE' | 'IN_PROGRESS' — returned by API since Story 4.3 code review
     scheduledDate: string
     serviceAddress: string
     finalPrice: number
-    status?: string
     beforePhotoUrl?: string | null
     afterPhotoUrl?: string | null
     service: {
@@ -62,6 +62,7 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
     const [isLoading, setIsLoading] = useState(true)
     const [acceptingId, setAcceptingId] = useState<string | null>(null)
+    const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null)
     const [isOnboarding, setIsOnboarding] = useState(false)
 
     const [earnings, setEarnings] = useState<EarningsSummary | null>(null)
@@ -146,6 +147,28 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
             alert('Une erreur est survenue')
         } finally {
             setAcceptingId(null)
+        }
+    }
+
+    const handleUpdateStatus = async (missionId: string, newStatus: 'EN_ROUTE' | 'IN_PROGRESS') => {
+        setUpdatingStatusId(missionId)
+        try {
+            const response = await fetch(`/api/washer/missions/${missionId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus }),
+            })
+            if (response.ok) {
+                await fetchMissions() // Re-fetch to reflect the new status
+            } else {
+                const error = await response.json()
+                alert(error.error || 'Erreur lors de la mise à jour du statut')
+            }
+        } catch (error) {
+            console.error('Error updating mission status:', error)
+            alert('Une erreur est survenue')
+        } finally {
+            setUpdatingStatusId(null)
         }
     }
 
@@ -417,8 +440,36 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                             </button>
                                                         )}
                                                         {activeTab === 'accepted' && (
-                                                            <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg font-medium text-sm">
-                                                                {mission.status === 'IN_PROGRESS' ? 'En cours' : 'Acceptée'}
+                                                            <div className="flex items-center gap-2">
+                                                                {mission.status === 'ACCEPTED' && (
+                                                                    <button
+                                                                        onClick={() => handleUpdateStatus(mission.id, 'EN_ROUTE')}
+                                                                        disabled={updatingStatusId === mission.id}
+                                                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    >
+                                                                        {updatingStatusId === mission.id ? 'Mise à jour...' : 'En route'}
+                                                                    </button>
+                                                                )}
+                                                                {mission.status === 'EN_ROUTE' && (
+                                                                    <button
+                                                                        onClick={() => handleUpdateStatus(mission.id, 'IN_PROGRESS')}
+                                                                        disabled={updatingStatusId === mission.id}
+                                                                        className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    >
+                                                                        {updatingStatusId === mission.id ? 'Mise à jour...' : 'Démarrer le lavage'}
+                                                                    </button>
+                                                                )}
+                                                                {mission.status === 'IN_PROGRESS' && (
+                                                                    <div className="bg-orange-100 text-orange-700 px-4 py-2 rounded-lg font-medium text-sm">
+                                                                        En cours
+                                                                    </div>
+                                                                )}
+                                                                {/* Fallback for unexpected active statuses */}
+                                                                {!['ACCEPTED', 'EN_ROUTE', 'IN_PROGRESS'].includes(mission.status) && (
+                                                                    <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg font-medium text-sm">
+                                                                        {mission.status}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>

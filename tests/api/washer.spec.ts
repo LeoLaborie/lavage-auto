@@ -210,3 +210,126 @@ test.describe('Story 4.3 - GET /api/washer/missions/accepted', () => {
         });
     });
 });
+
+// Story 4.4: Mise à Jour du Statut de Mission (En Route / En Cours)
+// 401 for unauthenticated access is covered below (live test, no DB seed needed).
+test.describe('Story 4.4 - PATCH /api/washer/missions/[id]/status', () => {
+    // AC#7: Unauthenticated request → 401
+    test('should return 401 Unauthorized for unauthenticated request', async ({ request }) => {
+        const response = await request.patch('/api/washer/missions/some-booking-id/status', {
+            data: { status: 'EN_ROUTE' },
+        });
+        expect(response.status()).toBe(401);
+        const body = await response.json();
+        expect(body.success).toBe(false);
+        expect(body.error).toBe('Unauthorized');
+    });
+
+    // AC#9: Missing or invalid status → 400 (soft test: may hit 401 first without auth)
+    test('should return 400 for COMPLETED status (redirect to /complete endpoint)', async ({ request }) => {
+        const response = await request.patch('/api/washer/missions/some-booking-id/status', {
+            data: { status: 'COMPLETED' },
+        });
+
+        if (response.status() === 401 || response.status() === 403) {
+            console.warn('Skipping 400 check: auth required. Current status:', response.status());
+            return;
+        }
+
+        expect(response.status()).toBe(400);
+        const body = await response.json();
+        expect(body.success).toBe(false);
+        expect(body.error).toContain('/api/booking/[id]/complete');
+    });
+
+    test('should return 400 for invalid status value (e.g., CANCELLED)', async ({ request }) => {
+        const response = await request.patch('/api/washer/missions/some-booking-id/status', {
+            data: { status: 'CANCELLED' },
+        });
+
+        if (response.status() === 401 || response.status() === 403) {
+            console.warn('Skipping 400 check: auth required. Current status:', response.status());
+            return;
+        }
+
+        expect(response.status()).toBe(400);
+        const body = await response.json();
+        expect(body.success).toBe(false);
+        expect(body.error).toContain('EN_ROUTE');
+        expect(body.error).toContain('IN_PROGRESS');
+    });
+
+    test.describe('Authenticated Access (VALIDATED) - Requires DB Seeding', () => {
+        // AC#6: Non-existent booking → 404
+        test.skip('should return 404 for non-existent booking id', async ({ request }) => {
+            // TODO: Authenticate as a VALIDATED laveur
+            const response = await request.patch('/api/washer/missions/non-existent-id/status', {
+                data: { status: 'EN_ROUTE' },
+            });
+            expect(response.status()).toBe(404);
+            const body = await response.json();
+            expect(body.success).toBe(false);
+            expect(body.error).toBe('Mission introuvable');
+        });
+
+        // AC#5: Ownership check — laveur cannot update another laveur's mission
+        test.skip('should return 403 when laveur tries to update a booking assigned to another laveur', async ({ request }) => {
+            // TODO: Seed a booking assigned to laveur A, authenticate as laveur B
+            const response = await request.patch('/api/washer/missions/other-laveur-booking/status', {
+                data: { status: 'EN_ROUTE' },
+            });
+            expect(response.status()).toBe(403);
+            const body = await response.json();
+            expect(body.success).toBe(false);
+            expect(body.error).toBe('Accès refusé');
+        });
+
+        // AC#3: Invalid transition (ACCEPTED → IN_PROGRESS) → 409
+        test.skip('should return 409 for invalid transition ACCEPTED → IN_PROGRESS', async ({ request }) => {
+            // TODO: Seed an ACCEPTED booking assigned to current laveur
+            const bookingId = 'seeded-accepted-booking-id';
+            const response = await request.patch(`/api/washer/missions/${bookingId}/status`, {
+                data: { status: 'IN_PROGRESS' },
+            });
+            expect(response.status()).toBe(409);
+            const body = await response.json();
+            expect(body.success).toBe(false);
+            expect(body.error).toContain('ACCEPTED');
+            expect(body.error).toContain('IN_PROGRESS');
+        });
+
+        // AC#1: Happy path — ACCEPTED → EN_ROUTE
+        test.skip('should return 200 and update status to EN_ROUTE from ACCEPTED', async ({ request }) => {
+            // TODO: Seed an ACCEPTED booking assigned to current laveur
+            const bookingId = 'seeded-accepted-booking-id';
+            const response = await request.patch(`/api/washer/missions/${bookingId}/status`, {
+                data: { status: 'EN_ROUTE' },
+            });
+            expect(response.status()).toBe(200);
+            const body = await response.json();
+            expect(body.success).toBe(true);
+            expect(body.data.bookingId).toBe(bookingId);
+            expect(body.data.status).toBe('EN_ROUTE');
+            // startedAt should NOT be set for EN_ROUTE
+            expect(body.data.startedAt).toBeUndefined();
+        });
+
+        // AC#2: Happy path — EN_ROUTE → IN_PROGRESS, startedAt is set
+        test.skip('should return 200 and set startedAt when transitioning to IN_PROGRESS', async ({ request }) => {
+            // TODO: Seed an EN_ROUTE booking assigned to current laveur
+            const bookingId = 'seeded-en-route-booking-id';
+            const response = await request.patch(`/api/washer/missions/${bookingId}/status`, {
+                data: { status: 'IN_PROGRESS' },
+            });
+            expect(response.status()).toBe(200);
+            const body = await response.json();
+            expect(body.success).toBe(true);
+            expect(body.data.bookingId).toBe(bookingId);
+            expect(body.data.status).toBe('IN_PROGRESS');
+            // startedAt must be a valid ISO 8601 timestamp
+            expect(typeof body.data.startedAt).toBe('string');
+            expect(() => new Date(body.data.startedAt)).not.toThrow();
+            expect(new Date(body.data.startedAt).toISOString()).toBe(body.data.startedAt);
+        });
+    });
+});
