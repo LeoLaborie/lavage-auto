@@ -7,12 +7,16 @@ import { useEffect, useState } from 'react'
 import { AppleEmoji } from '@/components/AppleEmoji'
 
 import { startStripeOnboarding } from '@/lib/actions/washer-stripe'
+import PhotoUploader from '@/components/features/laveur/PhotoUploader'
 
 interface Mission {
     id: string
     scheduledDate: string
     serviceAddress: string
     finalPrice: number
+    status?: string
+    beforePhotoUrl?: string | null
+    afterPhotoUrl?: string | null
     service: {
         name: string
         estimatedDuration: number
@@ -326,7 +330,7 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex items-center gap-4 w-full md:w-auto">
+                                                     <div className="flex items-center gap-4 w-full md:w-auto">
                                                         <div className="text-right flex-1 md:flex-none">
                                                             <p className="text-lg font-bold text-gray-900">{mission.finalPrice} €</p>
                                                             <p className="text-xs text-gray-500">Commission incluse</p>
@@ -342,11 +346,53 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                         )}
                                                         {activeTab === 'accepted' && (
                                                             <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg font-medium text-sm">
-                                                                Acceptée
+                                                                {mission.status === 'IN_PROGRESS' ? 'En cours' : 'Acceptée'}
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
+
+                                                {/* Photo upload section — only shown for accepted missions */}
+                                                {activeTab === 'accepted' && (
+                                                    <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                                                        {/* Upload "Avant" photo if not yet uploaded and mission is in correct state */}
+                                                        {!mission.beforePhotoUrl &&
+                                                            (mission.status === 'ACCEPTED' || mission.status === 'EN_ROUTE') && (
+                                                                <PhotoUploader
+                                                                    bookingId={mission.id}
+                                                                    type="avant"
+                                                                    onSuccess={() => fetchMissions()}
+                                                                />
+                                                            )}
+
+                                                        {/* Show "Avant" photo confirmation */}
+                                                        {mission.beforePhotoUrl && (
+                                                            <div className="flex items-center gap-2 text-green-700 text-sm">
+                                                                <span>✓</span>
+                                                                <span>Photo Avant enregistrée</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Upload "Après" photo if "Avant" done and mission in progress */}
+                                                        {mission.beforePhotoUrl &&
+                                                            !mission.afterPhotoUrl &&
+                                                            mission.status === 'IN_PROGRESS' && (
+                                                                <PhotoUploader
+                                                                    bookingId={mission.id}
+                                                                    type="apres"
+                                                                    onSuccess={() => fetchMissions()}
+                                                                />
+                                                            )}
+
+                                                        {/* Show "Après" photo confirmation */}
+                                                        {mission.afterPhotoUrl && (
+                                                            <div className="flex items-center gap-2 text-green-700 text-sm">
+                                                                <span>✓</span>
+                                                                <span>Photo Après enregistrée — En attente de validation client</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                     )}
