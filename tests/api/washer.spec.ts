@@ -66,20 +66,8 @@ test.describe('Washer API Endpoints Protection', () => {
 });
 
 // Story 4.3: Consultation du Planning (Missions Acceptées)
+// 401 for unauthenticated access is already covered in the global 'Washer API Endpoints Protection' suite above.
 test.describe('Story 4.3 - GET /api/washer/missions/accepted', () => {
-    test.describe('Unauthenticated Access', () => {
-        // AC#7: Given a non-authenticated request is made, Then a 401 Unauthorized response is returned.
-        // This test already exists above in the Unauthenticated group but is duplicated here
-        // for Story 4.3 documentation clarity - same assertion, intentional redundancy.
-        test('should return 401 Unauthorized for unauthenticated request', async ({ request }) => {
-            const response = await request.get('/api/washer/missions/accepted');
-            expect(response.status()).toBe(401);
-            const body = await response.json();
-            expect(body.success).toBe(false);
-            expect(body.error).toBe('Unauthorized');
-        });
-    });
-
     test.describe('Authenticated Access (VALIDATED) - Requires DB Seeding', () => {
         // AC#1-#4: Happy path — VALIDATED laveur gets 200 with bookings array
         test.skip('should return 200 with bookings array for VALIDATED laveur', async ({ request }) => {
@@ -103,8 +91,10 @@ test.describe('Story 4.3 - GET /api/washer/missions/accepted', () => {
             expect(response.status()).toBe(200);
             const body = await response.json();
             const validStatuses = ['ACCEPTED', 'EN_ROUTE', 'IN_PROGRESS'];
-            // All returned missions must have valid statuses (would need to expose status in response to test)
-            expect(body.bookings.length).toBeGreaterThanOrEqual(0);
+            // status is included in the response to make this assertion possible
+            body.bookings.forEach((mission: { status: string }) => {
+                expect(validStatuses).toContain(mission.status);
+            });
         });
 
         // AC#3: Each mission includes all required fields with correct types
@@ -154,15 +144,16 @@ test.describe('Story 4.3 - GET /api/washer/missions/accepted', () => {
         });
 
         // AC#5: Only today or future missions (no past missions)
-        test.skip('should not return past missions (scheduledDate < today 00:00:00)', async ({ request }) => {
+        test.skip('should not return past missions (scheduledDate < today 00:00:00 UTC)', async ({ request }) => {
             // TODO: Seed an ACCEPTED booking with scheduledDate in the past
             // TODO: Verify it does NOT appear in the response
             const response = await request.get('/api/washer/missions/accepted');
             expect(response.status()).toBe(200);
             const body = await response.json();
 
+            // Mirror the server's UTC-based cutoff to avoid timezone-dependent test failures.
             const todayStart = new Date();
-            todayStart.setHours(0, 0, 0, 0);
+            todayStart.setUTCHours(0, 0, 0, 0);
 
             body.bookings.forEach((mission: { scheduledDate: string }) => {
                 const missionDate = new Date(mission.scheduledDate);

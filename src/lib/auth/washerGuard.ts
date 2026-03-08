@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
+import type { User } from '@supabase/supabase-js'
+import type { Profile } from '@prisma/client'
 
 /**
  * Reusable guard for Washer (Laveur) API routes.
@@ -8,7 +10,7 @@ import { prisma } from '@/lib/prisma'
  * Includes try/catch for robust error handling.
  */
 export function withWasherGuard(
-    handler: (req: Request, user: any, profile: any) => Promise<NextResponse>
+    handler: (req: Request, user: User, profile: Profile) => Promise<NextResponse>
 ) {
     return async (req: Request) => {
         try {
