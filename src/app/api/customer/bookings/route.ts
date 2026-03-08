@@ -43,9 +43,11 @@ export const GET = withClientGuard(async (_req: Request, _authUser, dbUser) => {
             return {
                 id: b.id,
                 scheduledDate: b.scheduledDate.toISOString(),
-                // Map ACCEPTED to ASSIGNED for the frontend
+                // Map ACCEPTED to ASSIGNED for the frontend; all others pass through unchanged
                 status: b.status === 'ACCEPTED' ? 'ASSIGNED' : b.status,
                 finalPrice: b.amountCents / 100, // Convert cents to euros
+                beforePhotoUrl: b.beforePhotoUrl ?? null,
+                afterPhotoUrl: b.afterPhotoUrl ?? null,
                 service: {
                     name: b.serviceName
                 },

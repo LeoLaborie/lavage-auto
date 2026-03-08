@@ -7,12 +7,15 @@ import { useEffect, useState } from 'react'
 import { AppleEmoji } from '@/components/AppleEmoji'
 import VehicleForm from '@/components/features/dashboard/VehicleForm'
 import VehicleList from '@/components/features/dashboard/VehicleList'
+import MissionValidationCard from '@/components/features/dashboard/MissionValidationCard'
 
 interface Booking {
     id: string
     scheduledDate: string
     status: string
     finalPrice: number
+    beforePhotoUrl: string | null
+    afterPhotoUrl: string | null
     service: {
         name: string
     }
@@ -127,12 +130,16 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="font-semibold text-gray-900">{booking.service.name}</span>
-                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                                            booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
                                                             booking.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-800' :
-                                                                'bg-green-100 text-green-800'
-                                                            }`}>
+                                                            booking.status === 'IN_PROGRESS' ? 'bg-orange-100 text-orange-800' :
+                                                            'bg-green-100 text-green-800'
+                                                        }`}>
                                                             {booking.status === 'PENDING' ? 'En attente' :
-                                                                booking.status === 'ASSIGNED' ? 'Laveur assigné' : booking.status}
+                                                                booking.status === 'ASSIGNED' ? 'Laveur assigné' :
+                                                                booking.status === 'IN_PROGRESS' ? 'En cours' :
+                                                                booking.status}
                                                         </span>
                                                     </div>
                                                     <p className="text-sm text-gray-600">
@@ -163,6 +170,12 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                                                     ) : null}
                                                 </div>
                                             </div>
+
+                                            {/* Validation card for IN_PROGRESS missions */}
+                                            <MissionValidationCard
+                                                booking={booking}
+                                                onValidated={() => router.refresh()}
+                                            />
                                         </div>
                                     ))}
                                 </div>
@@ -175,17 +188,43 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                                 <h2 className="text-xl font-semibold mb-4">Historique</h2>
                                 <div className="space-y-4">
                                     {pastBookings.map(booking => (
-                                        <div key={booking.id} className="flex justify-between items-center p-4 border-b border-gray-100 last:border-0">
-                                            <div>
-                                                <p className="font-medium text-gray-900">{booking.service.name}</p>
-                                                <p className="text-sm text-gray-500">
-                                                    {new Date(booking.scheduledDate).toLocaleDateString('fr-FR')}
-                                                </p>
+                                        <div key={booking.id} className="p-4 border-b border-gray-100 last:border-0">
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <p className="font-medium text-gray-900">{booking.service.name}</p>
+                                                    <p className="text-sm text-gray-500">
+                                                        {new Date(booking.scheduledDate).toLocaleDateString('fr-FR')}
+                                                    </p>
+                                                </div>
+                                                <span className={`text-xs px-2 py-1 rounded-full ${booking.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                    {booking.status === 'COMPLETED' ? 'Terminé' : 'Annulé'}
+                                                </span>
                                             </div>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${booking.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                {booking.status === 'COMPLETED' ? 'Terminé' : 'Annulé'}
-                                            </span>
+
+                                            {/* Read-only photo viewer for completed bookings (AC#9) */}
+                                            {booking.status === 'COMPLETED' && booking.beforePhotoUrl && booking.afterPhotoUrl && (
+                                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs text-gray-400 uppercase tracking-wide">Avant</p>
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                        <img
+                                                            src={booking.beforePhotoUrl}
+                                                            alt="Photo avant lavage"
+                                                            className="w-full h-20 object-cover rounded border border-gray-200"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs text-gray-400 uppercase tracking-wide">Après</p>
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                        <img
+                                                            src={booking.afterPhotoUrl}
+                                                            alt="Photo après lavage"
+                                                            className="w-full h-20 object-cover rounded border border-gray-200"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

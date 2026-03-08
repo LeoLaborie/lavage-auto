@@ -54,6 +54,8 @@ export default async function Dashboard() {
             scheduledDate: b.scheduledDate.toISOString(),
             status: b.status === 'ACCEPTED' ? 'ASSIGNED' : b.status,
             finalPrice: b.amountCents / 100,
+            beforePhotoUrl: b.beforePhotoUrl ?? null,
+            afterPhotoUrl: b.afterPhotoUrl ?? null,
             service: { name: b.serviceName },
             car: b.car ? {
                 make: b.car.make,
