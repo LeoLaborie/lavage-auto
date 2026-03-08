@@ -27,7 +27,20 @@ test.describe('Washer API Endpoints Protection', () => {
         });
     });
 
-    // Note: Fully testing the VALIDATION_PENDING and VALIDATED states via E2E/API
+    // Note: Fully testing the VALIDATION_PENDING and VALIDATED states via API
     // requires seeding a test user in Supabase Auth and Prisma DB.
-    // Ensure that seed scripts or setup fixtures are used for complete coverage in the future.
+    test.describe('Authenticated Access (VALIDATED) - Requires Seeding', () => {
+        test.skip('GET /api/washer/missions/available should return 200 with bookings array', async ({ request }) => {
+            // TODO: Setup a valid user token for a VALIDATED laveur profile
+            const response = await request.get('/api/washer/missions/available');
+            expect(response.status()).toBe(200);
+            const body = await response.json();
+            expect(body.success).toBe(true);
+            expect(Array.isArray(body.bookings)).toBe(true);
+        });
+
+        test.skip('GET /api/washer/missions/available should only return future PENDING/CONFIRMED missions without laveur', async ({ request }) => {
+            // TODO: Query and verify all elements in body.bookings match the specific criteria
+        });
+    });
 });
