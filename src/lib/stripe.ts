@@ -46,3 +46,27 @@ export async function createCheckoutSession(
         },
     });
 }
+export async function createConnectAccount(email: string, userId: string) {
+    return await stripe.accounts.create({
+        type: 'express',
+        email: email,
+        capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+        },
+        metadata: {
+            userId,
+        },
+    });
+}
+
+export async function createAccountLink(stripeAccountId: string) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+    return await stripe.accountLinks.create({
+        account: stripeAccountId,
+        refresh_url: `${baseUrl}/dashboard?stripe_refresh=true`,
+        return_url: `${baseUrl}/washer/stripe-callback`,
+        type: 'account_onboarding',
+    });
+}

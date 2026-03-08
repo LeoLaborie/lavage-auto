@@ -35,7 +35,7 @@ export default async function Dashboard() {
     }
 
     if (dbUser.role === 'LAVEUR') {
-        return <WasherDashboardView />
+        return <WasherDashboardView user={dbUser} />
     }
 
     // Default view for ADMIN or others
