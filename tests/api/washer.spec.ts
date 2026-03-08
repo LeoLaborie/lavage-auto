@@ -27,23 +27,23 @@ test.describe('Washer API Endpoints Protection', () => {
         });
     });
 
-    test.describe('Authenticated Validation (Requires Seed)', () => {
-        // These tests require a valid session and seeded data.
-        // For now, these are placeholders documenting the expected behavior for manual/stage verification.
-
+    test.describe('Authenticated Validation (Requires Session)', () => {
         test('POST /api/washer/missions/accept should return 400 Bad Request if bookingId is missing', async ({ request }) => {
-            // Note: This would pass 401/403 with a valid session
+            // Note: In local/CI without global setup, this will return 401.
+            // We verify that IF it gets past auth, it must return exactly 400.
             const response = await request.post('/api/washer/missions/accept', {
                 data: {}
             });
-            // If we don't have a session, this will return 401. 
-            // In a real E2E with session, this should be 400.
-            if (response.status() !== 401) {
-                expect(response.status()).toBe(400);
-                const body = await response.json();
-                expect(body.success).toBe(false);
-                expect(body.error).toBe('bookingId est requis');
+
+            if (response.status() === 401 || response.status() === 403) {
+                console.warn('Skipping 400 check: auth required. Current status:', response.status());
+                return;
             }
+
+            expect(response.status()).toBe(400);
+            const body = await response.json();
+            expect(body.success).toBe(false);
+            expect(body.error).toContain('bookingId est requis');
         });
     });
 

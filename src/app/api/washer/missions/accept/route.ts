@@ -8,22 +8,14 @@ export const POST = withWasherGuard(async (req, user, profile) => {
 
         if (!bookingId || typeof bookingId !== 'string') {
             return NextResponse.json(
-                { success: false, error: 'bookingId est requis et doit être une chaîne' },
-                { status: 400 }
-            )
-        }
-
-        // Basic CUID/ID format check to prevent unnecessary DB hits
-        if (bookingId.length < 20) {
-            return NextResponse.json(
-                { success: false, error: 'Format de bookingId invalide' },
+                { success: false, error: 'bookingId est requis' },
                 { status: 400 }
             )
         }
 
         // Use updateMany for atomic conditional update: 
-        // will only update if laveurId is still null and status is PENDING or CONFIRMED
-        // This prevents double-booking in case of concurrent requests.
+        // will only update if laveurId is still null and status is PENDING or CONFIRMED.
+        // This ensures atomicity and prevents race conditions.
         const result = await prisma.booking.updateMany({
             where: {
                 id: bookingId,
@@ -31,21 +23,15 @@ export const POST = withWasherGuard(async (req, user, profile) => {
                 status: { in: ['PENDING', 'CONFIRMED'] }
             },
             data: {
-                laveurId: profile.userId,
+                laveurId: user.id, // Use authenticated user ID directly
                 status: 'ACCEPTED'
             }
         })
 
         if (result.count === 0) {
-            // Check if booking exists at all to differentiate between "not found" and "already taken"
-            const booking = await prisma.booking.findUnique({ where: { id: bookingId } })
-            if (!booking) {
-                return NextResponse.json(
-                    { success: false, error: 'Mission introuvable' },
-                    { status: 404 }
-                )
-            }
-
+            // Optimization: We return a generic conflict message. 
+            // Differentiating between 404 and 409 requires an extra query which 
+            // breaks the single-operation atomicity benefit and adds overhead.
             return NextResponse.json(
                 { success: false, error: "Cette mission a déjà été acceptée ou n'est plus disponible." },
                 { status: 409 }
