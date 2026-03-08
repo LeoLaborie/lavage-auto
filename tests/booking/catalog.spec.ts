@@ -7,8 +7,8 @@ test.describe('Consultation des Prestations', () => {
 
         // Vérifier l'affichage des éléments principaux
         await expect(page.locator('h1', { hasText: 'Choisissez votre lavage' })).toBeVisible();
-        await expect(page.locator('text=Lavage Extérieur')).toBeVisible();
-        await expect(page.locator('text=Lavage Complet')).toBeVisible();
+        await expect(page.locator('h3', { hasText: 'Lavage Extérieur' })).toBeVisible();
+        await expect(page.locator('h3', { hasText: 'Lavage Complet' })).toBeVisible();
 
         const btnContinuer = page.locator('button', { hasText: 'Continuer vers la localisation' });
 
