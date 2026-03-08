@@ -49,7 +49,7 @@ export default async function Dashboard() {
         })
 
         // Serialize for Client Component
-        const serializedBookings = bookings.map((b: any) => ({
+        const serializedBookings = bookings.map((b) => ({
             id: b.id,
             scheduledDate: b.scheduledDate.toISOString(),
             status: b.status === 'ACCEPTED' ? 'ASSIGNED' : b.status,

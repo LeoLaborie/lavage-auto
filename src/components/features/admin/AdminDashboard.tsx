@@ -112,9 +112,17 @@ function PaymentStatusBadge({ status }: { status: PaymentStatus | null }) {
         REFUNDED: 'bg-gray-100 text-gray-800',
         PARTIALLY_REFUNDED: 'bg-orange-100 text-orange-800',
     }
+    const labels: Record<PaymentStatus, string> = {
+        PENDING: 'En attente',
+        PROCESSING: 'En cours',
+        SUCCEEDED: 'Réussi',
+        FAILED: 'Échoué',
+        REFUNDED: 'Remboursé',
+        PARTIALLY_REFUNDED: 'Part. remboursé',
+    }
     return (
         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${classes[status]}`}>
-            {status}
+            {labels[status]}
         </span>
     )
 }

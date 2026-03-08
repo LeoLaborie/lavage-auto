@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
+import { checkAdminAuth } from '@/lib/auth/adminGuard'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,24 +9,14 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-        }
-
-        const dbAdmin = await prisma.user.findUnique({ where: { authId: user.id } })
-
-        if (!dbAdmin) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-        }
-
-        if (dbAdmin.role !== 'ADMIN') {
-            return NextResponse.json({ success: false, error: 'Forbidden: ADMIN role required' }, { status: 403 })
-        }
+        const auth = await checkAdminAuth(req)
+        if (!auth.ok) return auth.response
 
         const { id } = await params
+
+        if (!id || typeof id !== 'string' || id.trim().length < 5) {
+            return NextResponse.json({ success: false, error: 'Identifiant invalide' }, { status: 400 })
+        }
 
         const targetUser = await prisma.user.findUnique({ where: { id } })
         if (!targetUser) {
