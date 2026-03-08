@@ -96,10 +96,9 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
   let validatedCarId: string | undefined
   if (carId) {
     const ownedCar = await prisma.car.findUnique({
-      where: { id: carId },
-      select: { userId: true },
+      where: { id: carId, userId: dbUser.id },
     })
-    if (!ownedCar || ownedCar.userId !== dbUser.id) {
+    if (!ownedCar) {
       return NextResponse.json(
         { success: false, error: 'Véhicule invalide ou non autorisé.' },
         { status: 403 }

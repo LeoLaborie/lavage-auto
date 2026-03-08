@@ -23,6 +23,13 @@ interface Service {
   icon: string;
 }
 
+interface UserCar {
+  id: string;
+  make: string;
+  model: string;
+  plate: string | null;
+}
+
 const services: Service[] = [
   {
     id: 'exterior',
@@ -151,7 +158,7 @@ function ReserverContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Car selection state
-  const [userCars, setUserCars] = useState<any[]>([]);
+  const [userCars, setUserCars] = useState<UserCar[]>([]);
   const [selectedCarId, setSelectedCarId] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('booking_selected_car_id') || '';
@@ -276,20 +283,14 @@ function ReserverContent() {
 
     if (currentStep === 3) {
       // Validate customer information
-      const validationData = { ...customerInfo } as any;
-
       if (!isNewCar) {
         if (!selectedCarId) {
           setFormErrors({ carSelection: 'Veuillez sélectionner un véhicule' });
           return;
         }
-        // Mock car details to pass validation
-        validationData.licensePlate = 'EXISTING';
-        validationData.make = 'EXISTING';
-        validationData.model = 'EXISTING';
       }
 
-      const validation = validateBookingForm(validationData as BookingFormData);
+      const validation = validateBookingForm(customerInfo as BookingFormData, { skipCarValidation: !isNewCar });
       if (!validation.isValid) {
         setFormErrors(validation.errors);
         return;
@@ -308,20 +309,14 @@ function ReserverContent() {
     e.preventDefault();
 
     // Final validation before submission
-    const validationData = { ...customerInfo } as any;
-
     if (!isNewCar) {
       if (!selectedCarId) {
         setFormErrors({ carSelection: 'Veuillez sélectionner un véhicule' });
         return;
       }
-      // Mock car details to pass validation
-      validationData.licensePlate = 'EXISTING';
-      validationData.make = 'EXISTING';
-      validationData.model = 'EXISTING';
     }
 
-    const customerValidation = validateBookingForm(validationData as BookingFormData);
+    const customerValidation = validateBookingForm(customerInfo as BookingFormData, { skipCarValidation: !isNewCar });
     const dateTimeValidation = validateDateTimeBooking(selectedDate, selectedTime, address);
 
     if (!customerValidation.isValid || !dateTimeValidation.isValid) {
@@ -402,6 +397,8 @@ function ReserverContent() {
         localStorage.removeItem('booking_address');
         localStorage.removeItem('booking_customer_info');
         localStorage.removeItem('booking_step');
+        localStorage.removeItem('booking_selected_car_id');
+        localStorage.removeItem('booking_is_new_car');
 
         // Redirect to Stripe
         window.location.href = result.data.checkoutUrl;
@@ -416,6 +413,8 @@ function ReserverContent() {
       localStorage.removeItem('booking_address');
       localStorage.removeItem('booking_customer_info');
       localStorage.removeItem('booking_step');
+      localStorage.removeItem('booking_selected_car_id');
+      localStorage.removeItem('booking_is_new_car');
 
       alert('Réservation confirmée ! Vous allez être redirigé vers votre espace.');
 

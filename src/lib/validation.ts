@@ -28,7 +28,10 @@ export function validatePhone(phone: string): boolean {
   return phoneRegex.test(cleanPhone)
 }
 
-export function validateBookingForm(data: BookingFormData): ValidationResult {
+export function validateBookingForm(
+  data: BookingFormData,
+  options: { skipCarValidation?: boolean } = {}
+): ValidationResult {
   const errors: Record<string, string> = {}
 
   // Required fields
@@ -61,11 +64,13 @@ export function validateBookingForm(data: BookingFormData): ValidationResult {
     errors.carType = 'Le modèle de voiture ne peut pas dépasser 50 caractères'
   }
 
-  // Required validation for license plate
-  if (!data.licensePlate?.trim()) {
-    errors.licensePlate = 'La plaque d\'immatriculation est requise'
-  } else if (data.licensePlate.trim().length > 20) {
-    errors.licensePlate = 'La plaque d\'immatriculation est trop longue'
+  // Car field validation — skipped when an existing saved vehicle is selected
+  if (!options.skipCarValidation) {
+    if (!data.licensePlate?.trim()) {
+      errors.licensePlate = 'La plaque d\'immatriculation est requise'
+    } else if (data.licensePlate.trim().length > 20) {
+      errors.licensePlate = 'La plaque d\'immatriculation est trop longue'
+    }
   }
 
   // Optional validation for notes
