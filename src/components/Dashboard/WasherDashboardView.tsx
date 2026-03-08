@@ -113,6 +113,9 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
         if (user && activeTab === 'payments' && earnings === null) {
             fetchEarnings()
         }
+        // earnings intentionally omitted: we only fetch once on first tab activation.
+        // Adding it would cause an infinite loop (fetch → set earnings → re-trigger).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, activeTab])
 
     const handleAcceptMission = async (missionId: string) => {
@@ -205,7 +208,7 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <p className="text-sm text-gray-500 mb-1">Lavages réalisés</p>
-                        <p className="text-2xl font-bold text-gray-900">{acceptedMissions.length}</p>
+                        <p className="text-2xl font-bold text-gray-900">{earnings?.completedMissionsCount ?? 0}</p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <p className="text-sm text-gray-500 mb-1">Note moyenne</p>

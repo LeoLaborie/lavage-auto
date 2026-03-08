@@ -21,8 +21,10 @@ export function withWasherGuard(
                 return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
             }
 
-            const profile = await prisma.profile.findUnique({
-                where: { userId: user.id }
+            // Profile.userId references User.id (cuid), not the Supabase Auth UUID.
+            // We must resolve via the User relation (authId) to find the correct profile.
+            const profile = await prisma.profile.findFirst({
+                where: { user: { authId: user.id } }
             })
 
             // Fail-closed approach: ONLY allow VALIDATED

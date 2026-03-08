@@ -84,12 +84,14 @@ export async function capturePaymentIntent(
 /**
  * Creates a Stripe Transfer from the platform account to a connected Laveur account.
  * Uses source_transaction to link the transfer to the original charge for reconciliation.
+ * IMPORTANT: source_transaction must be a Charge ID (ch_...), NOT a PaymentIntent ID (pi_...).
+ * Obtain chargeId from capturePaymentIntent(...)?.latest_charge.
  * Includes an idempotency key to prevent duplicate transfers on retries.
  */
 export async function createTransfer(
     amountCents: number,
     stripeAccountId: string,
-    paymentIntentId: string,
+    chargeId: string,
     bookingId: string
 ): Promise<Stripe.Transfer> {
     return await stripe.transfers.create(
@@ -97,10 +99,10 @@ export async function createTransfer(
             amount: amountCents,
             currency: 'eur',
             destination: stripeAccountId,
-            source_transaction: paymentIntentId,
+            source_transaction: chargeId,
             metadata: {
                 bookingId,
-                paymentIntentId,
+                chargeId,
             },
         },
         {
