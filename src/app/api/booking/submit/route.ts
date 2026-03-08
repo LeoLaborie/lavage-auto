@@ -89,9 +89,25 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
   // --- Server-side price lookup (NEVER trust client-sent price) ---
   const amountCents = matchedService.amountCents
 
-  // --- Handle car info: store details if provided ---
+  // --- Handle car info ---
   let finalAccessNotes = notes?.trim() || ''
-  if (!carId && (make || model || licensePlate)) {
+
+  // Validate carId ownership if provided
+  let validatedCarId: string | undefined
+  if (carId) {
+    const ownedCar = await prisma.car.findUnique({
+      where: { id: carId },
+      select: { userId: true },
+    })
+    if (!ownedCar || ownedCar.userId !== dbUser.id) {
+      return NextResponse.json(
+        { success: false, error: 'Véhicule invalide ou non autorisé.' },
+        { status: 403 }
+      )
+    }
+    validatedCarId = carId
+  } else if (make || model || licensePlate) {
+    // Fallback: store car details in access notes for unregistered cars
     const carInfo = `Véhicule: ${make || ''} ${model || ''} (${licensePlate || ''})`.trim()
     finalAccessNotes = finalAccessNotes ? `${carInfo}\n---\n${finalAccessNotes}` : carInfo
   }
@@ -104,6 +120,7 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     serviceAddress: address.trim(),
     accessNotes: finalAccessNotes || null,
     status: 'PENDING',
+    ...(validatedCarId && { carId: validatedCarId }),
   }
 
   // --- Create Booking ---

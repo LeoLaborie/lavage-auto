@@ -172,10 +172,11 @@ function ReserverContent() {
       fetch('/api/customer/cars')
         .then(res => res.json())
         .then(data => {
-          if (data.cars && data.cars.length > 0) {
-            setUserCars(data.cars);
+          const cars = data?.data?.cars;
+          if (cars && cars.length > 0) {
+            setUserCars(cars);
             setIsNewCar(false); // Default to existing car if available
-            setSelectedCarId(data.cars[0].id);
+            setSelectedCarId(cars[0].id);
           }
         })
         .catch(err => console.error('Error fetching cars:', err));
@@ -752,7 +753,7 @@ function ReserverContent() {
                     >
                       <option value="">Choisir un véhicule...</option>
                       {userCars.map(car => (
-                        <option key={car.id} value={car.id}>{car.make} {car.model} - {car.licensePlate}</option>
+                        <option key={car.id} value={car.id}>{car.make} {car.model}{car.plate ? ` - ${car.plate}` : ''}</option>
                       ))}
                     </select>
                   ) : (
