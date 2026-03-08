@@ -20,10 +20,16 @@ export default async function Dashboard() {
         redirect('/login')
     }
 
-    // Fetch DB user with profile
+    // Fetch DB user with profile and cars
     const dbUser = await prisma.user.findUnique({
         where: { authId: user.id },
-        include: { profile: true }
+        include: {
+            profile: true,
+            cars: {
+                select: { id: true, make: true, model: true, plate: true },
+                orderBy: { createdAt: 'desc' },
+            },
+        },
     })
 
     if (!dbUser) {
@@ -31,7 +37,7 @@ export default async function Dashboard() {
     }
 
     if (dbUser.role === 'CLIENT') {
-        return <ClientDashboardView />
+        return <ClientDashboardView initialCars={dbUser.cars} />
     }
 
     if (dbUser.role === 'LAVEUR') {

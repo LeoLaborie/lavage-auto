@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { AppleEmoji } from '@/components/AppleEmoji'
+import VehicleForm from '@/components/features/dashboard/VehicleForm'
+import VehicleList from '@/components/features/dashboard/VehicleList'
 
 interface Booking {
     id: string
@@ -30,33 +32,26 @@ interface Car {
     id: string
     make: string
     model: string
-    licensePlate?: string
+    plate: string | null
 }
 
-export default function ClientDashboardView() {
+interface ClientDashboardViewProps {
+    initialCars: Car[]
+}
+
+export default function ClientDashboardView({ initialCars }: ClientDashboardViewProps) {
     const { user, loading } = useAuth()
     const router = useRouter()
     const [bookings, setBookings] = useState<Booking[]>([])
-    const [cars, setCars] = useState<Car[]>([])
     const [isLoadingData, setIsLoadingData] = useState(true)
-    const [showAddCarModal, setShowAddCarModal] = useState(false)
-    const [newCar, setNewCar] = useState({ make: '', model: '', licensePlate: '' })
 
     const fetchData = async () => {
         setIsLoadingData(true)
         try {
-            const [bookingsRes, carsRes] = await Promise.all([
-                fetch('/api/customer/bookings'),
-                fetch('/api/customer/cars')
-            ])
-
+            const bookingsRes = await fetch('/api/customer/bookings')
             if (bookingsRes.ok) {
                 const data = await bookingsRes.json()
                 setBookings(data.bookings)
-            }
-            if (carsRes.ok) {
-                const data = await carsRes.json()
-                setCars(data.cars)
             }
         } catch (error) {
             console.error('Error fetching dashboard data:', error)
@@ -70,26 +65,6 @@ export default function ClientDashboardView() {
             fetchData()
         }
     }, [user])
-
-    const handleAddCar = async (e: React.FormEvent) => {
-        e.preventDefault()
-        try {
-            const res = await fetch('/api/customer/cars/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newCar)
-            })
-            if (res.ok) {
-                setShowAddCarModal(false)
-                setNewCar({ make: '', model: '', licensePlate: '' })
-                fetchData() // Refresh list
-            } else {
-                alert('Erreur lors de l\'ajout du véhicule')
-            }
-        } catch (error) {
-            console.error('Error adding car:', error)
-        }
-    }
 
     const handleCancelBooking = async (bookingId: string) => {
         if (!confirm('Êtes-vous sûr de vouloir annuler cette réservation ?')) return
@@ -110,28 +85,6 @@ export default function ClientDashboardView() {
             }
         } catch (error) {
             console.error('Error cancelling booking:', error)
-            alert('Une erreur est survenue')
-        }
-    }
-
-    const handleDeleteCar = async (carId: string) => {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) return
-
-        try {
-            const res = await fetch('/api/customer/cars/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ carId })
-            })
-
-            if (res.ok) {
-                fetchData() // Refresh list
-            } else {
-                const data = await res.json()
-                alert(data.error || 'Erreur lors de la suppression')
-            }
-        } catch (error) {
-            console.error('Error deleting car:', error)
             alert('Une erreur est survenue')
         }
     }
@@ -262,97 +215,14 @@ export default function ClientDashboardView() {
                     <div className="space-y-6">
                         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                             <h2 className="text-lg font-semibold mb-4">Mes Véhicules</h2>
-                            {cars.length > 0 && (
-                                <div className="mb-4 space-y-2">
-                                    {cars.map(car => (
-                                        <div key={car.id} className="p-3 bg-gray-50 rounded-lg text-sm flex justify-between items-center group">
-                                            <div>
-                                                <p className="font-medium text-gray-900">{car.make} {car.model}</p>
-                                                {car.licensePlate && <p className="text-gray-500">{car.licensePlate}</p>}
-                                            </div>
-                                            <button
-                                                onClick={() => handleDeleteCar(car.id)}
-                                                className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
-                                                title="Supprimer ce véhicule"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            <button
-                                onClick={() => setShowAddCarModal(true)}
-                                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-[#004aad] hover:text-[#004aad] transition-colors"
-                            >
-                                + Ajouter un véhicule
-                            </button>
+                            <div className="space-y-4">
+                                <VehicleList cars={initialCars} />
+                                <VehicleForm />
+                            </div>
                         </div>
                     </div>
                 </div>
             </main >
-
-            {/* Add Car Modal */}
-            {
-                showAddCarModal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-xl p-6 max-w-md w-full">
-                            <h3 className="text-xl font-bold mb-4">Ajouter un véhicule</h3>
-                            <form onSubmit={handleAddCar} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Marque</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={newCar.make}
-                                        onChange={e => setNewCar({ ...newCar, make: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-lg"
-                                        placeholder="Ex: Peugeot"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Modèle</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={newCar.model}
-                                        onChange={e => setNewCar({ ...newCar, model: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-lg"
-                                        placeholder="Ex: 308"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Immatriculation (optionnel)</label>
-                                    <input
-                                        type="text"
-                                        value={newCar.licensePlate}
-                                        onChange={e => setNewCar({ ...newCar, licensePlate: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-lg"
-                                        placeholder="Ex: AA-123-BB"
-                                    />
-                                </div>
-                                <div className="flex justify-end gap-3 mt-6">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowAddCarModal(false)}
-                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                                    >
-                                        Annuler
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                    >
-                                        Ajouter
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )
-            }
         </div >
     )
 }
