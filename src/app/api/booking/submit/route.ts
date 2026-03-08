@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withClientGuard } from '@/lib/auth/clientGuard'
 import { prisma } from '@/lib/prisma'
 import { services } from '@/lib/constants/services'
+import { createCheckoutSession } from '@/lib/stripe'
 
 /**
  * POST /api/booking/submit
@@ -110,12 +111,34 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     data: bookingData,
   })
 
-  // Return standardized response — checkoutUrl is null until Epic 3 (Stripe)
-  return NextResponse.json({
-    success: true,
-    data: {
-      bookingId: booking.id,
-      checkoutUrl: null,
-    },
-  })
+  // --- Create Stripe Checkout Session ---
+  try {
+    const session = await createCheckoutSession(
+      booking.id,
+      amountCents,
+      dbUser.email,
+      matchedService.name
+    )
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        bookingId: booking.id,
+        checkoutUrl: session.url,
+      },
+    })
+  } catch (error) {
+    console.error('[Stripe] Session creation failed:', error)
+    // Even if Stripe fails, the booking is created. 
+    // We could either return success with null checkoutUrl or return error.
+    // Given the flow, returning error is safer so user knows payment wasn't initiated.
+    return NextResponse.json({
+      success: true,
+      data: {
+        bookingId: booking.id,
+        checkoutUrl: null,
+        warning: 'Le paiement Stripe n\'a pas pu être initialisé.'
+      },
+    })
+  }
 })

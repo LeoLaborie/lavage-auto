@@ -1,11 +1,9 @@
-// Story 3.2 - Stripe Webhooks (Will be fully implemented in Epic 3)
-// Keeping the webhook endpoint active with minimal logic for Stripe connectivity.
+// src/app/api/webhooks/stripe/route.ts
+// Story 3.1 - Stripe Checkout webhook: confirm booking on payment
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2026-01-28.clover',
-})
+import { stripe } from '@/lib/stripe'  // Use the canonical shared client
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: Request) {
     const body = await request.text()
@@ -18,21 +16,78 @@ export async function POST(request: Request) {
         )
     }
 
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+        console.error('[Stripe Webhook] STRIPE_WEBHOOK_SECRET is not configured')
+        return NextResponse.json(
+            { success: false, error: 'Server configuration error' },
+            { status: 500 }
+        )
+    }
+
     try {
         const event = stripe.webhooks.constructEvent(
             body,
             sig,
-            process.env.STRIPE_WEBHOOK_SECRET!
+            process.env.STRIPE_WEBHOOK_SECRET
         )
 
-        // TODO: Story 3.2 - Implement full webhook handling
         console.log(`[Stripe Webhook] Received event: ${event.type}`)
+
+        if (event.type === 'checkout.session.completed') {
+            const session = event.data.object as Stripe.Checkout.Session
+            const bookingId = session.metadata?.bookingId
+
+            if (!bookingId) {
+                console.error('[Stripe Webhook] Missing bookingId in metadata')
+                return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 400 })
+            }
+
+            // --- Atomic Update: Booking + Payment ---
+            await prisma.$transaction(async (tx) => {
+                const booking = await tx.booking.findUnique({
+                    where: { id: bookingId }
+                })
+
+                if (!booking) {
+                    throw new Error(`Booking not found: ${bookingId}`)
+                }
+
+                // Update Booking Status
+                await tx.booking.update({
+                    where: { id: bookingId },
+                    data: { status: 'CONFIRMED' }
+                })
+
+                // Create or Update Payment — upgrade PROCESSING → SUCCEEDED
+                await tx.payment.upsert({
+                    where: { bookingId },
+                    update: {
+                        status: 'SUCCEEDED',
+                        stripeSessionId: session.id,
+                        stripePaymentIntentId: session.payment_intent as string,
+                        processedAt: new Date(),
+                    },
+                    create: {
+                        bookingId,
+                        userId: booking.clientId,
+                        amountCents: booking.amountCents,
+                        currency: booking.currency,
+                        status: 'SUCCEEDED',
+                        stripeSessionId: session.id,
+                        stripePaymentIntentId: session.payment_intent as string,
+                        processedAt: new Date(),
+                    }
+                })
+            })
+
+            console.log(`[Stripe Webhook] Booking ${bookingId} confirmed successfully`)
+        }
 
         return NextResponse.json({ success: true, data: { received: true } })
     } catch (err) {
-        console.error('[Stripe Webhook] Signature verification failed:', err)
+        console.error('[Stripe Webhook] Error:', err)
         return NextResponse.json(
-            { success: false, error: 'Webhook signature verification failed' },
+            { success: false, error: err instanceof Error ? err.message : 'Unknown error' },
             { status: 400 }
         )
     }
