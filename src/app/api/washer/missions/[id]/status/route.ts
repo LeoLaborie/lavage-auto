@@ -61,7 +61,7 @@ export const PATCH = withWasherGuard(async (req, _user, profile) => {
             )
         }
 
-        // AC#6: Fetch the booking
+        // AC#6: Fetch the booking to check existence and ownership before attempting update
         const booking = await prisma.booking.findUnique({ where: { id: bookingId } })
 
         if (!booking) {
@@ -80,7 +80,10 @@ export const PATCH = withWasherGuard(async (req, _user, profile) => {
         }
 
         // AC#3: Validate state machine transition
-        if (ALLOWED_TRANSITIONS[booking.status] !== newStatus) {
+        const expectedCurrentStatus = Object.keys(ALLOWED_TRANSITIONS).find(
+            (from) => ALLOWED_TRANSITIONS[from] === newStatus
+        )
+        if (booking.status !== expectedCurrentStatus) {
             return NextResponse.json(
                 {
                     success: false,
@@ -90,31 +93,47 @@ export const PATCH = withWasherGuard(async (req, _user, profile) => {
             )
         }
 
-        // AC#1 & #2: Build update payload
+        // AC#1 & #2: Atomic conditional update — guards against TOCTOU race conditions.
+        // The where clause re-checks laveurId + status so a concurrent request cannot
+        // advance the state twice.
         const updateData: Record<string, unknown> = { status: newStatus }
         if (newStatus === 'IN_PROGRESS') {
             // Set startedAt server-side when the wash begins (UTC, stored as-is by Prisma)
             updateData.startedAt = new Date()
         }
 
-        const updated = await prisma.booking.update({
-            where: { id: bookingId },
+        const result = await prisma.booking.updateMany({
+            where: {
+                id: bookingId,
+                laveurId: profile.userId,
+                status: expectedCurrentStatus,
+            },
             data: updateData,
         })
+
+        if (result.count === 0) {
+            // Race condition: another request already advanced the status
+            return NextResponse.json(
+                { success: false, error: `Transition de statut invalide : statut déjà modifié` },
+                { status: 409 }
+            )
+        }
+
+        // Re-fetch to get the persisted timestamps
+        const updated = await prisma.booking.findUnique({ where: { id: bookingId } })
 
         return NextResponse.json({
             success: true,
             data: {
-                bookingId: updated.id,
-                status: updated.status,
+                bookingId: bookingId,
+                status: newStatus,
                 ...(newStatus === 'IN_PROGRESS' && {
-                    startedAt: updated.startedAt?.toISOString(),
+                    startedAt: updated?.startedAt?.toISOString(),
                 }),
             },
         })
     } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Erreur interne du serveur'
         console.error('[status] Error:', error)
-        return NextResponse.json({ success: false, error: message }, { status: 500 })
+        return NextResponse.json({ success: false, error: 'Erreur interne du serveur' }, { status: 500 })
     }
 })
