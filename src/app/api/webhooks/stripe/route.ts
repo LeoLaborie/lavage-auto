@@ -81,6 +81,58 @@ export async function POST(request: Request) {
             })
 
             console.log(`[Stripe Webhook] Booking ${bookingId} confirmed successfully`)
+        } else if (event.type === 'payment_intent.payment_failed') {
+            const paymentIntent = event.data.object as Stripe.PaymentIntent;
+            // The bookingId could be in the metadata if passed at intent creation.
+            const bookingId = paymentIntent.metadata?.bookingId;
+
+            if (!bookingId) {
+                console.error('[Stripe Webhook] Missing bookingId in metadata for payment_failed');
+                return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 400 });
+            }
+
+            await prisma.$transaction(async (tx) => {
+                const booking = await tx.booking.findUnique({
+                    where: { id: bookingId }
+                });
+
+                if (booking) {
+                    await tx.booking.update({
+                        where: { id: bookingId },
+                        // Assuming CANCELLED is a valid enum value for failed bookings
+                        data: { status: 'CANCELLED' }
+                    });
+
+                    // Update corresponding payment status
+                    await tx.payment.updateMany({
+                        where: { bookingId },
+                        data: { status: 'FAILED' }
+                    });
+                }
+            });
+            console.log(`[Stripe Webhook] Booking ${bookingId} cancelled due to payment failure`);
+        } else if (event.type === 'checkout.session.expired') {
+            const session = event.data.object as Stripe.Checkout.Session;
+            const bookingId = session.metadata?.bookingId;
+
+            if (!bookingId) {
+                console.error('[Stripe Webhook] Missing bookingId in metadata for session.expired');
+                return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 400 });
+            }
+
+            await prisma.$transaction(async (tx) => {
+                // Similarly mark booking cancelled if the session expired
+                await tx.booking.updateMany({
+                    where: { id: bookingId, status: 'PENDING' },
+                    data: { status: 'CANCELLED' }
+                });
+
+                await tx.payment.updateMany({
+                    where: { bookingId },
+                    data: { status: 'FAILED' }
+                });
+            });
+            console.log(`[Stripe Webhook] Booking ${bookingId} cancelled due to session timeout`);
         }
 
         return NextResponse.json({ success: true, data: { received: true } })
