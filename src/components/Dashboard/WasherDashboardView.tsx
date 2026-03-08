@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { AppleEmoji } from '@/components/AppleEmoji'
 
+import { startStripeOnboarding } from '@/lib/actions/washer-stripe'
+
 interface Mission {
     id: string
     scheduledDate: string
@@ -24,17 +26,29 @@ interface Mission {
     }
 }
 
-export default function WasherDashboardView() {
+interface WasherDashboardProps {
+    user: {
+        id: string
+        email: string
+        profile: {
+            stripeAccountId: string | null
+            status: string
+        } | null
+    }
+}
+
+export default function WasherDashboardView({ user: initialUser }: WasherDashboardProps) {
     const { user, loading } = useAuth()
     const router = useRouter()
     const [isAvailable, setIsAvailable] = useState(true)
-    const [activeTab, setActiveTab] = useState<'available' | 'accepted'>('available')
+    const [activeTab, setActiveTab] = useState<'available' | 'accepted' | 'payments'>('available')
 
     const [availableMissions, setAvailableMissions] = useState<Mission[]>([])
     const [acceptedMissions, setAcceptedMissions] = useState<Mission[]>([])
 
     const [isLoading, setIsLoading] = useState(true)
     const [acceptingId, setAcceptingId] = useState<string | null>(null)
+    const [isOnboarding, setIsOnboarding] = useState(false)
 
     const fetchMissions = async () => {
         setIsLoading(true)
@@ -92,11 +106,30 @@ export default function WasherDashboardView() {
         }
     }
 
+    const handleConnectStripe = async () => {
+        setIsOnboarding(true)
+        try {
+            const result = await startStripeOnboarding()
+            if (result.success && result.data?.url) {
+                window.location.href = result.data.url
+            } else {
+                alert(result.error || 'Erreur lors de l\'initialisation de Stripe')
+            }
+        } catch (error) {
+            console.error('Stripe onboarding error:', error)
+            alert('Une erreur est survenue lors de la connexion à Stripe')
+        } finally {
+            setIsOnboarding(false)
+        }
+    }
+
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
     }
 
     if (!user) return null
+
+    const stripeConnected = !!initialUser.profile?.stripeAccountId
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -141,11 +174,9 @@ export default function WasherDashboardView() {
                         <p className="text-2xl font-bold text-gray-900">-</p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm text-gray-500 mb-1">Prochain rdv</p>
-                        <p className="text-lg font-medium text-gray-900">
-                            {acceptedMissions.length > 0
-                                ? new Date(acceptedMissions[0].scheduledDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-                                : 'Aucun'}
+                        <p className="text-sm text-gray-500 mb-1">Stripe Connect</p>
+                        <p className={`text-lg font-medium ${stripeConnected ? 'text-green-600' : 'text-amber-600'}`}>
+                            {stripeConnected ? 'Activé' : 'Non configuré'}
                         </p>
                     </div>
                 </div>
@@ -171,94 +202,157 @@ export default function WasherDashboardView() {
                             >
                                 Mes missions ({acceptedMissions.length})
                             </button>
+                            <button
+                                onClick={() => setActiveTab('payments')}
+                                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'payments'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                Paiements
+                            </button>
                         </div>
                     </div>
 
-                    <div className="p-6 flex justify-end">
-                        <button
-                            onClick={fetchMissions}
-                            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                        >
-                            <span className="text-lg">↻</span> Actualiser
-                        </button>
-                    </div>
+                    {activeTab === 'payments' ? (
+                        <div className="p-8 max-w-2xl">
+                            <h2 className="text-xl font-bold text-gray-900 mb-4">Configuration des revenus</h2>
+                            <p className="text-gray-600 mb-6">
+                                Pour recevoir vos paiements automatiquement après chaque mission, vous devez connecter un compte bancaire via notre partenaire Stripe.
+                            </p>
 
-                    {isLoading ? (
-                        <div className="p-8 text-center text-gray-500">Chargement des missions...</div>
-                    ) : (
-                        <div className="divide-y divide-gray-100">
-                            {(activeTab === 'available' ? availableMissions : acceptedMissions).length === 0 ? (
-                                <div className="p-8 text-center text-gray-500">
-                                    {activeTab === 'available'
-                                        ? 'Aucune mission disponible dans votre secteur pour le moment.'
-                                        : 'Vous n\'avez aucune mission prévue.'}
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 flex items-start gap-4 mb-8">
+                                <div className="bg-blue-100 p-2 rounded-lg">
+                                    <AppleEmoji name="bank" className="w-6 h-6" />
                                 </div>
-                            ) : (
-                                (activeTab === 'available' ? availableMissions : acceptedMissions).map((mission) => (
-                                    <div key={mission.id} className="p-6 hover:bg-gray-50 transition-colors">
-                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${activeTab === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                                                        }`}>
-                                                        {mission.service.name}
-                                                    </span>
-                                                    <span className="text-sm text-gray-500">
-                                                        {new Date(mission.scheduledDate).toLocaleString('fr-FR', {
-                                                            weekday: 'long',
-                                                            day: 'numeric',
-                                                            month: 'long',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
-                                                    </span>
-                                                </div>
-                                                <h3 className="text-lg font-medium text-gray-900 mb-1">
-                                                    {mission.serviceAddress}
-                                                </h3>
-                                                <div className="flex items-center gap-4 text-sm text-gray-600">
-                                                    <span className="flex items-center gap-1">
-                                                        <AppleEmoji name="car" className="w-4 h-4" />
-                                                        {mission.car.model}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <AppleEmoji name="clock" className="w-4 h-4" />
-                                                        {mission.service.estimatedDuration} min
-                                                    </span>
-                                                    {activeTab === 'accepted' && (
-                                                        <span className="flex items-center gap-1 text-blue-600">
-                                                            <AppleEmoji name="bust_in_silhouette" className="w-4 h-4" />
-                                                            {mission.customer.name}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
+                                <div>
+                                    <p className="font-medium text-blue-900">
+                                        {stripeConnected ? 'Votre compte Stripe est configuré' : 'Action requise : Configuration Stripe'}
+                                    </p>
+                                    <p className="text-sm text-blue-800 mt-1">
+                                        {stripeConnected
+                                            ? `ID de compte : ${initialUser.profile?.stripeAccountId?.slice(0, 10)}...`
+                                            : 'Vous devez compléter l\'onboarding Stripe pour pouvoir recevoir vos fonds.'}
+                                    </p>
+                                </div>
+                            </div>
 
-                                            <div className="flex items-center gap-4 w-full md:w-auto">
-                                                <div className="text-right flex-1 md:flex-none">
-                                                    <p className="text-lg font-bold text-gray-900">{mission.finalPrice} €</p>
-                                                    <p className="text-xs text-gray-500">Commission incluse</p>
-                                                </div>
-                                                {activeTab === 'available' && (
-                                                    <button
-                                                        onClick={() => handleAcceptMission(mission.id)}
-                                                        disabled={acceptingId === mission.id}
-                                                        className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                                                    >
-                                                        {acceptingId === mission.id ? 'Acceptation...' : 'Accepter'}
-                                                    </button>
-                                                )}
-                                                {activeTab === 'accepted' && (
-                                                    <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg font-medium text-sm">
-                                                        Acceptée
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
+                            {!stripeConnected ? (
+                                <button
+                                    onClick={handleConnectStripe}
+                                    disabled={isOnboarding}
+                                    className="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition-shadow shadow-lg disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isOnboarding ? 'Initialisation...' : (
+                                        <>
+                                            Connecter mon compte bancaire
+                                            <AppleEmoji name="rocket" className="w-5 h-5" />
+                                        </>
+                                    )}
+                                </button>
+                            ) : (
+                                <div className="flex gap-4">
+                                    <button
+                                        disabled
+                                        className="bg-green-100 text-green-700 px-6 py-2 rounded-lg font-medium cursor-not-allowed"
+                                    >
+                                        Compte déjà lié
+                                    </button>
+                                    <p className="text-sm text-gray-500 self-center italic">
+                                        Les virements seront effectués automatiquement après validation de mission.
+                                    </p>
+                                </div>
                             )}
                         </div>
+                    ) : (
+                        <>
+                            <div className="p-6 flex justify-end">
+                                <button
+                                    onClick={fetchMissions}
+                                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                >
+                                    <span className="text-lg">↻</span> Actualiser
+                                </button>
+                            </div>
+
+                            {isLoading ? (
+                                <div className="p-8 text-center text-gray-500">Chargement des missions...</div>
+                            ) : (
+                                <div className="divide-y divide-gray-100">
+                                    {(activeTab === 'available' ? availableMissions : acceptedMissions).length === 0 ? (
+                                        <div className="p-8 text-center text-gray-500">
+                                            {activeTab === 'available'
+                                                ? 'Aucune mission disponible dans votre secteur pour le moment.'
+                                                : 'Vous n\'avez aucune mission prévue.'}
+                                        </div>
+                                    ) : (
+                                        (activeTab === 'available' ? availableMissions : acceptedMissions).map((mission) => (
+                                            <div key={mission.id} className="p-6 hover:bg-gray-50 transition-colors">
+                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${activeTab === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                                                }`}>
+                                                                {mission.service.name}
+                                                            </span>
+                                                            <span className="text-sm text-gray-500">
+                                                                {new Date(mission.scheduledDate).toLocaleString('fr-FR', {
+                                                                    weekday: 'long',
+                                                                    day: 'numeric',
+                                                                    month: 'long',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="text-lg font-medium text-gray-900 mb-1">
+                                                            {mission.serviceAddress}
+                                                        </h3>
+                                                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                                                            <span className="flex items-center gap-1">
+                                                                <AppleEmoji name="car" className="w-4 h-4" />
+                                                                {mission.car.model}
+                                                            </span>
+                                                            <span className="flex items-center gap-1">
+                                                                <AppleEmoji name="clock" className="w-4 h-4" />
+                                                                {mission.service.estimatedDuration} min
+                                                            </span>
+                                                            {activeTab === 'accepted' && (
+                                                                <span className="flex items-center gap-1 text-blue-600">
+                                                                    <AppleEmoji name="bust_in_silhouette" className="w-4 h-4" />
+                                                                    {mission.customer.name}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-4 w-full md:w-auto">
+                                                        <div className="text-right flex-1 md:flex-none">
+                                                            <p className="text-lg font-bold text-gray-900">{mission.finalPrice} €</p>
+                                                            <p className="text-xs text-gray-500">Commission incluse</p>
+                                                        </div>
+                                                        {activeTab === 'available' && (
+                                                            <button
+                                                                onClick={() => handleAcceptMission(mission.id)}
+                                                                disabled={acceptingId === mission.id}
+                                                                className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                                            >
+                                                                {acceptingId === mission.id ? 'Acceptation...' : 'Accepter'}
+                                                            </button>
+                                                        )}
+                                                        {activeTab === 'accepted' && (
+                                                            <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg font-medium text-sm">
+                                                                Acceptée
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </main>
