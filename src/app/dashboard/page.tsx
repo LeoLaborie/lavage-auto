@@ -79,28 +79,6 @@ export default async function Dashboard() {
         return <WasherDashboardView user={dbUser} />
     }
 
-    // Default view for ADMIN or others
-    return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-            <div className="bg-white p-8 rounded-xl shadow-md text-center max-w-md">
-                <h1 className="text-2xl font-bold text-gray-900 mb-4">Espace Administration</h1>
-                <p className="text-gray-600 mb-6">
-                    Bienvenue sur le panneau d'administration. Les fonctionnalités de gestion seront bientôt disponibles ici.
-                </p>
-                <form action={async () => {
-                    'use server'
-                    const supabase = await createClient()
-                    await supabase.auth.signOut()
-                    redirect('/login')
-                }}>
-                    <button
-                        type="submit"
-                        className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                        Déconnexion
-                    </button>
-                </form>
-            </div>
-        </div>
-    )
+    // ADMIN users are redirected to the admin dashboard (Story 5.3)
+    redirect('/admin')
 }
