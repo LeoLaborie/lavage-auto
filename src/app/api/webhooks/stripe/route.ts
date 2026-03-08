@@ -92,14 +92,13 @@ export async function POST(request: Request) {
             }
 
             await prisma.$transaction(async (tx) => {
-                const booking = await tx.booking.findUnique({
-                    where: { id: bookingId }
+                const booking = await tx.booking.findFirst({
+                    where: { id: bookingId, status: 'PENDING' }
                 });
 
                 if (booking) {
                     await tx.booking.update({
                         where: { id: bookingId },
-                        // Assuming CANCELLED is a valid enum value for failed bookings
                         data: { status: 'CANCELLED' }
                     });
 
@@ -140,7 +139,7 @@ export async function POST(request: Request) {
         console.error('[Stripe Webhook] Error:', err)
         return NextResponse.json(
             { success: false, error: err instanceof Error ? err.message : 'Unknown error' },
-            { status: 400 }
+            { status: 500 }
         )
     }
 }
