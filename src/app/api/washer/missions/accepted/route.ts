@@ -42,12 +42,14 @@ export const GET = withWasherGuard(async (_req, _user, profile) => {
             return {
                 id: booking.id,
                 // Expose status so E2E tests can assert that only active statuses are returned.
-                // The frontend ignores this field (WasherDashboardView doesn't read it).
                 status: booking.status,
                 scheduledDate: booking.scheduledDate.toISOString(),
                 serviceAddress: booking.serviceAddress,
                 // Store amountCents in DB; convert to euros with 2-decimal precision for display.
                 finalPrice: Number((booking.amountCents / 100).toFixed(2)),
+                // Photo URLs added by Story 5.1 — used by PhotoUploader component.
+                beforePhotoUrl: booking.beforePhotoUrl,
+                afterPhotoUrl: booking.afterPhotoUrl,
                 service: {
                     name: booking.serviceName,
                     // Fall back to 60 min if the service name doesn't match any catalog entry.
