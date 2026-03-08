@@ -68,6 +68,7 @@ model User {
 
   // Relationships
   profile   Profile?
+  cars      Car[]
   bookingsAsClient  Booking[]  @relation("ClientBookings")
   bookingsAsLaveur  Booking[]  @relation("LaveurBookings")
   payments  Payment[]
@@ -150,6 +151,8 @@ model Booking {
   validatedAt     DateTime? @map("validated_at")    // When client validated the job
 
   // Relationships
+  carId   String?  @map("car_id")
+  car     Car?     @relation(fields: [carId], references: [id])
   payment Payment?
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -198,4 +201,25 @@ model Payment {
 
   @@index([userId])
   @@map("payments")
+}
+
+/// A vehicle owned by a Client.
+model Car {
+  id        String   @id @default(cuid())
+
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  make      String   @map("make")      // e.g., "Tesla"
+  model     String   @map("model")     // e.g., "Model 3"
+  plate     String?  @map("plate")     // License plate (optional)
+
+  // Relationships
+  bookings  Booking[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@unique([userId, plate])
+  @@map("cars")
 }
