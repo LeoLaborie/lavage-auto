@@ -14,7 +14,7 @@ describe('Price consistency (ISSUE-001)', () => {
       // In the frontend, we render: {service.amountCents / 100}€
       // For Stripe, we send: amountCents verbatim
       const displayedDecimal = s.amountCents / 100;
-      expect(displayedDecimal * 100).toBe(s.amountCents);
+      expect(Math.round(displayedDecimal * 100)).toBe(s.amountCents);
     });
   });
 

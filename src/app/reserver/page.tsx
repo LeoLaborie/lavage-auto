@@ -35,7 +35,15 @@ function ReserverContent() {
   const [selectedService, setSelectedService] = useState<WashService | null>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('booking_service');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const canonical = services.find(s => s.id === parsed.id);
+          return canonical || null;
+        } catch (e) {
+          return null;
+        }
+      }
     }
     return null;
   });

@@ -26,8 +26,8 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     )
   }
 
-  // Find the exact service matching the canonical ID provided by frontend
-  const matchedService = services.find((s) => s.id === service)
+  // Find the exact service matching the canonical ID provided by frontend, ensuring it's visible
+  const matchedService = services.find((s) => s.id === service && s.isVisible)
 
   if (!matchedService) {
     return NextResponse.json(
