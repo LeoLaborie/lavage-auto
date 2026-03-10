@@ -37,6 +37,7 @@ interface WasherDashboardProps {
         profile: {
             stripeAccountId: string | null
             status: string
+            isAvailable?: boolean
         } | null
     }
 }
@@ -54,8 +55,36 @@ function formatEuros(amountCents: number): string {
 export default function WasherDashboardView({ user: initialUser }: WasherDashboardProps) {
     const { user, loading } = useAuth()
     const router = useRouter()
-    const [isAvailable, setIsAvailable] = useState(true)
+    const [isAvailable, setIsAvailable] = useState(initialUser.profile?.isAvailable ?? true)
+    const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false)
     const [activeTab, setActiveTab] = useState<'available' | 'accepted' | 'payments'>('available')
+
+    const handleUpdateAvailability = async (available: boolean) => {
+        setIsUpdatingAvailability(true)
+        try {
+            const res = await fetch('/api/washer/availability', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isAvailable: available })
+            })
+            if (res.ok) {
+                const data = await res.json()
+                setIsAvailable(data.data.isAvailable)
+                if (data.data.isAvailable) {
+                    fetchMissions()
+                } else {
+                    setAvailableMissions([])
+                }
+            } else {
+                alert('Erreur lors de la mise à jour de la disponibilité')
+            }
+        } catch (error) {
+            console.error('Failed to update availability', error)
+            alert('Une erreur est survenue')
+        } finally {
+            setIsUpdatingAvailability(false)
+        }
+    }
 
     const [availableMissions, setAvailableMissions] = useState<Mission[]>([])
     const [acceptedMissions, setAcceptedMissions] = useState<Mission[]>([])
@@ -210,18 +239,20 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
                     <div className="flex items-center bg-white rounded-full p-1 shadow-sm border border-gray-200">
                         <button
-                            onClick={() => setIsAvailable(true)}
+                            onClick={() => handleUpdateAvailability(true)}
+                            disabled={isUpdatingAvailability || isAvailable}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${isAvailable ? 'bg-green-500 text-white' : 'text-gray-500 hover:text-gray-700'
-                                }`}
+                                } disabled:opacity-50`}
                         >
-                            Disponible
+                            {isUpdatingAvailability && isAvailable ? 'Mise à jour...' : 'Disponible'}
                         </button>
                         <button
-                            onClick={() => setIsAvailable(false)}
+                            onClick={() => handleUpdateAvailability(false)}
+                            disabled={isUpdatingAvailability || !isAvailable}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${!isAvailable ? 'bg-red-500 text-white' : 'text-gray-500 hover:text-gray-700'
-                                }`}
+                                } disabled:opacity-50`}
                         >
-                            Indisponible
+                            {isUpdatingAvailability && !isAvailable ? 'Mise à jour...' : 'Indisponible'}
                         </button>
                     </div>
                 </div>

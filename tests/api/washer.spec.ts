@@ -25,6 +25,14 @@ test.describe('Washer API Endpoints Protection', () => {
             expect(body.success).toBe(false);
             expect(body.error).toBe('Unauthorized');
         });
+
+        test('PATCH /api/washer/availability should return 401 Unauthorized', async ({ request }) => {
+            const response = await request.patch('/api/washer/availability', { data: { isAvailable: false } });
+            expect(response.status()).toBe(401);
+            const body = await response.json();
+            expect(body.success).toBe(false);
+            expect(body.error).toBe('Unauthorized');
+        });
     });
 
     test.describe('Authenticated Validation (Requires Session)', () => {
@@ -45,6 +53,22 @@ test.describe('Washer API Endpoints Protection', () => {
             expect(body.success).toBe(false);
             expect(body.error).toContain('bookingId est requis');
         });
+
+        test('PATCH /api/washer/availability should return 400 Bad Request if payload is invalid', async ({ request }) => {
+            const response = await request.patch('/api/washer/availability', {
+                data: { isAvailable: 'not-a-boolean' }
+            });
+
+            if (response.status() === 401 || response.status() === 403) {
+                console.warn('Skipping 400 check: auth required. Current status:', response.status());
+                return;
+            }
+
+            expect(response.status()).toBe(400);
+            const body = await response.json();
+            expect(body.success).toBe(false);
+            expect(body.error).toContain('expected boolean');
+        });
     });
 
     // Note: Fully testing the VALIDATION_PENDING and VALIDATED states via API
@@ -61,6 +85,16 @@ test.describe('Washer API Endpoints Protection', () => {
 
         test.skip('GET /api/washer/missions/available should only return future PENDING/CONFIRMED missions without laveur', async ({ request }) => {
             // TODO: Query and verify all elements in body.bookings match the specific criteria
+        });
+
+        test.skip('GET /api/washer/missions/available should return empty array if laveur is unavailable', async ({ request }) => {
+            // TODO: Ensure profile.isAvailable is false for the authenticated user
+            // TODO: Expect 200 OK and an empty bookings array
+        });
+
+        test.skip('PATCH /api/washer/availability should return 200 and update availability', async ({ request }) => {
+            // TODO: Authenticate as a VALIDATED laveur, send { isAvailable: false }
+            // TODO: Expect 200 OK, success: true, data: { isAvailable: false }
         });
     });
 });

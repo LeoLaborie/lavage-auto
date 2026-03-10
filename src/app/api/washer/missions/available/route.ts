@@ -8,6 +8,15 @@ const durationMap = new Map<string, number>(
 )
 
 export const GET = withWasherGuard(async (req, user, profile) => {
+    // Return early if washer is not available
+    if (!profile.isAvailable) {
+        return NextResponse.json({
+            success: true,
+            data: { bookings: [] },
+            bookings: []
+        })
+    }
+
     const bookings = await prisma.booking.findMany({
         where: {
             status: { in: ['PENDING', 'CONFIRMED'] },
