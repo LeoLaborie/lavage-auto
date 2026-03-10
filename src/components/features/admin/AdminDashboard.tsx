@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -436,6 +437,7 @@ export default function AdminDashboard({
                                         <th className="px-4 py-3 font-medium text-gray-600">Montant</th>
                                         <th className="px-4 py-3 font-medium text-gray-600">Statut</th>
                                         <th className="px-4 py-3 font-medium text-gray-600">Date planifiée</th>
+                                        <th className="px-4 py-3 font-medium text-gray-600">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -448,6 +450,14 @@ export default function AdminDashboard({
                                             <td className="px-4 py-3 text-gray-700">{b.amountEur.toFixed(2)} €</td>
                                             <td className="px-4 py-3"><BookingStatusBadge status={b.status} /></td>
                                             <td className="px-4 py-3 text-gray-600">{formatDate(b.scheduledDate)}</td>
+                                            <td className="px-4 py-3">
+                                                <Link
+                                                    href={`/admin/bookings/${b.id}`}
+                                                    className="text-xs text-[#004aad] hover:underline font-medium"
+                                                >
+                                                    Voir détail
+                                                </Link>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
