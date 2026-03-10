@@ -26,16 +26,8 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     )
   }
 
-  // Validate service ID against canonical catalog
-  // Mapping frontend legacy IDs to canonical IDs
-  const serviceIdMap: Record<string, string> = {
-    'exterior': 'lavage-exterieur',
-    'complete': 'lavage-complet',
-    'premium': 'lavage-premium'
-  }
-
-  const canonicalServiceId = serviceIdMap[service] || service
-  const matchedService = services.find((s) => s.id === canonicalServiceId)
+  // Find the exact service matching the canonical ID provided by frontend
+  const matchedService = services.find((s) => s.id === service)
 
   if (!matchedService) {
     return NextResponse.json(

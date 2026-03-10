@@ -13,15 +13,9 @@ import 'react-calendar/dist/Calendar.css';
 import { format, addDays, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
+import { services as allServices, WashService } from '@/lib/constants/services';
 
-interface Service {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: string;
-  icon: string;
-}
+const services = allServices.filter(s => s.isVisible);
 
 interface UserCar {
   id: string;
@@ -29,33 +23,6 @@ interface UserCar {
   model: string;
   plate: string | null;
 }
-
-const services: Service[] = [
-  {
-    id: 'exterior',
-    name: 'Lavage Extérieur',
-    description: 'Nettoyage complet de l\'extérieur de votre véhicule avec des produits de qualité.',
-    price: 25,
-    duration: '30 min',
-    icon: 'sponge'
-  },
-  {
-    id: 'complete',
-    name: 'Lavage Complet',
-    description: 'Nettoyage intérieur et extérieur pour une voiture impeccable.',
-    price: 45,
-    duration: '60 min',
-    icon: 'sparkles'
-  },
-  {
-    id: 'premium',
-    name: 'Lavage Premium',
-    description: 'Service complet avec cire, lustrage et traitement des plastiques.',
-    price: 75,
-    duration: '90 min',
-    icon: 'gem'
-  }
-];
 
 const timeSlots = [
   '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
@@ -65,7 +32,7 @@ const timeSlots = [
 
 function ReserverContent() {
   const searchParams = useSearchParams();
-  const [selectedService, setSelectedService] = useState<Service | null>(() => {
+  const [selectedService, setSelectedService] = useState<WashService | null>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('booking_service');
       return saved ? JSON.parse(saved) : null;
@@ -518,10 +485,10 @@ function ReserverContent() {
                     <p className="text-gray-600 mb-6 text-sm leading-relaxed">{service.description}</p>
 
                     <div className="pt-4 border-t border-gray-100 flex justify-between items-center mt-auto">
-                      <span className="text-3xl font-bold text-primary">{service.price}€</span>
+                      <span className="text-3xl font-bold text-primary">{service.amountCents / 100}€</span>
                       <div className="flex items-center text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                         <span className="mr-1">⏱️</span>
-                        {service.duration}
+                        {service.durationLabel}
                       </div>
                     </div>
                   </div>
@@ -843,11 +810,11 @@ function ReserverContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-900">Durée estimée:</span>
-                    <span className="font-medium text-gray-900">{selectedService?.duration}</span>
+                    <span className="font-medium text-gray-900">{selectedService?.durationLabel}</span>
                   </div>
                   <div className="flex justify-between border-t pt-3">
                     <span className="text-lg font-semibold text-gray-900">Total:</span>
-                    <span className="text-2xl font-bold text-blue-600">{selectedService?.price}€</span>
+                    <span className="text-2xl font-bold text-blue-600">{(selectedService?.amountCents || 0) / 100}€</span>
                   </div>
                 </div>
               </div>
