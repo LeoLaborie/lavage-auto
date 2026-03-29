@@ -1,14 +1,23 @@
+import { services as canonicalServices, ServiceId } from '@/lib/constants/services';
 import { BookingFormData as ValidationBookingFormData } from '@/lib/validation';
 
-export interface Service {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: string;
-  icon: string;
-  amountCents?: number;
-  durationLabel?: string;
+const uiServices = canonicalServices
+  .filter((service) => service.isVisible)
+  .map((service) => ({
+    id: service.id,
+    name: service.name,
+    description: service.description,
+    price: service.amountCents / 100,
+    duration: service.durationLabel,
+    icon: service.icon,
+    amountCents: service.amountCents,
+    durationLabel: service.durationLabel,
+  }));
+
+export type Service = (typeof uiServices)[number];
+export const services: Service[] = uiServices;
+export function getServiceById(id: ServiceId): Service | undefined {
+  return uiServices.find((service) => service.id === id);
 }
 
 export interface UserCar {
@@ -29,39 +38,6 @@ export interface BookingFormData extends ValidationBookingFormData {
     model: string;
     notes: string;
 }
-
-export const services: Service[] = [
-  {
-    id: 'exterior',
-    name: 'Lavage Extérieur',
-    description: 'Nettoyage complet de l\'extérieur de votre véhicule avec des produits de qualité.',
-    price: 25,
-    duration: '30 min',
-    icon: 'sponge',
-    amountCents: 2500,
-    durationLabel: '30 min',
-  },
-  {
-    id: 'complete',
-    name: 'Lavage Complet',
-    description: 'Nettoyage intérieur et extérieur pour une voiture impeccable.',
-    price: 45,
-    duration: '60 min',
-    icon: 'sparkles',
-    amountCents: 4500,
-    durationLabel: '60 min',
-  },
-  {
-    id: 'premium',
-    name: 'Lavage Premium',
-    description: 'Service complet avec cire, lustrage et traitement des plastiques.',
-    price: 75,
-    duration: '90 min',
-    icon: 'gem',
-    amountCents: 7500,
-    durationLabel: '90 min'
-  }
-];
 
 export const timeSlots = [
   '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',

@@ -1,3 +1,4 @@
+import type { ServiceId } from '@/lib/constants/services';
 import { Service, services } from './constants';
 import { AppleEmoji } from '@/components/AppleEmoji';
 
@@ -6,6 +7,8 @@ interface StepServiceProps {
   setSelectedService: (service: Service) => void;
   handleNext: () => void;
 }
+
+const popularServiceId: ServiceId = 'lavage-complet';
 
 export default function StepService({ selectedService, setSelectedService, handleNext }: StepServiceProps) {
   return (
@@ -24,13 +27,13 @@ export default function StepService({ selectedService, setSelectedService, handl
               handleNext();
             }}
           >
-            {service.id === 'complete' && (
+            {service.id === popularServiceId && (
               <div className="absolute top-4 right-4 bg-accent text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide z-20">
                 Populaire
               </div>
             )}
 
-            <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110 opacity-10 ${service.id === 'premium' ? 'bg-secondary' : service.id === 'complete' ? 'bg-accent' : 'bg-primary'
+            <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110 opacity-10 ${service.id === 'lavage-premium' ? 'bg-secondary' : service.id === 'lavage-complet' ? 'bg-accent' : 'bg-primary'
               }`} />
 
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm transition-colors overflow-hidden border-2 ${selectedService?.id === service.id

@@ -17,7 +17,7 @@ export const PATCH = withWasherGuard(async (req, user, profile) => {
         }
 
         const updatedProfile = await prisma.profile.update({
-            where: { userId: user.id },
+            where: { id: profile.id },
             data: { isAvailable }
         })
 

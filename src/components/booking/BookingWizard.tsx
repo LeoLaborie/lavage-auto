@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { validateBookingForm, validateDateTimeBooking } from '@/lib/validation';
+import type { ServiceId } from '@/lib/constants/services';
 import Image from 'next/image';
 
 import StepService from './StepService';
@@ -11,49 +12,78 @@ import StepAddress from './StepAddress';
 import StepSchedule from './StepSchedule';
 import StepVehicle from './StepVehicle';
 import StepConfirmation from './StepConfirmation';
-import { Service, UserCar, services, BookingFormData } from './constants';
+import { Service, UserCar, services, BookingFormData, getServiceById } from './constants';
+
+const CANONICAL_SERVICE_KEY = 'booking_service_id';
+const STORAGE_VERSION_KEY = 'booking_storage_version';
+const STORAGE_VERSION = '2';
+const BOOKING_STATE_KEYS = [
+  'booking_service',
+  CANONICAL_SERVICE_KEY,
+  'booking_date',
+  'booking_time',
+  'booking_address',
+  'booking_customer_info',
+  'booking_step',
+  'booking_selected_car_id',
+  'booking_is_new_car',
+];
+
+const createEmptyCustomerInfo = (): BookingFormData => ({
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  carType: '',
+  licensePlate: '',
+  make: '',
+  model: '',
+  notes: ''
+});
+
+const isStorageVersionCurrent = () => {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(STORAGE_VERSION_KEY) === STORAGE_VERSION;
+};
+
+const readStoredService = () => {
+  if (typeof window === 'undefined' || !isStorageVersionCurrent()) return null;
+  const savedId = localStorage.getItem(CANONICAL_SERVICE_KEY) as ServiceId | null;
+  return savedId ? getServiceById(savedId) ?? null : null;
+};
+
+const readStoredString = (key: string, fallback = '') => {
+  if (typeof window === 'undefined' || !isStorageVersionCurrent()) return fallback;
+  return localStorage.getItem(key) ?? fallback;
+};
+
+const readStoredBoolean = (key: string, fallback: boolean) => {
+  if (typeof window === 'undefined' || !isStorageVersionCurrent()) return fallback;
+  const saved = localStorage.getItem(key);
+  return saved ? saved === 'true' : fallback;
+};
+
+const readStoredCustomerInfo = () => {
+  if (typeof window === 'undefined' || !isStorageVersionCurrent()) {
+    return createEmptyCustomerInfo();
+  }
+  const raw = localStorage.getItem('booking_customer_info');
+  if (!raw) return createEmptyCustomerInfo();
+  try {
+    return { ...createEmptyCustomerInfo(), ...JSON.parse(raw) } as BookingFormData;
+  } catch {
+    return createEmptyCustomerInfo();
+  }
+};
 
 export default function BookingWizard() {
   const searchParams = useSearchParams();
-  const [selectedService, setSelectedService] = useState<Service | null>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('booking_service');
-      return saved ? JSON.parse(saved) : null;
-    }
-    return null;
-  });
-  const [selectedDate, setSelectedDate] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('booking_date') || '';
-    }
-    return '';
-  });
-  const [selectedTime, setSelectedTime] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('booking_time') || '';
-    }
-    return '';
-  });
-  const [address, setAddress] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('booking_address') || '';
-    }
-    return '';
-  });
+  const [selectedService, setSelectedService] = useState<Service | null>(readStoredService);
+  const [selectedDate, setSelectedDate] = useState(() => readStoredString('booking_date'));
+  const [selectedTime, setSelectedTime] = useState(() => readStoredString('booking_time'));
+  const [address, setAddress] = useState(() => readStoredString('booking_address'));
   const { user } = useAuth();
-  const [customerInfo, setCustomerInfo] = useState<BookingFormData>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('booking_customer_info');
-      return saved ? JSON.parse(saved) : {
-        firstName: '', lastName: '', email: '', phone: '',
-        carType: '', licensePlate: '', make: '', model: '', notes: ''
-      };
-    }
-    return {
-      firstName: '', lastName: '', email: '', phone: '',
-      carType: '', licensePlate: '', make: '', model: '', notes: ''
-    };
-  });
+  const [customerInfo, setCustomerInfo] = useState<BookingFormData>(readStoredCustomerInfo);
 
   // Pre-fill user info if logged in
   useEffect(() => {
@@ -82,7 +112,7 @@ export default function BookingWizard() {
   }, [user]);
 
   const [currentStep, setCurrentStep] = useState(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && isStorageVersionCurrent()) {
       return parseInt(localStorage.getItem('booking_step') || '1', 10);
     }
     return 1;
@@ -94,19 +124,17 @@ export default function BookingWizard() {
 
   // Car selection state
   const [userCars, setUserCars] = useState<UserCar[]>([]);
-  const [selectedCarId, setSelectedCarId] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('booking_selected_car_id') || '';
-    }
-    return '';
-  });
-  const [isNewCar, setIsNewCar] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('booking_is_new_car');
-      return saved ? saved === 'true' : true;
-    }
-    return true;
-  });
+  const [selectedCarId, setSelectedCarId] = useState(() => readStoredString('booking_selected_car_id'));
+  const [isNewCar, setIsNewCar] = useState(() => readStoredBoolean('booking_is_new_car', true));
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const version = localStorage.getItem(STORAGE_VERSION_KEY);
+    if (version === STORAGE_VERSION) return;
+
+    BOOKING_STATE_KEYS.forEach((key) => localStorage.removeItem(key));
+    localStorage.setItem(STORAGE_VERSION_KEY, STORAGE_VERSION);
+  }, []);
 
   // Fetch user cars
   useEffect(() => {
@@ -133,7 +161,7 @@ export default function BookingWizard() {
     const dateParam = searchParams.get('date');
 
     if (serviceParam) {
-      const service = services.find(s => s.id === serviceParam);
+      const service = getServiceById(serviceParam as ServiceId);
       if (service) {
         setSelectedService(service);
       }
@@ -158,11 +186,12 @@ export default function BookingWizard() {
 
   // Save state to localStorage
   useEffect(() => {
-    if (selectedService) {
-      localStorage.setItem('booking_service', JSON.stringify(selectedService));
-    } else {
-      localStorage.removeItem('booking_service');
+    if (typeof window === 'undefined') return;
+    if (!selectedService) {
+      localStorage.removeItem(CANONICAL_SERVICE_KEY);
+      return;
     }
+    localStorage.setItem(CANONICAL_SERVICE_KEY, selectedService.id);
   }, [selectedService]);
 
   useEffect(() => {
@@ -297,6 +326,7 @@ export default function BookingWizard() {
       const result = await bookingResponse.json();
 
       localStorage.removeItem('booking_service');
+      localStorage.removeItem(CANONICAL_SERVICE_KEY);
       localStorage.removeItem('booking_date');
       localStorage.removeItem('booking_time');
       localStorage.removeItem('booking_address');
@@ -304,6 +334,7 @@ export default function BookingWizard() {
       localStorage.removeItem('booking_step');
       localStorage.removeItem('booking_selected_car_id');
       localStorage.removeItem('booking_is_new_car');
+      localStorage.removeItem(CANONICAL_SERVICE_KEY);
 
       if (result.data?.checkoutUrl) {
         window.location.href = result.data.checkoutUrl;

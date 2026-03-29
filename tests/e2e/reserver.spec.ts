@@ -26,4 +26,13 @@ test.describe('Reservation Flow', () => {
         // Check that we moved to step 2 (Quand et où ?)
         await expect(page.getByRole('heading', { name: 'Quand et où ?' })).toBeVisible();
     });
+
+    test('stores canonical service id when selection is made', async ({ page }) => {
+        await page.goto('/reserver');
+
+        await page.getByRole('heading', { name: 'Lavage Extérieur' }).click();
+
+        const storedServiceId = await page.evaluate(() => localStorage.getItem('booking_service_id'));
+        expect(storedServiceId).toBe('lavage-exterieur');
+    });
 });
