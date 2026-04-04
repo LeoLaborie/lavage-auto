@@ -32,7 +32,7 @@ export async function createCheckoutSession(
             },
         ],
         mode: 'payment',
-        success_url: `${baseUrl}/dashboard?success=true&bookingId=${bookingId}`,
+        success_url: `${baseUrl}/booking/success?bookingId=${bookingId}`,
         cancel_url: `${baseUrl}/api/booking/cancel?bookingId=${bookingId}`,
         customer_email: customerEmail,
         metadata: {

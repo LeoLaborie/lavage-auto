@@ -1,5 +1,6 @@
 import { UserCar, BookingFormData } from './constants';
 import { User } from '@supabase/supabase-js';
+import { validateEmail, validatePhone } from '@/lib/validation';
 
 // Extend the User type to handle the metadata we access
 interface CustomUser extends User {
@@ -28,6 +29,17 @@ export default function StepVehicle({
   customerInfo, setCustomerInfo, formErrors, setFormErrors, user,
   userCars, selectedCarId, setSelectedCarId, isNewCar, setIsNewCar, handleBack, handleNext
 }: StepVehicleProps) {
+  const validateField = (field: string, value: string) => {
+    if (!value.trim()) {
+      const labels: Record<string, string> = { firstName: 'Le prénom', lastName: 'Le nom', email: "L'email", phone: 'Le téléphone', make: 'La marque', model: 'Le modèle' };
+      setFormErrors((prev) => ({ ...prev, [field]: `${labels[field] || 'Ce champ'} est requis` }));
+    } else if (field === 'email' && !validateEmail(value)) {
+      setFormErrors((prev) => ({ ...prev, email: 'Veuillez entrer un email valide' }));
+    } else if (field === 'phone' && !validatePhone(value)) {
+      setFormErrors((prev) => ({ ...prev, phone: 'Numéro de téléphone français invalide' }));
+    }
+  };
+
   return (
     <div className="animate-fade-in-up">
       <h2 className="text-2xl font-bold text-gray-900 mb-6 title-font text-center">Vos coordonnées</h2>
@@ -44,6 +56,7 @@ export default function StepVehicle({
                 setCustomerInfo({ ...customerInfo, firstName: e.target.value });
                 if (formErrors.firstName) setFormErrors((prev) => ({ ...prev, firstName: '' }));
               }}
+              onBlur={(e) => validateField('firstName', e.target.value)}
               className={`w-full px-3 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-primary transition-all text-sm ${formErrors.firstName ? 'border-red-500' : 'border-gray-200'}`}
               placeholder="Jean"
             />
@@ -57,6 +70,7 @@ export default function StepVehicle({
                 setCustomerInfo({ ...customerInfo, lastName: e.target.value });
                 if (formErrors.lastName) setFormErrors((prev) => ({ ...prev, lastName: '' }));
               }}
+              onBlur={(e) => validateField('lastName', e.target.value)}
               className={`w-full px-3 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-primary transition-all text-sm ${formErrors.lastName ? 'border-red-500' : 'border-gray-200'}`}
               placeholder="Dupont"
             />
@@ -70,6 +84,7 @@ export default function StepVehicle({
                 setCustomerInfo({ ...customerInfo, email: e.target.value });
                 if (formErrors.email) setFormErrors((prev) => ({ ...prev, email: '' }));
               }}
+              onBlur={(e) => !user && validateField('email', e.target.value)}
               className={`w-full px-3 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-primary transition-all text-sm ${formErrors.email ? 'border-red-500' : 'border-gray-200'} ${user ? 'opacity-75' : ''}`}
               disabled={!!user}
               placeholder="jean@mail.com"
@@ -84,6 +99,7 @@ export default function StepVehicle({
                 setCustomerInfo({ ...customerInfo, phone: e.target.value });
                 if (formErrors.phone) setFormErrors((prev) => ({ ...prev, phone: '' }));
               }}
+              onBlur={(e) => validateField('phone', e.target.value)}
               placeholder="06 12..."
               className={`w-full px-3 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-primary transition-all text-sm ${formErrors.phone ? 'border-red-500' : 'border-gray-200'}`}
             />
@@ -134,6 +150,7 @@ export default function StepVehicle({
                     setCustomerInfo({ ...customerInfo, make: e.target.value });
                     if (formErrors.make) setFormErrors((prev) => ({ ...prev, make: '' }));
                   }}
+                  onBlur={(e) => validateField('make', e.target.value)}
                   placeholder="Marque"
                   className={`w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm ${formErrors.make ? 'border-red-500' : 'border-gray-200'}`}
                 />
@@ -146,6 +163,7 @@ export default function StepVehicle({
                     setCustomerInfo({ ...customerInfo, model: e.target.value });
                     if (formErrors.model) setFormErrors((prev) => ({ ...prev, model: '' }));
                   }}
+                  onBlur={(e) => validateField('model', e.target.value)}
                   placeholder="Modèle"
                   className={`w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm ${formErrors.model ? 'border-red-500' : 'border-gray-200'}`}
                 />

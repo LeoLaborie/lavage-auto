@@ -38,19 +38,29 @@ export default function Contact() {
       return;
     }
 
-    // TODO: Submit to API
-    setTimeout(() => {
-      toast.success('Message envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.');
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: ''
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
+
+      if (res.ok) {
+        toast.success('Message envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.');
+        setFormData({ firstName: '', lastName: '', email: '', phone: '', subject: '', message: '' });
+      } else {
+        const data = await res.json();
+        if (data.errors) {
+          setErrors(data.errors);
+        } else {
+          toast.error(data.error || 'Erreur lors de l\'envoi du message');
+        }
+      }
+    } catch {
+      toast.error('Une erreur est survenue. Veuillez réessayer.');
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">
@@ -278,7 +288,7 @@ export default function Contact() {
 
       <footer className="bg-gray-900 text-white py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p>&copy; 2025 Lavage Auto. Tous droits réservés.</p>
+          <p>&copy; {new Date().getFullYear()} Nealkar. Tous droits réservés.</p>
         </div>
       </footer>
     </div>

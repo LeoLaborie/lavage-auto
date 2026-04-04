@@ -204,6 +204,22 @@ model Payment {
   @@map("payments")
 }
 
+/// A message submitted via the contact form.
+model ContactMessage {
+  id        String   @id @default(cuid())
+
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  email     String   @map("email")
+  phone     String   @map("phone")
+  subject   String   @map("subject")
+  message   String   @map("message")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_messages")
+}
+
 /// A vehicle owned by a Client.
 model Car {
   id        String   @id @default(cuid())

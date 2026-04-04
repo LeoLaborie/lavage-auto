@@ -17,7 +17,7 @@ export default function Reserver() {
 
       <footer className="bg-gray-900 text-white py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p>&copy; 2025 Lavage Auto. Tous droits réservés.</p>
+          <p>&copy; {new Date().getFullYear()} Nealkar. Tous droits réservés.</p>
         </div>
       </footer>
     </div>

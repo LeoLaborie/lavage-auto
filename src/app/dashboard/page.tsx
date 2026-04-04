@@ -8,7 +8,7 @@ import WasherDashboardView from '@/components/Dashboard/WasherDashboardView'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-    title: 'Tableau de bord - Nealkar',
+    title: 'Tableau de bord',
     description: 'Gérez vos réservations de lavage auto',
 }
 

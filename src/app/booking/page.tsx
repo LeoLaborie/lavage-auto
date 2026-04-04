@@ -3,7 +3,7 @@ import { ServiceCatalog } from '@/components/features/booking/ServiceCatalog';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Réserver un lavage automobile | Nealkar',
+    title: 'Réserver un lavage automobile',
     description: 'Sélectionnez la prestation de lavage sans eau qui correspond à vos besoins.',
 };
 

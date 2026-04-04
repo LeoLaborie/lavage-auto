@@ -118,11 +118,12 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {services.filter(s => s.isVisible).map((service) => {
-              const style = {
+              const styleMap: Record<string, { emoji: string; bg: string; iconBg: string; iconHover: string; popular: boolean }> = {
                 'lavage-exterieur': { emoji: '🧽', bg: 'bg-primary/5', iconBg: 'bg-blue-50 text-primary', iconHover: 'group-hover:bg-primary group-hover:text-white', popular: false },
                 'lavage-complet':   { emoji: '✨', bg: 'bg-accent/10',  iconBg: 'bg-yellow-50 text-accent-dark', iconHover: 'group-hover:bg-accent group-hover:text-primary', popular: true },
                 'lavage-premium':   { emoji: '💎', bg: 'bg-secondary/5', iconBg: 'bg-cyan-50 text-secondary', iconHover: 'group-hover:bg-secondary group-hover:text-white', popular: false },
-              }[service.id] ?? { emoji: '🧽', bg: 'bg-primary/5', iconBg: 'bg-blue-50 text-primary', iconHover: 'group-hover:bg-primary group-hover:text-white', popular: false }
+              }
+              const style = styleMap[service.id] ?? { emoji: '🧽', bg: 'bg-primary/5', iconBg: 'bg-blue-50 text-primary', iconHover: 'group-hover:bg-primary group-hover:text-white', popular: false }
 
               return (
                 <a key={service.id} href={`/reserver?service=${service.id}`} className={`group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden ${style.popular ? 'ring-2 ring-accent/20' : ''}`}>
@@ -401,7 +402,7 @@ export default function Home() {
           </div>
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-500 text-sm">&copy; 2025 Nealkar. Tous droits réservés.</p>
+            <p className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} Nealkar. Tous droits réservés.</p>
             <div className="flex gap-6 text-sm text-gray-500">
               <a href="/privacy" className="hover:text-white transition-colors">Confidentialité</a>
               <a href="/conditions" className="hover:text-white transition-colors">CGV</a>

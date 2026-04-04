@@ -71,3 +71,36 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Calendar responsive overrides */
+.calendar-wrapper-compact {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.calendar-wrapper-compact .react-calendar {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.calendar-wrapper-compact .react-calendar__tile {
+  padding: 0.5em 0.25em;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 400px) {
+  .calendar-wrapper-compact .react-calendar__navigation button {
+    font-size: 0.75rem;
+    padding: 4px 2px;
+  }
+
+  .calendar-wrapper-compact .react-calendar__month-view__weekdays__weekday {
+    font-size: 0.65rem;
+    padding: 4px 0;
+  }
+
+  .calendar-wrapper-compact .react-calendar__tile {
+    padding: 0.4em 0.15em;
+    font-size: 0.7rem;
+  }
+}

@@ -6,11 +6,27 @@ import Providers from "@/components/Providers";
 const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Nealkar - Lavage auto à domicile",
-  description: "Réservez votre lavage auto à domicile en quelques clics",
+  title: {
+    default: "Nealkar - Lavage auto à domicile",
+    template: "%s | Nealkar",
+  },
+  description: "Réservez votre lavage auto sans eau à domicile en quelques clics. Service professionnel, écologique et pratique partout en France.",
   icons: {
     icon: "/icon.svg",
   },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    siteName: "Nealkar",
+    title: "Nealkar - Lavage auto à domicile",
+    description: "Réservez votre lavage auto sans eau à domicile en quelques clics. Service professionnel, écologique et pratique.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nealkar - Lavage auto à domicile",
+    description: "Réservez votre lavage auto sans eau à domicile en quelques clics.",
+  },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://nealkar.fr"),
 };
 
 export default function RootLayout({
