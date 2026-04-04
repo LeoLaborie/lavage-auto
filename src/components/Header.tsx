@@ -49,9 +49,9 @@ export default function Header({ currentPage }: HeaderProps) {
             <a
               href="/"
               className="w-32 h-16 rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-              aria-label="KLYN Accueil"
+              aria-label="Nealkar Accueil"
             >
-              <img src="/klyn.png" alt="Logo KLYN" className="w-32 h-16 rounded-lg object-contain" />
+              <img src="/nealkar.png" alt="Logo Nealkar" className="w-32 h-16 rounded-lg object-contain" />
             </a>
           </div>
 

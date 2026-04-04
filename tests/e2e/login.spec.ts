@@ -5,7 +5,7 @@ test.describe('Login Mode Flow', () => {
         await page.goto('/login');
 
         // Check main content for login mode
-        await expect(page.locator('h1')).toHaveText('Bienvenue sur Klyn');
+        await expect(page.locator('h1')).toHaveText('Bienvenue sur Nealkar');
         await expect(page.getByText('Connectez-vous pour accéder à votre espace')).toBeVisible();
 
         const emailInput = page.getByLabel('Email', { exact: true });

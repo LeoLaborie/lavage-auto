@@ -7,8 +7,8 @@ import AdminDashboard from '@/components/features/admin/AdminDashboard'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-    title: 'Administration - Klyn',
-    description: 'Panneau d\'administration Klyn',
+    title: 'Administration - Nealkar',
+    description: 'Panneau d\'administration Nealkar',
 }
 
 export default async function AdminPage() {

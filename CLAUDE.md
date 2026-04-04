@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**klyn / lavage-auto** — Plateforme de réservation de lavage automobile à domicile (sans eau). Trois rôles : CLIENT (réserve un lavage), LAVEUR (accepte et réalise les missions), ADMIN (back-office). Paiements via Stripe Checkout avec Connect pour les reversements aux laveurs.
+**Nealkar / lavage-auto** — Plateforme de réservation de lavage automobile à domicile (sans eau). Trois rôles : CLIENT (réserve un lavage), LAVEUR (accepte et réalise les missions), ADMIN (back-office). Paiements via Stripe Checkout avec Connect pour les reversements aux laveurs.
 
 ## Commands
 

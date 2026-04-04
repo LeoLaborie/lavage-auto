@@ -120,7 +120,7 @@ export default function Login() {
               <span className="text-3xl">👋</span>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Bienvenue sur Klyn
+              Bienvenue sur Nealkar
             </h1>
             <p className="text-gray-600">
               {mode === 'login'
@@ -270,7 +270,7 @@ export default function Login() {
 
       <footer className="bg-gray-900 text-white py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p>&copy; {new Date().getFullYear()} Klyn. Tous droits réservés.</p>
+          <p>&copy; {new Date().getFullYear()} Nealkar. Tous droits réservés.</p>
         </div>
       </footer>
     </div>

@@ -6,8 +6,11 @@ import Providers from "@/components/Providers";
 const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "KLYN - Lavage auto à domicile",
+  title: "Nealkar - Lavage auto à domicile",
   description: "Réservez votre lavage auto à domicile en quelques clics",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

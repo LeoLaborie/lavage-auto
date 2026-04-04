@@ -166,7 +166,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent rounded-full blur-3xl transform -translate-x-10 translate-y-10"></div>
                   <Image
                     src="/images/apps/app-mockup.png"
-                    alt="Application Client KLYN"
+                    alt="Application Client Nealkar"
                     width={600}
                     height={800}
                     className="relative z-10 w-full max-w-md mx-auto drop-shadow-2xl transform hover:scale-[1.02] transition-transform duration-500"
@@ -177,7 +177,7 @@ export default function Home() {
               </div>
               <div className="order-1 md:order-2">
                 <span className="text-primary font-bold tracking-wider uppercase text-sm">Pour les clients</span>
-                <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">L'application KLYN</h2>
+                <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">L'application Nealkar</h2>
                 <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                   Simplifiez votre routine avec notre application dédiée. Réservez, suivez et payez en toute sécurité, le tout depuis votre poche.
                 </p>
@@ -210,9 +210,9 @@ export default function Home() {
             <div className="grid md:grid-cols-2 gap-16 items-center">
               <div>
                 <span className="text-secondary font-bold tracking-wider uppercase text-sm">Pour les professionnels</span>
-                <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">KLYN OPERATORS</h2>
+                <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">NEALKAR OPERATORS</h2>
                 <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                  Rejoignez le réseau KLYN et développez votre activité de lavage auto avec nos outils professionnels.
+                  Rejoignez le réseau Nealkar et développez votre activité de lavage auto avec nos outils professionnels.
                 </p>
 
                 <ul className="space-y-4 mb-10">
@@ -312,7 +312,7 @@ export default function Home() {
                 {
                   name: "Marie L.",
                   role: "Maman occupée",
-                  content: "Plus besoin de faire la queue à la station de lavage le week-end. KLYN s'occupe de tout pendant que je profite de ma famille.",
+                  content: "Plus besoin de faire la queue à la station de lavage le week-end. Nealkar s'occupe de tout pendant que je profite de ma famille.",
                   stars: 5
                 }
               ].map((testimonial, i) => (
@@ -359,7 +359,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             {/* Première colonne - Brand */}
             <div>
-              <h3 className="text-2xl font-bold mb-6 text-white title-font">KLYN</h3>
+              <h3 className="text-2xl font-bold mb-6 text-white title-font">Nealkar</h3>
               <p className="text-gray-400 mb-6 leading-relaxed">
                 La référence du lavage auto à domicile. Qualité, écologie et satisfaction client sont nos priorités.
               </p>
@@ -409,14 +409,14 @@ export default function Home() {
                 </li>
                 <li className="flex items-center gap-3 text-gray-400">
                   <span>✉️</span>
-                  <a href="mailto:contact@klyn.fr" className="hover:text-white transition-colors">contact@klyn.fr</a>
+                  <a href="mailto:contact@nealkar.fr" className="hover:text-white transition-colors">contact@nealkar.fr</a>
                 </li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-500 text-sm">&copy; 2025 KLYN. Tous droits réservés.</p>
+            <p className="text-gray-500 text-sm">&copy; 2025 Nealkar. Tous droits réservés.</p>
             <div className="flex gap-6 text-sm text-gray-500">
               <a href="/privacy" className="hover:text-white transition-colors">Confidentialité</a>
               <a href="/conditions" className="hover:text-white transition-colors">CGV</a>
