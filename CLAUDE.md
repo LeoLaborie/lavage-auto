@@ -76,6 +76,7 @@ npx playwright test tests/booking-submit.spec.ts  # Un seul fichier de test
 - Pré-remplissage automatique depuis `/api/customer/profile` (phone, firstName, lastName) et Supabase Auth metadata
 - À la soumission (`booking/submit`) : le profil client (phone, nom) est upsert dans `profiles`, et un nouveau véhicule est créé dans `cars` (avec réutilisation si même plaque)
 - Le `ReservationPopup` (landing hero) utilise les IDs canoniques de `services.ts` pour les liens vers `/reserver`
+- **Disponibilité des créneaux** : la validation est per-client (un même client ne peut pas réserver 2x le même créneau). L'endpoint `GET /api/booking/booked-slots?date=YYYY-MM-DD` retourne les créneaux déjà pris par le client ; `StepSchedule` et `TimeSelector` les masquent de la liste affichée
 
 ### Tests
 - `tests/` — Tests Playwright (intégration API/booking flows)

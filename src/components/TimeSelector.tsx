@@ -34,30 +34,33 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
     setIsLoadingSlots(true)
     setAvailableSlots([])
     try {
-      const slots = []
-      // Horaires de service: 8h à 18h
+      const dateStr = format(date, 'yyyy-MM-dd')
+      const now = new Date()
+      const isToday = date.toDateString() === now.toDateString()
+
+      // Generate all possible slots
+      const allSlots: string[] = []
       for (let hour = 8; hour <= 18; hour++) {
         for (const minutes of [0, 30]) {
           const time = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-          try {
-            const response = await fetch('/api/booking/validate-timeslot', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                date: format(date, 'yyyy-MM-dd'),
-                time: time
-              })
-            })
-
-            if (response.ok) {
-              slots.push(time)
-            }
-          } catch (error) {
-            console.error('Error validating time slot:', error)
+          // Filter past slots if today
+          if (isToday && (hour < now.getHours() || (hour === now.getHours() && minutes <= now.getMinutes()))) {
+            continue
           }
+          allSlots.push(time)
         }
       }
-      setAvailableSlots(slots)
+
+      // Fetch booked slots in one call and filter them out
+      const res = await fetch(`/api/booking/booked-slots?date=${dateStr}`)
+      if (res.ok) {
+        const data = await res.json()
+        const booked: string[] = data.success ? data.data : []
+        setAvailableSlots(allSlots.filter(s => !booked.includes(s)))
+      } else {
+        // If not authenticated or error, show all slots (landing page visitors)
+        setAvailableSlots(allSlots)
+      }
     } catch (error) {
       console.error('Error fetching slots:', error)
     } finally {

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format } from 'date-fns';
@@ -19,18 +20,37 @@ export default function StepSchedule({
   selectedDate, setSelectedDate, selectedTime, setSelectedTime,
   dateTimeErrors, setDateTimeErrors, handleBack, handleNext
 }: StepScheduleProps) {
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  useEffect(() => {
+    if (!selectedDate) {
+      setBookedSlots([]);
+      return;
+    }
+    setLoadingSlots(true);
+    fetch(`/api/booking/booked-slots?date=${selectedDate}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setBookedSlots(data.data);
+      })
+      .catch(() => setBookedSlots([]))
+      .finally(() => setLoadingSlots(false));
+  }, [selectedDate]);
+
   const isToday = (dateStr: string) => {
     const today = new Date();
     return dateStr === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   };
 
-  const availableSlots = selectedDate && isToday(selectedDate)
+  const availableSlots = (selectedDate && isToday(selectedDate)
     ? timeSlots.filter((slot) => {
         const [h, m] = slot.split(':').map(Number);
         const now = new Date();
         return h > now.getHours() || (h === now.getHours() && m > now.getMinutes());
       })
-    : timeSlots;
+    : timeSlots
+  ).filter((slot) => !bookedSlots.includes(slot));
 
   return (
     <div className="animate-fade-in-up">
@@ -87,6 +107,15 @@ export default function StepSchedule({
               <p className="text-xs text-gray-500 mb-2 sticky top-0 bg-white py-1 z-10">
                 Pour le <span className="font-bold text-primary capitalize">{format(new Date(selectedDate), 'EEEE d MMMM', { locale: fr })}</span>
               </p>
+              {loadingSlots ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : availableSlots.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-400 text-center">
+                  <p className="text-sm">Aucun créneau disponible pour cette date.</p>
+                </div>
+              ) : (
               <div className="grid grid-cols-3 gap-2">
                 {availableSlots.map((time) => (
                   <button
@@ -106,6 +135,7 @@ export default function StepSchedule({
                   </button>
                 ))}
               </div>
+              )}
             </div>
           )}
 
