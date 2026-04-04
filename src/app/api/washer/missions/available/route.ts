@@ -13,7 +13,6 @@ export const GET = withWasherGuard(async (req, user, profile) => {
         return NextResponse.json({
             success: true,
             data: { bookings: [] },
-            bookings: []
         })
     }
 
@@ -55,6 +54,5 @@ export const GET = withWasherGuard(async (req, user, profile) => {
     return NextResponse.json({
         success: true,
         data: { bookings: mapped },
-        bookings: mapped
     })
 })

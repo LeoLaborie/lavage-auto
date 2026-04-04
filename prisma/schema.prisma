@@ -162,6 +162,7 @@ model Booking {
   @@index([clientId, status])
   @@index([laveurId, status])
   @@index([status])
+  @@index([scheduledDate])
   @@map("bookings")
 }
 
@@ -201,6 +202,7 @@ model Payment {
   updatedAt DateTime @updatedAt      @map("updated_at")
 
   @@index([userId])
+  @@index([status])
   @@map("payments")
 }
 
@@ -217,6 +219,7 @@ model ContactMessage {
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([createdAt])
   @@map("contact_messages")
 }
 

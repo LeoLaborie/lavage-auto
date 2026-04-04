@@ -62,7 +62,10 @@ export const PATCH = withWasherGuard(async (req, _user, profile) => {
         }
 
         // AC#6: Fetch the booking to check existence and ownership before attempting update
-        const booking = await prisma.booking.findUnique({ where: { id: bookingId } })
+        const booking = await prisma.booking.findUnique({
+            where: { id: bookingId },
+            select: { id: true, laveurId: true, status: true, startedAt: true },
+        })
 
         if (!booking) {
             return NextResponse.json(
@@ -97,8 +100,9 @@ export const PATCH = withWasherGuard(async (req, _user, profile) => {
         // The where clause re-checks laveurId + status so a concurrent request cannot
         // advance the state twice.
         const updateData: Record<string, unknown> = { status: newStatus }
-        if (newStatus === 'IN_PROGRESS') {
-            // Set startedAt server-side when the wash begins (UTC, stored as-is by Prisma)
+        if (newStatus === 'IN_PROGRESS' && !booking.startedAt) {
+            // Set startedAt server-side when the wash begins (UTC, stored as-is by Prisma).
+            // Only set if not already populated, to avoid overwriting a previous timestamp.
             updateData.startedAt = new Date()
         }
 

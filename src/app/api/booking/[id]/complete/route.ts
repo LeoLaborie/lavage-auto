@@ -76,11 +76,11 @@ export async function POST(
         }
 
         // Guard: booking must be in IN_PROGRESS to be completed
-        if (booking.status !== 'IN_PROGRESS' && booking.status !== 'ACCEPTED' && booking.status !== 'EN_ROUTE') {
+        if (booking.status !== 'IN_PROGRESS') {
             return NextResponse.json(
                 {
                     success: false,
-                    error: `Impossible de compléter : statut actuel ${booking.status}. Statut attendu : IN_PROGRESS, ACCEPTED, ou EN_ROUTE.`,
+                    error: `Impossible de compléter : statut actuel ${booking.status}. Statut attendu : IN_PROGRESS.`,
                 },
                 { status: 409 }
             )

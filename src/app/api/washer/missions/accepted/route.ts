@@ -67,15 +67,11 @@ export const GET = withWasherGuard(async (_req, _user, profile) => {
             }
         })
 
-        // Return bookings at both root level and under data.bookings:
-        // - data.bookings: standard API envelope (architecture.md convention)
-        // - root bookings: consumed directly by WasherDashboardView.tsx (setAcceptedMissions(data.bookings))
         const hasMore = bookings.length === 100
         return NextResponse.json(
             {
                 success: true,
                 data: { bookings: mapped },
-                bookings: mapped
             },
             {
                 headers: {

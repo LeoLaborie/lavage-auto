@@ -39,8 +39,13 @@ export async function POST(request: Request) {
 
             if (!bookingId) {
                 console.error('[Stripe Webhook] Missing bookingId in metadata')
-                return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 400 })
+                return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 200 })
             }
+
+            // Validate payment_intent type before storing
+            const paymentIntentId = typeof session.payment_intent === 'string'
+                ? session.payment_intent
+                : session.payment_intent?.id ?? null;
 
             // --- Atomic Update: Booking + Payment ---
             await prisma.$transaction(async (tx) => {
@@ -64,7 +69,7 @@ export async function POST(request: Request) {
                     update: {
                         status: 'SUCCEEDED',
                         stripeSessionId: session.id,
-                        stripePaymentIntentId: session.payment_intent as string,
+                        stripePaymentIntentId: paymentIntentId,
                         processedAt: new Date(),
                     },
                     create: {
@@ -74,7 +79,7 @@ export async function POST(request: Request) {
                         currency: booking.currency,
                         status: 'SUCCEEDED',
                         stripeSessionId: session.id,
-                        stripePaymentIntentId: session.payment_intent as string,
+                        stripePaymentIntentId: paymentIntentId,
                         processedAt: new Date(),
                     }
                 })
@@ -88,7 +93,7 @@ export async function POST(request: Request) {
 
             if (!bookingId) {
                 console.error('[Stripe Webhook] Missing bookingId in metadata for payment_failed');
-                return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 400 });
+                return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 200 });
             }
 
             await prisma.$transaction(async (tx) => {
@@ -116,7 +121,7 @@ export async function POST(request: Request) {
 
             if (!bookingId) {
                 console.error('[Stripe Webhook] Missing bookingId in metadata for session.expired');
-                return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 400 });
+                return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 200 });
             }
 
             await prisma.$transaction(async (tx) => {

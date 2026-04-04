@@ -36,7 +36,11 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     )
   }
 
-  // Build ISO 8601 scheduledDate from date + time
+  // Build scheduledDate from date + time.
+  // The client sends date (YYYY-MM-DD) and time (HH:MM) in French local time (Europe/Paris).
+  // Without a timezone suffix, `new Date()` interprets this as local time on the server.
+  // This is consistent with how validate-timeslot and the frontend construct dates,
+  // so conflict checks against existing bookings work correctly.
   const scheduledDate = new Date(`${date}T${time}:00`)
   if (isNaN(scheduledDate.getTime())) {
     return NextResponse.json(
@@ -174,6 +178,16 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
       matchedService.name
     )
 
+    if (!session.url) {
+      // Stripe returned a session but without a redirect URL — delete orphan booking
+      console.error('[Stripe] Session created but missing URL for booking:', booking.id)
+      await prisma.booking.delete({ where: { id: booking.id } })
+      return NextResponse.json(
+        { success: false, error: 'Le paiement n\'a pas pu être initialisé. Veuillez réessayer.' },
+        { status: 502 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -183,16 +197,15 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     })
   } catch (error) {
     console.error('[Stripe] Session creation failed:', error)
-    // Even if Stripe fails, the booking is created. 
-    // We could either return success with null checkoutUrl or return error.
-    // Given the flow, returning error is safer so user knows payment wasn't initiated.
-    return NextResponse.json({
-      success: true,
-      data: {
-        bookingId: booking.id,
-        checkoutUrl: null,
-        warning: 'Le paiement Stripe n\'a pas pu être initialisé.'
-      },
-    })
+    // Delete orphan booking — no payment was initiated
+    try {
+      await prisma.booking.delete({ where: { id: booking.id } })
+    } catch (deleteError) {
+      console.error('[Stripe] Failed to delete orphan booking:', booking.id, deleteError)
+    }
+    return NextResponse.json(
+      { success: false, error: 'Le paiement n\'a pas pu être initialisé. Veuillez réessayer.' },
+      { status: 502 }
+    )
   }
 })

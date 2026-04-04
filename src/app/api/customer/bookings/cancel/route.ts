@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withClientGuard } from '@/lib/auth/clientGuard'
 import { prisma } from '@/lib/prisma'
+import { stripe } from '@/lib/stripe'
 
 /**
  * POST /api/customer/bookings/cancel
@@ -61,8 +62,40 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
                 status: 'CANCELLED',
                 cancelledAt: new Date(),
                 cancellationReason: 'Client cancellation'
-            }
+            },
+            include: { payment: true }
         })
+
+        // Auto-refund if payment was successful
+        if (updatedBooking.payment && updatedBooking.payment.status === 'SUCCEEDED' && updatedBooking.payment.stripePaymentIntentId) {
+            try {
+                const refund = await stripe.refunds.create({
+                    payment_intent: updatedBooking.payment.stripePaymentIntentId,
+                    amount: updatedBooking.payment.amountCents,
+                    reason: 'requested_by_customer',
+                })
+
+                await prisma.payment.update({
+                    where: { id: updatedBooking.payment.id },
+                    data: {
+                        refundAmountCents: updatedBooking.payment.amountCents,
+                        status: 'REFUNDED',
+                        refundedAt: new Date(),
+                        refundReason: 'Client cancellation',
+                    },
+                })
+
+                console.info(
+                    '[cancel] Auto-refund issued for booking %s: %d cents (Stripe refund: %s)',
+                    bookingId,
+                    updatedBooking.payment.amountCents,
+                    refund.id
+                )
+            } catch (refundError) {
+                // Log but don't block cancellation — admin can retry refund manually
+                console.error('[cancel] Auto-refund failed for booking %s:', bookingId, refundError)
+            }
+        }
 
         return NextResponse.json({
             success: true,

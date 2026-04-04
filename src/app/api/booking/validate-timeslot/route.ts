@@ -39,7 +39,11 @@ export const POST = withClientGuard(async (req: Request) => {
       )
     }
 
-    // Build full datetime
+    // Build full datetime from date + time.
+    // The client sends date (YYYY-MM-DD) and time (HH:MM) in French local time (Europe/Paris).
+    // Without a timezone suffix, `new Date()` interprets this as local time on the server.
+    // This is consistent with how booking/submit and the frontend construct dates,
+    // so conflict checks against existing bookings work correctly.
     const scheduledAt = new Date(`${date}T${time}:00`)
 
     // Reject past datetimes

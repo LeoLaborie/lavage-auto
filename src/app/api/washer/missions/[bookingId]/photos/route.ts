@@ -154,11 +154,8 @@ export const POST = (req: Request, { params }: { params: Promise<{ bookingId: st
 
       if (photoType === 'avant') {
         updateData.beforePhotoUrl = photoUrl
-        // Transition to IN_PROGRESS if currently ACCEPTED or EN_ROUTE
-        if (booking.status === 'ACCEPTED' || booking.status === 'EN_ROUTE') {
-          updateData.status = 'IN_PROGRESS'
-          updateData.startedAt = new Date()
-        }
+        // Status transitions are handled exclusively by the dedicated status endpoint
+        // (PATCH /api/washer/missions/[bookingId]/status). No auto-transition here.
       } else {
         // apres — only update afterPhotoUrl; status managed by client validation (Story 5.2)
         updateData.afterPhotoUrl = photoUrl

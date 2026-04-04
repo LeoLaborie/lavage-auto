@@ -108,14 +108,14 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
             const availableRes = await fetch('/api/washer/missions/available')
             if (availableRes.ok) {
                 const data = await availableRes.json()
-                setAvailableMissions(data.bookings)
+                setAvailableMissions(data.data.bookings)
             }
 
             // Fetch accepted missions
             const acceptedRes = await fetch('/api/washer/missions/accepted')
             if (acceptedRes.ok) {
                 const data = await acceptedRes.json()
-                setAcceptedMissions(data.bookings)
+                setAcceptedMissions(data.data.bookings)
             }
         } catch (error) {
             console.error('Error fetching missions:', error)
