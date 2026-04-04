@@ -66,6 +66,14 @@ export function validateBookingForm(
 
   // Car field validation — skipped when an existing saved vehicle is selected
   if (!options.skipCarValidation) {
+    if (!data.make?.trim()) {
+      errors.make = 'La marque est requise'
+    }
+
+    if (!data.model?.trim()) {
+      errors.model = 'Le modèle est requis'
+    }
+
     if (!data.licensePlate?.trim()) {
       errors.licensePlate = 'La plaque d\'immatriculation est requise'
     } else if (data.licensePlate.trim().length > 20) {
@@ -89,14 +97,13 @@ export function validateDateTimeBooking(date: string, time: string, address: str
 
   if (!date) {
     errors.date = 'Veuillez sélectionner une date'
+  } else if (!time) {
+    errors.time = 'Veuillez sélectionner un créneau horaire'
   } else {
-    const selectedDate = new Date(date)
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(0, 0, 0, 0)
+    const selectedDateTime = new Date(`${date}T${time}:00`)
 
-    if (selectedDate < tomorrow) {
-      errors.date = 'Veuillez sélectionner une date à partir de demain'
+    if (selectedDateTime <= new Date()) {
+      errors.date = 'La date et l\'heure doivent être dans le futur'
     }
   }
 
@@ -106,7 +113,7 @@ export function validateDateTimeBooking(date: string, time: string, address: str
 
   if (!address.trim()) {
     errors.address = 'L\'adresse est requise'
-  } else if (address.trim().length < 10) {
+  } else if (address.trim().length < 5) {
     errors.address = 'Veuillez entrer une adresse complète'
   }
 

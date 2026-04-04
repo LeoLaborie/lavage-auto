@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { withClientGuard } from '@/lib/auth/clientGuard'
 import { prisma } from '@/lib/prisma'
-
-const VALID_TIME_SLOTS = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-  '16:00', '16:30', '17:00', '17:30', '18:00', '18:30'
-]
+import { TIME_SLOTS } from '@/lib/constants/services'
 
 /**
  * POST /api/booking/validate-timeslot
  * Validates that a requested date + time is valid and not conflicting.
+ * Protected: requires authenticated CLIENT user.
  *
  * Story 2.3 — Task 2
  */
-export async function POST(request: NextRequest) {
+export const POST = withClientGuard(async (req: Request) => {
   try {
-    const body = await request.json()
+    const body = await (req as NextRequest).json()
     const { date, time } = body
 
     if (!date || !time) {
@@ -26,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate time slot format
-    if (!VALID_TIME_SLOTS.includes(time)) {
+    if (!TIME_SLOTS.includes(time)) {
       return NextResponse.json(
         { success: false, error: 'Créneau horaire invalide.' },
         { status: 400 }
@@ -84,4 +81,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

@@ -19,6 +19,19 @@ export default function StepSchedule({
   selectedDate, setSelectedDate, selectedTime, setSelectedTime,
   dateTimeErrors, setDateTimeErrors, handleBack, handleNext
 }: StepScheduleProps) {
+  const isToday = (dateStr: string) => {
+    const today = new Date();
+    return dateStr === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  };
+
+  const availableSlots = selectedDate && isToday(selectedDate)
+    ? timeSlots.filter((slot) => {
+        const [h, m] = slot.split(':').map(Number);
+        const now = new Date();
+        return h > now.getHours() || (h === now.getHours() && m > now.getMinutes());
+      })
+    : timeSlots;
+
   return (
     <div className="animate-fade-in-up">
       <h2 className="text-2xl font-bold text-gray-900 mb-4 title-font text-center">Quand ?</h2>
@@ -75,7 +88,7 @@ export default function StepSchedule({
                 Pour le <span className="font-bold text-primary capitalize">{format(new Date(selectedDate), 'EEEE d MMMM', { locale: fr })}</span>
               </p>
               <div className="grid grid-cols-3 gap-2">
-                {timeSlots.map((time) => (
+                {availableSlots.map((time) => (
                   <button
                     key={time}
                     onClick={() => {

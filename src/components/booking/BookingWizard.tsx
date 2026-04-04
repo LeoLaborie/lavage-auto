@@ -92,18 +92,21 @@ export default function BookingWizard() {
         ...prev,
         email: user.email || prev.email,
         firstName: prev.firstName || user.user_metadata?.full_name?.split(' ')[0] || '',
-        lastName: prev.lastName || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || ''
+        lastName: prev.lastName || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+        phone: prev.phone || user.user_metadata?.phone || ''
       }));
 
+      // Fetch saved profile (phone, name) from DB
       fetch('/api/customer/profile')
         .then(res => res.json())
         .then(data => {
-          if (data.customer) {
+          const profile = data?.data?.profile;
+          if (profile) {
             setCustomerInfo((prev: BookingFormData) => ({
               ...prev,
-              phone: data.customer.phone || prev.phone,
-              firstName: data.customer.name.split(' ')[0] || prev.firstName,
-              lastName: data.customer.name.split(' ').slice(1).join(' ') || prev.lastName,
+              phone: prev.phone || profile.phone || '',
+              firstName: prev.firstName || profile.firstName || '',
+              lastName: prev.lastName || profile.lastName || '',
             }));
           }
         })
@@ -145,8 +148,15 @@ export default function BookingWizard() {
           const cars = data?.data?.cars;
           if (cars && cars.length > 0) {
             setUserCars(cars);
-            setIsNewCar(false); // Default to existing car if available
-            setSelectedCarId(cars[0].id);
+            const storedIsNewCar = localStorage.getItem('booking_is_new_car');
+            const storedCarId = localStorage.getItem('booking_selected_car_id');
+            if (storedIsNewCar !== null) {
+              setIsNewCar(storedIsNewCar === 'true');
+              setSelectedCarId(storedCarId || cars[0].id);
+            } else {
+              setIsNewCar(false);
+              setSelectedCarId(cars[0].id);
+            }
           }
         })
         .catch(err => console.error('Error fetching cars:', err));
@@ -160,27 +170,32 @@ export default function BookingWizard() {
     const timeParam = searchParams.get('time');
     const dateParam = searchParams.get('date');
 
+    let serviceResolved = false;
     if (serviceParam) {
       const service = getServiceById(serviceParam as ServiceId);
       if (service) {
         setSelectedService(service);
+        serviceResolved = true;
       }
     }
+
+    // Ne sauter d'étapes que si le service a été résolu
+    if (!serviceResolved) return;
 
     if (addressParam) {
       setAddress(decodeURIComponent(addressParam));
       if (timeParam && dateParam) {
         setSelectedTime(decodeURIComponent(timeParam));
         setSelectedDate(decodeURIComponent(dateParam));
-        setCurrentStep(4); // Passer à l'étape des infos personnelles avec adresse (nouvelle config)
+        setCurrentStep(4);
       } else if (dateParam) {
         setSelectedDate(decodeURIComponent(dateParam));
-        setCurrentStep(3); // Date/heure ok, adresse ok, passage infos
+        setCurrentStep(3);
       } else {
-        setCurrentStep(2); // Date/heure à choisir
+        setCurrentStep(2);
       }
-    } else if (serviceParam) {
-      setCurrentStep(2); // Choisir Adresse
+    } else {
+      setCurrentStep(2);
     }
   }, [searchParams]);
 
@@ -219,8 +234,12 @@ export default function BookingWizard() {
 
   const handleNext = () => {
     if (currentStep === 2) {
-      if (!address) {
+      if (!address.trim()) {
           setAddressError("Veuillez saisir une adresse");
+          return;
+      }
+      if (address.trim().length < 5) {
+          setAddressError("Veuillez entrer une adresse complète");
           return;
       }
       setAddressError("");
@@ -257,6 +276,13 @@ export default function BookingWizard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
+
+    if (!selectedService) {
+      setCurrentStep(1);
+      return;
+    }
+
     if (!isNewCar && !selectedCarId) {
       setFormErrors({ carSelection: 'Veuillez sélectionner un véhicule' });
       return;
@@ -289,9 +315,7 @@ export default function BookingWizard() {
         return;
       }
 
-      const [hours, minutes] = selectedTime.split(':').map(Number);
-      const scheduledAtDate = new Date(selectedDate);
-      scheduledAtDate.setHours(hours, minutes, 0, 0);
+      const scheduledAtDate = new Date(`${selectedDate}T${selectedTime}:00`);
 
       const bookingData: Record<string, unknown> = {
         service: selectedService?.id,
@@ -325,19 +349,16 @@ export default function BookingWizard() {
 
       const result = await bookingResponse.json();
 
-      localStorage.removeItem('booking_service');
-      localStorage.removeItem(CANONICAL_SERVICE_KEY);
-      localStorage.removeItem('booking_date');
-      localStorage.removeItem('booking_time');
-      localStorage.removeItem('booking_address');
-      localStorage.removeItem('booking_customer_info');
-      localStorage.removeItem('booking_step');
-      localStorage.removeItem('booking_selected_car_id');
-      localStorage.removeItem('booking_is_new_car');
-      localStorage.removeItem(CANONICAL_SERVICE_KEY);
+      BOOKING_STATE_KEYS.forEach((key) => localStorage.removeItem(key));
 
       if (result.data?.checkoutUrl) {
         window.location.href = result.data.checkoutUrl;
+        return;
+      }
+
+      if (result.data?.warning) {
+        alert('La réservation a été créée mais le paiement n\'a pas pu être initialisé. Veuillez réessayer depuis votre espace.');
+        window.location.href = '/dashboard';
         return;
       }
 
@@ -374,7 +395,11 @@ export default function BookingWizard() {
               { step: 4, icon: '/icons/step-info.png', label: 'Infos' },
               { step: 5, icon: '/icons/step-confirm.png', label: 'Confirmation' }
             ].map((item) => (
-              <div key={item.step} className="flex flex-col items-center gap-1 sm:gap-2 group cursor-default">
+              <div
+                key={item.step}
+                className={`flex flex-col items-center gap-1 sm:gap-2 group ${item.step < currentStep ? 'cursor-pointer' : 'cursor-default'}`}
+                onClick={() => { if (item.step < currentStep) setCurrentStep(item.step); }}
+              >
                 <div className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-300 z-10 border-4 relative overflow-hidden bg-white ${currentStep >= item.step
                   ? 'border-primary shadow-lg scale-110'
                   : 'border-gray-200 grayscale opacity-60'
@@ -450,6 +475,13 @@ export default function BookingWizard() {
             selectedTime={selectedTime}
             address={address}
             isSubmitting={isSubmitting}
+            vehicleLabel={
+              !isNewCar && selectedCarId
+                ? userCars.find(c => c.id === selectedCarId)
+                  ? `${userCars.find(c => c.id === selectedCarId)!.make} ${userCars.find(c => c.id === selectedCarId)!.model}${userCars.find(c => c.id === selectedCarId)!.plate ? ` - ${userCars.find(c => c.id === selectedCarId)!.plate}` : ''}`
+                  : 'Véhicule sélectionné'
+                : `${customerInfo.make || ''} ${customerInfo.model || ''}${customerInfo.licensePlate ? ` - ${customerInfo.licensePlate}` : ''}`.trim() || 'Nouveau véhicule'
+            }
             handleBack={handleBack}
             handleSubmit={handleSubmit}
           />

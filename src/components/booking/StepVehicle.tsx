@@ -130,18 +130,24 @@ export default function StepVehicle({
                 <input
                   type="text"
                   value={customerInfo.make || ''}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, make: e.target.value })}
+                  onChange={(e) => {
+                    setCustomerInfo({ ...customerInfo, make: e.target.value });
+                    if (formErrors.make) setFormErrors((prev) => ({ ...prev, make: '' }));
+                  }}
                   placeholder="Marque"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                  className={`w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm ${formErrors.make ? 'border-red-500' : 'border-gray-200'}`}
                 />
               </div>
               <div>
                 <input
                   type="text"
                   value={customerInfo.model || ''}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, model: e.target.value })}
+                  onChange={(e) => {
+                    setCustomerInfo({ ...customerInfo, model: e.target.value });
+                    if (formErrors.model) setFormErrors((prev) => ({ ...prev, model: '' }));
+                  }}
                   placeholder="Modèle"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                  className={`w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm ${formErrors.model ? 'border-red-500' : 'border-gray-200'}`}
                 />
               </div>
               <div>

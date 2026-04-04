@@ -14,7 +14,7 @@ import { createCheckoutSession } from '@/lib/stripe'
 export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
   const body = await (req as NextRequest).json()
 
-  const { service, date, time, address, notes, make, model, licensePlate, carId } = body
+  const { service, date, time, address, notes, make, model, licensePlate, carId, phone, firstName, lastName } = body
 
   // --- Validation ---
 
@@ -98,9 +98,36 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     }
     validatedCarId = carId
   } else if (make || model || licensePlate) {
-    // Fallback: store car details in access notes for unregistered cars
-    const carInfo = `Véhicule: ${make || ''} ${model || ''} (${licensePlate || ''})`.trim()
-    finalAccessNotes = finalAccessNotes ? `${carInfo}\n---\n${finalAccessNotes}` : carInfo
+    // Create or reuse a Car record in DB
+    const trimmedPlate = licensePlate?.trim() || null
+    let newCar = null
+
+    if (trimmedPlate) {
+      // If plate provided, try to find existing car with same plate for this user
+      newCar = await prisma.car.findUnique({
+        where: { userId_plate: { userId: dbUser.id, plate: trimmedPlate } },
+      })
+      if (newCar) {
+        // Update make/model if changed
+        newCar = await prisma.car.update({
+          where: { id: newCar.id },
+          data: { make: make?.trim() || newCar.make, model: model?.trim() || newCar.model },
+        })
+      }
+    }
+
+    if (!newCar) {
+      newCar = await prisma.car.create({
+        data: {
+          userId: dbUser.id,
+          make: make?.trim() || '',
+          model: model?.trim() || '',
+          plate: trimmedPlate,
+        },
+      })
+    }
+
+    validatedCarId = newCar.id
   }
 
   const bookingData: any = {
@@ -118,6 +145,25 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
   const booking = await prisma.booking.create({
     data: bookingData,
   })
+
+  // --- Save client profile info (phone, name) for future bookings ---
+  if (phone || firstName || lastName) {
+    await prisma.profile.upsert({
+      where: { userId: dbUser.id },
+      update: {
+        ...(phone && { phone: phone.trim() }),
+        ...(firstName && { firstName: firstName.trim() }),
+        ...(lastName && { lastName: lastName.trim() }),
+      },
+      create: {
+        userId: dbUser.id,
+        phone: phone?.trim() || null,
+        firstName: firstName?.trim() || null,
+        lastName: lastName?.trim() || null,
+        status: 'VALIDATED',
+      },
+    })
+  }
 
   // --- Create Stripe Checkout Session ---
   try {

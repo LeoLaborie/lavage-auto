@@ -1,6 +1,6 @@
 'use client'
-import { type FC } from 'react'
 import { AppleEmoji } from '@/components/AppleEmoji'
+import { services } from '@/lib/constants/services'
 
 interface ReservationPopupProps {
   isOpen: boolean
@@ -13,8 +13,17 @@ interface ReservationPopupProps {
   } | null
 }
 
+const visibleServices = services.filter((s) => s.isVisible)
+
 export default function ReservationPopup({ isOpen, onClose, address, selectedTime }: ReservationPopupProps) {
   if (!isOpen) return null
+
+  const buildHref = (serviceId: string) => {
+    const params = new URLSearchParams({ service: serviceId, address })
+    if (selectedTime?.date) params.set('date', selectedTime.date)
+    if (selectedTime?.time) params.set('time', selectedTime.time)
+    return `/reserver?${params.toString()}`
+  }
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
@@ -36,47 +45,20 @@ export default function ReservationPopup({ isOpen, onClose, address, selectedTim
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-8" style={{ minHeight: '250px' }}>
-          <a
-            href={`/reserver?service=exterior&address=${encodeURIComponent(address)}${selectedTime?.date ? `&date=${encodeURIComponent(selectedTime.date)}` : ''}${selectedTime?.time ? `&time=${encodeURIComponent(selectedTime.time)}` : ''}`}
-            className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-[#004aad]/10"
-          >
-            <div className="w-12 h-12 bg-[#004aad]/10 rounded-lg flex items-center justify-center mb-4">
-              <AppleEmoji name="sponge" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Lavage Extérieur</h3>
-            <p className="text-gray-600 mb-4 text-sm">Nettoyage complet de l'extérieur</p>
-            <p className="text-xl font-bold text-[#004aad]">25€</p>
-          </a>
-
-          <a
-            href={`/reserver?service=complete&address=${encodeURIComponent(address)}${selectedTime?.date ? `&date=${encodeURIComponent(selectedTime.date)}` : ''}${selectedTime?.time ? `&time=${encodeURIComponent(selectedTime.time)}` : ''}`}
-            className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-[#004aad]/10"
-          >
-            <div className="w-12 h-12 bg-[#004aad]/10 rounded-lg flex items-center justify-center mb-4">
-              <AppleEmoji name="sparkles" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Lavage Complet</h3>
-            <p className="text-gray-600 mb-4 text-sm">Intérieur et extérieur</p>
-            <p className="text-xl font-bold text-[#004aad]">45€</p>
-          </a>
-
-          <a
-            href={`/reserver?service=premium&address=${encodeURIComponent(address)}${selectedTime?.date ? `&date=${encodeURIComponent(selectedTime.date)}` : ''}${selectedTime?.time ? `&time=${encodeURIComponent(selectedTime.time)}` : ''}`}
-            className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-[#004aad]/10"
-          >
-            <div className="w-12 h-12 bg-[#004aad]/10 rounded-lg flex items-center justify-center mb-4">
-              <AppleEmoji name="gem" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Lavage Premium</h3>
-            <p className="text-gray-600 mb-4 text-sm">Service complet avec finitions</p>
-            <p className="text-xl font-bold text-[#004aad]">75€</p>
-          </a>
-        </div>
-
-        <div className="text-center">
-          <button className="bg-[#004aad] text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-[#003c8a] transition-colors">
-            Confirmer la réservation
-          </button>
+          {visibleServices.map((service) => (
+            <a
+              key={service.id}
+              href={buildHref(service.id)}
+              className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-[#004aad]/10"
+            >
+              <div className="w-12 h-12 bg-[#004aad]/10 rounded-lg flex items-center justify-center mb-4">
+                <AppleEmoji name={service.icon} />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{service.name}</h3>
+              <p className="text-gray-600 mb-4 text-sm">{service.description}</p>
+              <p className="text-xl font-bold text-[#004aad]">{service.amountCents / 100}€</p>
+            </a>
+          ))}
         </div>
       </div>
     </div>

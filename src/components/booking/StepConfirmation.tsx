@@ -1,4 +1,4 @@
-import { Service } from './constants';
+import { Service, UserCar } from './constants';
 
 interface StepConfirmationProps {
   selectedService: Service | null;
@@ -6,12 +6,13 @@ interface StepConfirmationProps {
   selectedTime: string;
   address: string;
   isSubmitting: boolean;
+  vehicleLabel: string;
   handleBack: () => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
 }
 
 export default function StepConfirmation({
-  selectedService, selectedDate, selectedTime, address, isSubmitting, handleBack, handleSubmit
+  selectedService, selectedDate, selectedTime, address, isSubmitting, vehicleLabel, handleBack, handleSubmit
 }: StepConfirmationProps) {
 
   const displayPrice = selectedService 
@@ -34,7 +35,7 @@ export default function StepConfirmation({
           </div>
           <div className="flex justify-between">
             <span className="text-gray-900">Date:</span>
-            <span className="font-medium text-gray-900">{new Date(selectedDate).toLocaleDateString('fr-FR')}</span>
+            <span className="font-medium text-gray-900">{new Date(selectedDate + 'T00:00:00').toLocaleDateString('fr-FR')}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-900">Heure:</span>
@@ -43,6 +44,10 @@ export default function StepConfirmation({
           <div className="flex justify-between">
             <span className="text-gray-900">Adresse:</span>
             <span className="font-medium text-gray-900">{address}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-900">Véhicule:</span>
+            <span className="font-medium text-gray-900">{vehicleLabel}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-900">Durée estimée:</span>
