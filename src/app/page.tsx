@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Header from '@/components/Header'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import TimeSelector from '@/components/TimeSelector'
+import { services } from '@/lib/constants/services'
 
 const ReservationPopup = dynamic(() => import('@/components/ReservationPopup'), { ssr: false })
 
@@ -116,45 +117,29 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <a href="/reserver?service=exterior" className="group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
-              <div className="w-16 h-16 bg-blue-50 text-primary rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
-                🧽
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Lavage Extérieur</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Nettoyage complet de la carrosserie, vitres extérieures et jantes avec des produits écologiques.</p>
-              <div className="flex items-center justify-between mt-auto">
-                <p className="text-2xl font-bold text-primary">dès 25€</p>
-                <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-accent group-hover:text-primary transition-colors">→</span>
-              </div>
-            </a>
+            {services.filter(s => s.isVisible).map((service) => {
+              const style = {
+                'lavage-exterieur': { emoji: '🧽', bg: 'bg-primary/5', iconBg: 'bg-blue-50 text-primary', iconHover: 'group-hover:bg-primary group-hover:text-white', popular: false },
+                'lavage-complet':   { emoji: '✨', bg: 'bg-accent/10',  iconBg: 'bg-yellow-50 text-accent-dark', iconHover: 'group-hover:bg-accent group-hover:text-primary', popular: true },
+                'lavage-premium':   { emoji: '💎', bg: 'bg-secondary/5', iconBg: 'bg-cyan-50 text-secondary', iconHover: 'group-hover:bg-secondary group-hover:text-white', popular: false },
+              }[service.id] ?? { emoji: '🧽', bg: 'bg-primary/5', iconBg: 'bg-blue-50 text-primary', iconHover: 'group-hover:bg-primary group-hover:text-white', popular: false }
 
-            <a href="/reserver?service=complete" className="group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden ring-2 ring-accent/20">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
-              <div className="absolute top-4 right-4 bg-accent text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Populaire</div>
-              <div className="w-16 h-16 bg-yellow-50 text-accent-dark rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-sm group-hover:bg-accent group-hover:text-primary transition-colors">
-                ✨
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Lavage Complet</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Le meilleur des deux mondes : nettoyage intérieur et extérieur pour une voiture comme neuve.</p>
-              <div className="flex items-center justify-between mt-auto">
-                <p className="text-2xl font-bold text-primary">dès 45€</p>
-                <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-accent group-hover:text-primary transition-colors">→</span>
-              </div>
-            </a>
-
-            <a href="/reserver?service=premium" className="group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
-              <div className="w-16 h-16 bg-cyan-50 text-secondary rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-sm group-hover:bg-secondary group-hover:text-white transition-colors">
-                💎
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Lavage Premium</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Service d'exception avec cire de protection, lustrage et traitement des plastiques et cuirs.</p>
-              <div className="flex items-center justify-between mt-auto">
-                <p className="text-2xl font-bold text-primary">dès 75€</p>
-                <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-accent group-hover:text-primary transition-colors">→</span>
-              </div>
-            </a>
+              return (
+                <a key={service.id} href={`/reserver?service=${service.id}`} className={`group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative overflow-hidden ${style.popular ? 'ring-2 ring-accent/20' : ''}`}>
+                  <div className={`absolute top-0 right-0 w-32 h-32 ${style.bg} rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110`}></div>
+                  {style.popular && <div className="absolute top-4 right-4 bg-accent text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Populaire</div>}
+                  <div className={`w-16 h-16 ${style.iconBg} rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-sm ${style.iconHover} transition-colors`}>
+                    {style.emoji}
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{service.name}</h3>
+                  <p className="text-gray-600 mb-6 leading-relaxed">{service.description}</p>
+                  <div className="flex items-center justify-between mt-auto">
+                    <p className="text-2xl font-bold text-primary">dès {service.amountCents / 100}€</p>
+                    <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-accent group-hover:text-primary transition-colors">→</span>
+                  </div>
+                </a>
+              )
+            })}
           </div>
         </section>
 
@@ -377,9 +362,9 @@ export default function Home() {
             <div>
               <h3 className="text-lg font-bold mb-6 text-white">Services</h3>
               <ul className="space-y-4">
-                <li><a href="/reserver?service=exterior" className="text-gray-400 hover:text-accent transition-colors">Lavage Extérieur</a></li>
-                <li><a href="/reserver?service=complete" className="text-gray-400 hover:text-accent transition-colors">Lavage Complet</a></li>
-                <li><a href="/reserver?service=premium" className="text-gray-400 hover:text-accent transition-colors">Lavage Premium</a></li>
+                {services.filter(s => s.isVisible).map(s => (
+                  <li key={s.id}><a href={`/reserver?service=${s.id}`} className="text-gray-400 hover:text-accent transition-colors">{s.name}</a></li>
+                ))}
                 <li><a href="/entreprise" className="text-gray-400 hover:text-accent transition-colors">Solutions Entreprises</a></li>
               </ul>
             </div>
