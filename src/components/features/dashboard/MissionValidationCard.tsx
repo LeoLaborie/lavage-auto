@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface MissionValidationCardProps {
     booking: {
@@ -25,6 +26,7 @@ interface MissionValidationCardProps {
 export default function MissionValidationCard({ booking, onValidated }: MissionValidationCardProps) {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [showConfirm, setShowConfirm] = useState(false)
 
     // Only render for IN_PROGRESS bookings
     if (booking.status !== 'IN_PROGRESS') return null
@@ -44,8 +46,6 @@ export default function MissionValidationCard({ booking, onValidated }: MissionV
     }
 
     const handleValidate = async () => {
-        if (!confirm('Êtes-vous sûr de valider la prestation ?')) return
-
         setLoading(true)
         setError(null)
 
@@ -103,7 +103,7 @@ export default function MissionValidationCard({ booking, onValidated }: MissionV
 
             {/* Validation button */}
             <button
-                onClick={handleValidate}
+                onClick={() => setShowConfirm(true)}
                 disabled={loading}
                 className="w-full bg-[#004aad] text-white py-2.5 px-4 rounded-lg font-medium text-sm hover:bg-[#003c8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -114,6 +114,18 @@ export default function MissionValidationCard({ booking, onValidated }: MissionV
             {error && (
                 <p className="mt-2 text-sm text-red-600">{error}</p>
             )}
+
+            <ConfirmDialog
+                isOpen={showConfirm}
+                onConfirm={() => {
+                    setShowConfirm(false)
+                    handleValidate()
+                }}
+                onCancel={() => setShowConfirm(false)}
+                title="Valider la prestation"
+                message="Êtes-vous sûr de valider la prestation ?"
+                confirmLabel="Valider"
+            />
         </div>
     )
 }

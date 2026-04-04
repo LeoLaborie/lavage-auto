@@ -1,13 +1,17 @@
 'use client'
 
 import Header from '@/components/Header'
+import { Skeleton, SkeletonBookingCard } from '@/components/ui/Skeleton'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { AppleEmoji } from '@/components/AppleEmoji'
 import VehicleForm from '@/components/features/dashboard/VehicleForm'
 import VehicleList from '@/components/features/dashboard/VehicleList'
 import MissionValidationCard from '@/components/features/dashboard/MissionValidationCard'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import EmptyState, { CalendarIcon } from '@/components/ui/EmptyState'
 
 interface Booking {
     id: string
@@ -45,17 +49,17 @@ interface ClientDashboardViewProps {
 
 export default function ClientDashboardView({ initialBookings, initialCars }: ClientDashboardViewProps) {
     const { user, loading } = useAuth()
+    const { toast } = useToast()
     const router = useRouter()
     const [bookings, setBookings] = useState<Booking[]>(initialBookings)
+    const [cancelBookingId, setCancelBookingId] = useState<string | null>(null)
 
     // Sync with props when navigation/revalidation happens
     useEffect(() => {
         setBookings(initialBookings)
     }, [initialBookings])
 
-    const handleCancelBooking = async (bookingId: string) => {
-        if (!confirm('Êtes-vous sûr de vouloir annuler cette réservation ?')) return
-
+    const confirmCancelBooking = async (bookingId: string) => {
         try {
             const res = await fetch('/api/customer/bookings/cancel', {
                 method: 'POST',
@@ -64,20 +68,48 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
             })
 
             if (res.ok) {
-                alert('Réservation annulée avec succès')
+                toast.success('Réservation annulée avec succès')
                 router.refresh()
             } else {
                 const data = await res.json()
-                alert(data.error || 'Erreur lors de l\'annulation')
+                toast.error(data.error || 'Erreur lors de l\'annulation')
             }
         } catch (error) {
             console.error('Error cancelling booking:', error)
-            alert('Une erreur est survenue')
+            toast.error('Une erreur est survenue')
         }
     }
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+        return (
+            <div className="min-h-screen bg-gray-50">
+                <Header currentPage="dashboard" />
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                    <div className="mb-8">
+                        <Skeleton className="h-8 w-48 mb-2" />
+                        <Skeleton className="h-5 w-64" />
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2 space-y-6">
+                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                <Skeleton className="h-6 w-40 mb-4" />
+                                <SkeletonBookingCard />
+                                <div className="mt-4"><SkeletonBookingCard /></div>
+                            </div>
+                        </div>
+                        <div className="space-y-6">
+                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                <Skeleton className="h-6 w-32 mb-4" />
+                                <div className="space-y-3">
+                                    <Skeleton className="h-16 w-full rounded-xl" />
+                                    <Skeleton className="h-16 w-full rounded-xl" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        )
     }
 
     if (!user) return null
@@ -119,9 +151,12 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                             <h2 className="text-xl font-semibold mb-4">Mes réservations en cours</h2>
                             {activeBookings.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
-                                    Aucune réservation en cours
-                                </div>
+                                <EmptyState
+                                    icon={<CalendarIcon />}
+                                    title="Aucune réservation en cours"
+                                    description="Réservez votre premier lavage auto à domicile en quelques clics."
+                                    action={{ label: "Réserver un lavage", href: "/reserver" }}
+                                />
                             ) : (
                                 <div className="space-y-4">
                                     {activeBookings.map(booking => (
@@ -162,7 +197,7 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                                                     <p className="font-bold text-gray-900 mb-2">{booking.finalPrice} €</p>
                                                     {booking.status === 'PENDING' || booking.status === 'ASSIGNED' || booking.status === 'CONFIRMED' ? (
                                                         <button
-                                                            onClick={() => handleCancelBooking(booking.id)}
+                                                            onClick={() => setCancelBookingId(booking.id)}
                                                             className="text-sm text-red-600 hover:text-red-800 font-medium underline"
                                                         >
                                                             Annuler
@@ -244,6 +279,19 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                     </div>
                 </div>
             </main>
+
+            <ConfirmDialog
+                isOpen={!!cancelBookingId}
+                onConfirm={() => {
+                    confirmCancelBooking(cancelBookingId!)
+                    setCancelBookingId(null)
+                }}
+                onCancel={() => setCancelBookingId(null)}
+                title="Annuler la réservation"
+                message="Êtes-vous sûr de vouloir annuler cette réservation ?"
+                confirmLabel="Annuler la réservation"
+                variant="danger"
+            />
         </div>
     )
 }

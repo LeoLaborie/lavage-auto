@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { validateBookingForm, validateDateTimeBooking } from '@/lib/validation';
 import type { ServiceId } from '@/lib/constants/services';
 import Image from 'next/image';
@@ -83,6 +84,7 @@ export default function BookingWizard() {
   const [selectedTime, setSelectedTime] = useState(() => readStoredString('booking_time'));
   const [address, setAddress] = useState(() => readStoredString('booking_address'));
   const { user } = useAuth();
+  const { toast } = useToast();
   const [customerInfo, setCustomerInfo] = useState<BookingFormData>(readStoredCustomerInfo);
 
   // Pre-fill user info if logged in
@@ -294,7 +296,7 @@ export default function BookingWizard() {
     if (!customerValidation.isValid || !dateTimeValidation.isValid) {
       setFormErrors(customerValidation.errors);
       setDateTimeErrors(dateTimeValidation.errors);
-      alert("Veuillez vérifier les informations saisies. Des erreurs sont présentes.");
+      toast.warning("Veuillez vérifier les informations saisies. Des erreurs sont présentes.");
       if (!customerValidation.isValid) setCurrentStep(4);
       else if (!dateTimeValidation.isValid) setCurrentStep(3);
       return;
@@ -357,17 +359,17 @@ export default function BookingWizard() {
       }
 
       if (result.data?.warning) {
-        alert('La réservation a été créée mais le paiement n\'a pas pu être initialisé. Veuillez réessayer depuis votre espace.');
+        toast.warning('La réservation a été créée mais le paiement n\'a pas pu être initialisé. Veuillez réessayer depuis votre espace.');
         window.location.href = '/dashboard';
         return;
       }
 
-      alert('Réservation confirmée ! Vous allez être redirigé vers votre espace.');
+      toast.success('Réservation confirmée ! Vous allez être redirigé vers votre espace.');
       window.location.href = '/dashboard';
 
     } catch (error) {
       console.error('Error submitting booking:', error);
-      alert('Une erreur est survenue lors de la réservation. Veuillez réessayer.');
+      toast.error('Une erreur est survenue lors de la réservation. Veuillez réessayer.');
     } finally {
       setIsSubmitting(false);
     }

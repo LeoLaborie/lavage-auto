@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import Header from '@/components/Header';
+import { useToast } from '@/contexts/ToastContext';
 import { validateContactForm, ContactFormData } from '@/lib/validation';
 
 export default function Contact() {
+  const { toast } = useToast();
   const [formData, setFormData] = useState<ContactFormData>({
     firstName: '',
     lastName: '',
@@ -38,7 +40,7 @@ export default function Contact() {
 
     // TODO: Submit to API
     setTimeout(() => {
-      alert('Message envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.');
+      toast.success('Message envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.');
       setFormData({
         firstName: '',
         lastName: '',

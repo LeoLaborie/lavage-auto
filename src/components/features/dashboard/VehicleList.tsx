@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import VehicleEditForm from "@/components/features/dashboard/VehicleEditForm";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { deleteVehicle } from "@/lib/actions/garage";
+import EmptyState, { CarIcon } from "@/components/ui/EmptyState";
 
 interface Car {
     id: string;
@@ -17,10 +19,10 @@ interface VehicleListProps {
 
 export default function VehicleList({ cars }: VehicleListProps) {
     const [editingCar, setEditingCar] = useState<Car | null>(null);
+    const [deleteCarId, setDeleteCarId] = useState<string | null>(null);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
-    async function handleDelete(carId: string) {
-        if (!confirm("Voulez-vous vraiment supprimer ce véhicule ?")) return;
+    async function confirmDelete(carId: string) {
         setDeleteError(null);
         const result = await deleteVehicle(carId);
         if (!result.success) {
@@ -30,9 +32,11 @@ export default function VehicleList({ cars }: VehicleListProps) {
 
     if (cars.length === 0) {
         return (
-            <div className="p-6 border-2 border-dashed border-slate-200 rounded-xl text-center text-slate-400 font-medium">
-                Aucun véhicule enregistré.
-            </div>
+            <EmptyState
+                icon={<CarIcon />}
+                title="Aucun véhicule"
+                description="Ajoutez votre premier véhicule pour faciliter vos prochaines réservations."
+            />
         );
     }
 
@@ -77,7 +81,7 @@ export default function VehicleList({ cars }: VehicleListProps) {
                             {/* Delete button */}
                             <button
                                 type="button"
-                                onClick={() => handleDelete(car.id)}
+                                onClick={() => setDeleteCarId(car.id)}
                                 className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                 title="Supprimer"
                                 aria-label={`Supprimer ${car.make} ${car.model}`}
@@ -98,6 +102,19 @@ export default function VehicleList({ cars }: VehicleListProps) {
                     onClose={() => setEditingCar(null)}
                 />
             )}
+
+            <ConfirmDialog
+                isOpen={!!deleteCarId}
+                onConfirm={() => {
+                    confirmDelete(deleteCarId!);
+                    setDeleteCarId(null);
+                }}
+                onCancel={() => setDeleteCarId(null)}
+                title="Supprimer le véhicule"
+                message="Voulez-vous vraiment supprimer ce véhicule ?"
+                confirmLabel="Supprimer"
+                variant="danger"
+            />
         </>
     );
 }

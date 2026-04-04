@@ -1,13 +1,16 @@
 'use client'
 
 import Header from '@/components/Header'
+import { Skeleton, SkeletonStatsCard, SkeletonMissionCard } from '@/components/ui/Skeleton'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { AppleEmoji } from '@/components/AppleEmoji'
 
 import { startStripeOnboarding } from '@/lib/actions/washer-stripe'
 import PhotoUploader from '@/components/features/laveur/PhotoUploader'
+import EmptyState, { MissionIcon } from '@/components/ui/EmptyState'
 
 interface Mission {
     id: string
@@ -54,6 +57,7 @@ function formatEuros(amountCents: number): string {
 
 export default function WasherDashboardView({ user: initialUser }: WasherDashboardProps) {
     const { user, loading } = useAuth()
+    const { toast } = useToast()
     const router = useRouter()
     const [isAvailable, setIsAvailable] = useState(initialUser.profile?.isAvailable ?? true)
     const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false)
@@ -76,11 +80,11 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                     setAvailableMissions([])
                 }
             } else {
-                alert('Erreur lors de la mise à jour de la disponibilité')
+                toast.error('Erreur lors de la mise à jour de la disponibilité')
             }
         } catch (error) {
             console.error('Failed to update availability', error)
-            alert('Une erreur est survenue')
+            toast.error('Une erreur est survenue')
         } finally {
             setIsUpdatingAvailability(false)
         }
@@ -165,15 +169,15 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
             if (response.ok) {
                 await fetchMissions()
-                alert('Mission acceptée avec succès !')
+                toast.success('Mission acceptée avec succès !')
                 setActiveTab('accepted') // Switch to accepted tab
             } else {
                 const error = await response.json()
-                alert(error.error || 'Erreur lors de l\'acceptation de la mission')
+                toast.error(error.error || 'Erreur lors de l\'acceptation de la mission')
             }
         } catch (error) {
             console.error('Error accepting mission:', error)
-            alert('Une erreur est survenue')
+            toast.error('Une erreur est survenue')
         } finally {
             setAcceptingId(null)
         }
@@ -191,11 +195,11 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                 await fetchMissions() // Re-fetch to reflect the new status
             } else {
                 const error = await response.json()
-                alert(error.error || 'Erreur lors de la mise à jour du statut')
+                toast.error(error.error || 'Erreur lors de la mise à jour du statut')
             }
         } catch (error) {
             console.error('Error updating mission status:', error)
-            alert('Une erreur est survenue')
+            toast.error('Une erreur est survenue')
         } finally {
             setUpdatingStatusId(null)
         }
@@ -208,18 +212,46 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
             if (result.success && result.data?.url) {
                 window.location.href = result.data.url
             } else {
-                alert(result.error || 'Erreur lors de l\'initialisation de Stripe')
+                toast.error(result.error || 'Erreur lors de l\'initialisation de Stripe')
             }
         } catch (error) {
             console.error('Stripe onboarding error:', error)
-            alert('Une erreur est survenue lors de la connexion à Stripe')
+            toast.error('Une erreur est survenue lors de la connexion à Stripe')
         } finally {
             setIsOnboarding(false)
         }
     }
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+        return (
+            <div className="min-h-screen bg-gray-50">
+                <Header currentPage="dashboard" />
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                    <div className="mb-8">
+                        <Skeleton className="h-8 w-48 mb-2" />
+                        <Skeleton className="h-5 w-64" />
+                    </div>
+                    <div className="grid md:grid-cols-4 gap-6 mb-8">
+                        <SkeletonStatsCard />
+                        <SkeletonStatsCard />
+                        <SkeletonStatsCard />
+                        <SkeletonStatsCard />
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="border-b border-gray-100 p-4 flex gap-4">
+                            <Skeleton className="h-8 w-32" />
+                            <Skeleton className="h-8 w-28" />
+                            <Skeleton className="h-8 w-24" />
+                        </div>
+                        <div className="divide-y divide-gray-100">
+                            <SkeletonMissionCard />
+                            <SkeletonMissionCard />
+                            <SkeletonMissionCard />
+                        </div>
+                    </div>
+                </main>
+            </div>
+        )
     }
 
     if (!user) return null
@@ -366,7 +398,11 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                             <div className="mt-10">
                                 <h2 className="text-xl font-bold text-gray-900 mb-4">Récapitulatif des gains</h2>
                                 {isEarningsLoading ? (
-                                    <div className="text-gray-500 text-sm">Chargement des données...</div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <SkeletonStatsCard />
+                                        <SkeletonStatsCard />
+                                        <SkeletonStatsCard />
+                                    </div>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div className="bg-green-50 border border-green-100 rounded-xl p-5">
@@ -406,15 +442,22 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                             </div>
 
                             {isLoading ? (
-                                <div className="p-8 text-center text-gray-500">Chargement des missions...</div>
+                                <div className="divide-y divide-gray-100">
+                                    <SkeletonMissionCard />
+                                    <SkeletonMissionCard />
+                                    <SkeletonMissionCard />
+                                </div>
                             ) : (
                                 <div className="divide-y divide-gray-100">
                                     {(activeTab === 'available' ? availableMissions : acceptedMissions).length === 0 ? (
-                                        <div className="p-8 text-center text-gray-500">
-                                            {activeTab === 'available'
-                                                ? 'Aucune mission disponible dans votre secteur pour le moment.'
-                                                : 'Vous n\'avez aucune mission prévue.'}
-                                        </div>
+                                        <EmptyState
+                                            icon={<MissionIcon />}
+                                            title={activeTab === 'available' ? "Aucune mission disponible" : "Aucune mission prévue"}
+                                            description={activeTab === 'available'
+                                                ? "Il n'y a pas de mission dans votre secteur pour le moment. Revenez bientôt !"
+                                                : "Vous n'avez aucune mission prévue. Consultez les missions disponibles."}
+                                            action={activeTab === 'accepted' ? { label: "Voir les missions disponibles", onClick: () => setActiveTab('available') } : undefined}
+                                        />
                                     ) : (
                                         (activeTab === 'available' ? availableMissions : acceptedMissions).map((mission) => (
                                             <div key={mission.id} className="p-6 hover:bg-gray-50 transition-colors">
