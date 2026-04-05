@@ -26,7 +26,11 @@ export const metadata: Metadata = {
     title: "Nealkar - Lavage auto à domicile",
     description: "Réservez votre lavage auto sans eau à domicile en quelques clics.",
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://nealkar.fr"),
+  metadataBase: new URL(
+    (process.env.NEXT_PUBLIC_APP_URL?.startsWith("http")
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : `https://${process.env.NEXT_PUBLIC_APP_URL}`) || "https://nealkar.fr"
+  ),
 };
 
 export default function RootLayout({
