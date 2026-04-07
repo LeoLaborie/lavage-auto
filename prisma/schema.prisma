@@ -212,10 +212,10 @@ model ContactMessage {
 
   firstName String   @map("first_name")
   lastName  String   @map("last_name")
-  email     String   @map("email")
-  phone     String   @map("phone")
-  subject   String   @map("subject")
-  message   String   @map("message")
+  email     String
+  phone     String
+  subject   String
+  message   String
 
   createdAt DateTime @default(now()) @map("created_at")
 

@@ -82,6 +82,10 @@ export async function triggerRefund(
             return { success: false, error: 'Ce paiement a déjà été entièrement remboursé' }
         }
 
+        if (booking.payment.paidOutAt) {
+            return { success: false, error: 'Remboursement impossible : les fonds ont déjà été versés au laveur. Veuillez traiter manuellement.' }
+        }
+
         const alreadyRefunded = booking.payment.refundAmountCents ?? 0
         const remaining = booking.payment.amountCents - alreadyRefunded
 

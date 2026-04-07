@@ -8,9 +8,8 @@ import { triggerPayout } from '@/lib/actions/payout'
  *
  * Marks a booking as COMPLETED and triggers the payout to the laveur.
  *
- * NOTE: This endpoint exists for Story 3.4 QA/testing.
- * In production, this transition will be triggered by the client validation
- * flow implemented in Story 5.2 (Vue Client Post-Mission et Validation Finale).
+ * Used by the client post-mission validation flow (Story 5.2 — MissionValidationCard)
+ * and by admins to manually complete bookings.
  *
  * Authorization: Only the CLIENT who owns the booking, or an ADMIN, may call this.
  */

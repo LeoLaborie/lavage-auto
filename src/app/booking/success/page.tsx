@@ -64,9 +64,13 @@ export default async function BookingSuccessPage({
                     </svg>
                 </div>
 
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Réservation confirmée !</h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                    {booking.status === 'PENDING' ? 'Paiement en cours de traitement' : 'Réservation confirmée !'}
+                </h1>
                 <p className="text-gray-500 mb-8">
-                    Votre paiement a été accepté. Un laveur sera assigné à votre mission prochainement.
+                    {booking.status === 'PENDING'
+                        ? 'Votre paiement est en cours de vérification. Votre réservation sera confirmée dans quelques instants.'
+                        : 'Votre paiement a été accepté. Un laveur sera assigné à votre mission prochainement.'}
                 </p>
 
                 <div className="bg-gray-50 rounded-xl p-6 text-left space-y-3 mb-8">

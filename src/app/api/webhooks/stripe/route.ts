@@ -57,7 +57,12 @@ export async function POST(request: Request) {
                     throw new Error(`Booking not found: ${bookingId}`)
                 }
 
-                // Update Booking Status
+                // Idempotency: only transition PENDING → CONFIRMED
+                if (booking.status !== 'PENDING') {
+                    console.log(`[Stripe Webhook] Booking ${bookingId} already ${booking.status}, skipping`)
+                    return
+                }
+
                 await tx.booking.update({
                     where: { id: bookingId },
                     data: { status: 'CONFIRMED' }

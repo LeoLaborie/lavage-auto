@@ -96,7 +96,16 @@ export const POST = (req: Request, { params }: { params: Promise<{ bookingId: st
       )
     }
 
-    // 7. Business rule validation
+    // 7. Business rule: booking must be in an active mission state
+    const validPhotoStatuses = ['ACCEPTED', 'EN_ROUTE', 'IN_PROGRESS']
+    if (!validPhotoStatuses.includes(booking.status)) {
+      return NextResponse.json(
+        { success: false, error: `Impossible d'uploader des photos pour une mission au statut "${booking.status}".` },
+        { status: 400 }
+      )
+    }
+
+    // 8. Business rule validation
     if (photoType === 'avant') {
       if (booking.beforePhotoUrl !== null) {
         return NextResponse.json(
@@ -120,7 +129,7 @@ export const POST = (req: Request, { params }: { params: Promise<{ bookingId: st
       }
     }
 
-    // 8. Upload to Supabase Storage (service-role client)
+    // 9. Upload to Supabase Storage (service-role client)
     const fileBuffer = await file.arrayBuffer()
     const fileBytes = new Uint8Array(fileBuffer)
     const timestamp = Date.now()
@@ -141,14 +150,14 @@ export const POST = (req: Request, { params }: { params: Promise<{ bookingId: st
       )
     }
 
-    // 9. Get public URL
+    // 10. Get public URL
     const { data: urlData } = getSupabaseAdmin().storage
       .from(BUCKET_NAME)
       .getPublicUrl(storagePath)
 
     const photoUrl = urlData.publicUrl
 
-    // 10. Update Booking in Prisma
+    // 11. Update Booking in Prisma
     try {
       const updateData: Record<string, unknown> = {}
 

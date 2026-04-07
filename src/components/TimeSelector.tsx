@@ -2,8 +2,9 @@
 import { useState, useEffect, useRef } from 'react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
-import { format, addDays, isSameDay, parseISO } from 'date-fns'
+import { format, addDays, isSameDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { TIME_SLOTS } from '@/lib/constants/services'
 
 interface TimeSelectorProps {
   onSelect: (type: 'now' | 'later', time?: string, date?: string) => void
@@ -38,18 +39,12 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
       const now = new Date()
       const isToday = date.toDateString() === now.toDateString()
 
-      // Generate all possible slots
-      const allSlots: string[] = []
-      for (let hour = 8; hour <= 18; hour++) {
-        for (const minutes of [0, 30]) {
-          const time = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-          // Filter past slots if today
-          if (isToday && (hour < now.getHours() || (hour === now.getHours() && minutes <= now.getMinutes()))) {
-            continue
-          }
-          allSlots.push(time)
-        }
-      }
+      // Filter past slots if today
+      const allSlots = TIME_SLOTS.filter(time => {
+        if (!isToday) return true
+        const [h, m] = time.split(':').map(Number)
+        return h > now.getHours() || (h === now.getHours() && m > now.getMinutes())
+      })
 
       // Fetch booked slots in one call and filter them out
       const res = await fetch(`/api/booking/booked-slots?date=${dateStr}`)
