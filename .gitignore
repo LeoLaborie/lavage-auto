@@ -42,3 +42,4 @@ yarn-error.log*
 
 /src/generated/prisma
 /.worktrees/
+.claude/
