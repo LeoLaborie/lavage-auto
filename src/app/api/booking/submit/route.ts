@@ -65,13 +65,56 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     )
   }
 
+  // --- Rate limit: reject if last booking was created < 10s ago ---
+  const TEN_SECONDS_AGO = new Date(Date.now() - 10_000)
+  const recentBooking = await prisma.booking.findFirst({
+    where: {
+      clientId: dbUser.id,
+      createdAt: { gte: TEN_SECONDS_AGO },
+    },
+    select: { id: true },
+  })
+
+  if (recentBooking) {
+    return NextResponse.json(
+      { success: false, error: 'Veuillez patienter quelques secondes avant de créer une nouvelle réservation.' },
+      { status: 429 }
+    )
+  }
+
+  // --- Active bookings cap (max 10 per client) ---
+  const PENDING_TTL_MS = 30 * 60 * 1000 // 30 minutes
+  const pendingCutoff = new Date(Date.now() - PENDING_TTL_MS)
+
+  const activeBookingsCount = await prisma.booking.count({
+    where: {
+      clientId: dbUser.id,
+      status: { in: ['PENDING', 'CONFIRMED', 'ACCEPTED'] },
+      // Exclude stale PENDING bookings (no payment after 30 min)
+      NOT: {
+        status: 'PENDING',
+        createdAt: { lt: pendingCutoff },
+      },
+    },
+  })
+
+  if (activeBookingsCount >= 10) {
+    return NextResponse.json(
+      { success: false, error: 'Vous avez atteint le maximum de 10 réservations actives.' },
+      { status: 429 }
+    )
+  }
+
   // --- Duplicate Booking Prevention (Guard) — per-client ---
   const conflictingBooking = await prisma.booking.findFirst({
     where: {
       clientId: dbUser.id,
       scheduledDate,
-      status: {
-        in: ['PENDING', 'CONFIRMED', 'ACCEPTED'],
+      status: { in: ['PENDING', 'CONFIRMED', 'ACCEPTED'] },
+      // Ignore stale PENDING bookings
+      NOT: {
+        status: 'PENDING',
+        createdAt: { lt: pendingCutoff },
       },
     },
   })

@@ -30,6 +30,9 @@ export const GET = withClientGuard(async (req: Request, _user: any, dbUser: any)
     const startOfDay = new Date(`${date}T00:00:00`)
     const endOfDay = new Date(`${date}T23:59:59`)
 
+    // Ignore stale PENDING bookings (no payment after 30 min)
+    const pendingCutoff = new Date(Date.now() - 30 * 60 * 1000)
+
     const bookings = await prisma.booking.findMany({
       where: {
         clientId: dbUser.id,
@@ -37,8 +40,10 @@ export const GET = withClientGuard(async (req: Request, _user: any, dbUser: any)
           gte: startOfDay,
           lte: endOfDay,
         },
-        status: {
-          in: ['PENDING', 'CONFIRMED', 'ACCEPTED'],
+        status: { in: ['PENDING', 'CONFIRMED', 'ACCEPTED'] },
+        NOT: {
+          status: 'PENDING',
+          createdAt: { lt: pendingCutoff },
         },
       },
       select: {

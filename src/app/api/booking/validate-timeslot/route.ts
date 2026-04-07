@@ -50,13 +50,18 @@ export const POST = withClientGuard(async (req: Request, _user: any, dbUser: any
       )
     }
 
+    // Ignore stale PENDING bookings (no payment after 30 min)
+    const pendingCutoff = new Date(Date.now() - 30 * 60 * 1000)
+
     // Check if this client already has an active booking at this exact datetime
     const conflictingBooking = await prisma.booking.findFirst({
       where: {
         clientId: dbUser.id,
         scheduledDate: scheduledAt,
-        status: {
-          in: ['PENDING', 'CONFIRMED', 'ACCEPTED'],
+        status: { in: ['PENDING', 'CONFIRMED', 'ACCEPTED'] },
+        NOT: {
+          status: 'PENDING',
+          createdAt: { lt: pendingCutoff },
         },
       },
     })
