@@ -67,13 +67,32 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
         })
 
         // Auto-refund if payment was successful
+        // With capture_method: 'manual', uncaptured PIs must be cancelled (not refunded)
         if (updatedBooking.payment && updatedBooking.payment.status === 'SUCCEEDED' && updatedBooking.payment.stripePaymentIntentId) {
             try {
-                const refund = await stripe.refunds.create({
-                    payment_intent: updatedBooking.payment.stripePaymentIntentId,
-                    amount: updatedBooking.payment.amountCents,
-                    reason: 'requested_by_customer',
-                })
+                const pi = await stripe.paymentIntents.retrieve(updatedBooking.payment.stripePaymentIntentId)
+
+                if (pi.status === 'requires_capture') {
+                    // PI not yet captured — cancel to release the hold
+                    await stripe.paymentIntents.cancel(updatedBooking.payment.stripePaymentIntentId)
+                    console.info(
+                        '[cancel] Uncaptured PI cancelled for booking %s (PI: %s)',
+                        bookingId,
+                        updatedBooking.payment.stripePaymentIntentId
+                    )
+                } else {
+                    // PI was captured — issue a refund
+                    await stripe.refunds.create({
+                        payment_intent: updatedBooking.payment.stripePaymentIntentId,
+                        amount: updatedBooking.payment.amountCents,
+                        reason: 'requested_by_customer',
+                    })
+                    console.info(
+                        '[cancel] Refund issued for booking %s: %d cents',
+                        bookingId,
+                        updatedBooking.payment.amountCents
+                    )
+                }
 
                 await prisma.payment.update({
                     where: { id: updatedBooking.payment.id },
@@ -84,13 +103,6 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
                         refundReason: 'Client cancellation',
                     },
                 })
-
-                console.info(
-                    '[cancel] Auto-refund issued for booking %s: %d cents (Stripe refund: %s)',
-                    bookingId,
-                    updatedBooking.payment.amountCents,
-                    refund.id
-                )
             } catch (refundError) {
                 // Log but don't block cancellation — admin can retry refund manually
                 console.error('[cancel] Auto-refund failed for booking %s:', bookingId, refundError)

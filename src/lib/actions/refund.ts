@@ -5,7 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Prisma IDs use cuid() format (e.g. "clxyz123abc...")
+const CUID_REGEX = /^c[a-z0-9]{8,}$/i
 
 export interface RefundResult {
     success: boolean
@@ -53,8 +54,8 @@ export async function triggerRefund(
             return { success: false, error: 'Accès refusé' }
         }
 
-        // 2. Validate bookingId format (M3)
-        if (!UUID_REGEX.test(bookingId)) {
+        // 2. Validate bookingId format (cuid)
+        if (!CUID_REGEX.test(bookingId)) {
             return { success: false, error: 'Identifiant de réservation invalide' }
         }
 

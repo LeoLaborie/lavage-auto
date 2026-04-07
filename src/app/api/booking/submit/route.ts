@@ -65,9 +65,10 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     )
   }
 
-  // --- Duplicate Booking Prevention (Guard) ---
+  // --- Duplicate Booking Prevention (Guard) — per-client ---
   const conflictingBooking = await prisma.booking.findFirst({
     where: {
+      clientId: dbUser.id,
       scheduledDate,
       status: {
         in: ['PENDING', 'CONFIRMED', 'ACCEPTED'],
@@ -77,7 +78,7 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
 
   if (conflictingBooking) {
     return NextResponse.json(
-      { success: false, error: 'Ce créneau n\'est plus disponible (déjà réservé).' },
+      { success: false, error: 'Vous avez déjà une réservation sur ce créneau.' },
       { status: 409 }
     )
   }

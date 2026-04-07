@@ -13,6 +13,9 @@ export const GET = withClientGuard(async (_req: Request, _authUser, dbUser) => {
             where: {
                 clientId: dbUser.id
             },
+            include: {
+                car: true
+            },
             orderBy: {
                 scheduledDate: 'desc'
             }
@@ -20,26 +23,6 @@ export const GET = withClientGuard(async (_req: Request, _authUser, dbUser) => {
 
         // Map Prisma records to the shape expected by the frontend dashboard
         const mappedBookings = bookings.map(b => {
-            // Extract car info from accessNotes if possible (Story 2.3 workaround)
-            let carMake = '—'
-            let carModel = '—'
-
-            if (b.accessNotes?.includes('Véhicule:')) {
-                // Try to extract: "Véhicule: [Make] [Model] ([Plate])"
-                const carLine = b.accessNotes.split('\n').find(l => l.includes('Véhicule:')) || ''
-                const match = carLine.match(/Véhicule:\s*(.*?)\s+(.*?)\s+\((.*?)\)/)
-                if (match) {
-                    carMake = match[1]
-                    carModel = match[2]
-                } else {
-                    // Fallback for partial matches like "Véhicule: Tesla Model 3"
-                    const partialMatch = carLine.match(/Véhicule:\s*(.*)/)
-                    if (partialMatch) {
-                        carMake = partialMatch[1]
-                    }
-                }
-            }
-
             return {
                 id: b.id,
                 scheduledDate: b.scheduledDate.toISOString(),
@@ -52,8 +35,8 @@ export const GET = withClientGuard(async (_req: Request, _authUser, dbUser) => {
                     name: b.serviceName
                 },
                 car: {
-                    make: carMake,
-                    model: carModel
+                    make: b.car?.make ?? '—',
+                    model: b.car?.model ?? '—'
                 },
                 // Placeholder for assignment (Epic 4)
                 assignment: null
