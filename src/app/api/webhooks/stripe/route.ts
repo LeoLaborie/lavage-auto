@@ -42,55 +42,79 @@ export async function POST(request: Request) {
                 return NextResponse.json({ success: false, error: 'Missing bookingId' }, { status: 200 })
             }
 
-            // Validate payment_intent type before storing
-            const paymentIntentId = typeof session.payment_intent === 'string'
-                ? session.payment_intent
-                : session.payment_intent?.id ?? null;
+            if (session.mode === 'setup') {
+                // Setup mode: card saved, no payment yet
+                // Just confirm the booking — Payment record will be created at washer acceptance
+                await prisma.$transaction(async (tx) => {
+                    const booking = await tx.booking.findUnique({
+                        where: { id: bookingId }
+                    })
 
-            // --- Atomic Update: Booking + Payment ---
-            await prisma.$transaction(async (tx) => {
-                const booking = await tx.booking.findUnique({
-                    where: { id: bookingId }
-                })
-
-                if (!booking) {
-                    throw new Error(`Booking not found: ${bookingId}`)
-                }
-
-                // Idempotency: only transition PENDING → CONFIRMED
-                if (booking.status !== 'PENDING') {
-                    console.log(`[Stripe Webhook] Booking ${bookingId} already ${booking.status}, skipping`)
-                    return
-                }
-
-                await tx.booking.update({
-                    where: { id: bookingId },
-                    data: { status: 'CONFIRMED' }
-                })
-
-                // Create or Update Payment — upgrade PROCESSING → SUCCEEDED
-                await tx.payment.upsert({
-                    where: { bookingId },
-                    update: {
-                        status: 'SUCCEEDED',
-                        stripeSessionId: session.id,
-                        stripePaymentIntentId: paymentIntentId,
-                        processedAt: new Date(),
-                    },
-                    create: {
-                        bookingId,
-                        userId: booking.clientId,
-                        amountCents: booking.amountCents,
-                        currency: booking.currency,
-                        status: 'SUCCEEDED',
-                        stripeSessionId: session.id,
-                        stripePaymentIntentId: paymentIntentId,
-                        processedAt: new Date(),
+                    if (!booking) {
+                        throw new Error(`Booking not found: ${bookingId}`)
                     }
-                })
-            })
 
-            console.log(`[Stripe Webhook] Booking ${bookingId} confirmed successfully`)
+                    // Idempotency: only transition PENDING → CONFIRMED
+                    if (booking.status !== 'PENDING') {
+                        console.log(`[Stripe Webhook] Booking ${bookingId} already ${booking.status}, skipping`)
+                        return
+                    }
+
+                    await tx.booking.update({
+                        where: { id: bookingId },
+                        data: { status: 'CONFIRMED' }
+                    })
+                })
+
+                console.log(`[Stripe Webhook] Booking ${bookingId} confirmed (setup mode — card saved)`)
+            } else {
+                // Legacy payment mode: keep existing logic for backwards compatibility
+                const paymentIntentId = typeof session.payment_intent === 'string'
+                    ? session.payment_intent
+                    : session.payment_intent?.id ?? null;
+
+                await prisma.$transaction(async (tx) => {
+                    const booking = await tx.booking.findUnique({
+                        where: { id: bookingId }
+                    })
+
+                    if (!booking) {
+                        throw new Error(`Booking not found: ${bookingId}`)
+                    }
+
+                    if (booking.status !== 'PENDING') {
+                        console.log(`[Stripe Webhook] Booking ${bookingId} already ${booking.status}, skipping`)
+                        return
+                    }
+
+                    await tx.booking.update({
+                        where: { id: bookingId },
+                        data: { status: 'CONFIRMED' }
+                    })
+
+                    await tx.payment.upsert({
+                        where: { bookingId },
+                        update: {
+                            status: 'SUCCEEDED',
+                            stripeSessionId: session.id,
+                            stripePaymentIntentId: paymentIntentId,
+                            processedAt: new Date(),
+                        },
+                        create: {
+                            bookingId,
+                            userId: booking.clientId,
+                            amountCents: booking.amountCents,
+                            currency: booking.currency,
+                            status: 'SUCCEEDED',
+                            stripeSessionId: session.id,
+                            stripePaymentIntentId: paymentIntentId,
+                            processedAt: new Date(),
+                        }
+                    })
+                })
+
+                console.log(`[Stripe Webhook] Booking ${bookingId} confirmed (payment mode — legacy)`)
+            }
         } else if (event.type === 'payment_intent.payment_failed') {
             const paymentIntent = event.data.object as Stripe.PaymentIntent;
             // The bookingId could be in the metadata if passed at intent creation.
