@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withWasherGuard } from '@/lib/auth/washerGuard'
 import { prisma } from '@/lib/prisma'
+import { chargeCustomer } from '@/lib/stripe'
 
 export const POST = withWasherGuard(async (req, _user, profile) => {
     try {
@@ -13,9 +14,7 @@ export const POST = withWasherGuard(async (req, _user, profile) => {
             )
         }
 
-        // Use updateMany for atomic conditional update: 
-        // will only update if laveurId is still null and status is PENDING or CONFIRMED.
-        // This ensures atomicity and prevents race conditions.
+        // 1. Atomic claim: only one washer can win
         const result = await prisma.booking.updateMany({
             where: {
                 id: bookingId,
@@ -23,25 +22,96 @@ export const POST = withWasherGuard(async (req, _user, profile) => {
                 status: { in: ['PENDING', 'CONFIRMED'] }
             },
             data: {
-                laveurId: profile.userId, // FK to User.id (cuid), not Supabase Auth UUID
+                laveurId: profile.userId,
                 status: 'ACCEPTED'
             }
         })
 
         if (result.count === 0) {
-            // Optimization: We return a generic conflict message. 
-            // Differentiating between 404 and 409 requires an extra query which 
-            // breaks the single-operation atomicity benefit and adds overhead.
             return NextResponse.json(
                 { success: false, error: "Cette mission a déjà été acceptée ou n'est plus disponible." },
                 { status: 409 }
             )
         }
 
-        return NextResponse.json({
-            success: true,
-            data: { bookingId }
+        // 2. Load booking with client profile to get stripeCustomerId
+        const booking = await prisma.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                client: {
+                    include: { profile: true }
+                }
+            }
         })
+
+        if (!booking) {
+            return NextResponse.json(
+                { success: false, error: 'Réservation introuvable après acceptation' },
+                { status: 500 }
+            )
+        }
+
+        const stripeCustomerId = booking.client.profile?.stripeCustomerId
+        if (!stripeCustomerId) {
+            console.error(`[accept] Booking ${bookingId}: client has no stripeCustomerId — cancelling`)
+            await prisma.booking.update({
+                where: { id: bookingId },
+                data: {
+                    status: 'CANCELLED',
+                    laveurId: null,
+                    cancelledAt: new Date(),
+                    cancellationReason: 'Client sans moyen de paiement enregistré',
+                },
+            })
+            return NextResponse.json(
+                { success: false, error: 'Le client n\'a pas de moyen de paiement enregistré. La mission a été annulée.' },
+                { status: 422 }
+            )
+        }
+
+        // 3. Charge the customer off-session
+        try {
+            const paymentIntent = await chargeCustomer(
+                stripeCustomerId,
+                booking.amountCents,
+                bookingId,
+                booking.serviceName
+            )
+
+            // 4. Create Payment record
+            await prisma.payment.create({
+                data: {
+                    bookingId,
+                    userId: booking.clientId,
+                    amountCents: booking.amountCents,
+                    currency: booking.currency,
+                    status: 'SUCCEEDED',
+                    stripePaymentIntentId: paymentIntent.id,
+                    processedAt: new Date(),
+                },
+            })
+
+            return NextResponse.json({
+                success: true,
+                data: { bookingId }
+            })
+        } catch (stripeError: any) {
+            // 5. Payment failed — cancel the booking
+            console.error(`[accept] Payment failed for booking ${bookingId}:`, stripeError.message)
+            await prisma.booking.update({
+                where: { id: bookingId },
+                data: {
+                    status: 'CANCELLED',
+                    laveurId: null,
+                    cancelledAt: new Date(),
+                    cancellationReason: `Échec du paiement: ${stripeError.message}`,
+                },
+            })
+            return NextResponse.json(
+                { success: false, error: 'Le paiement du client a échoué. La mission a été annulée.' },
+                { status: 422 }
+            )
+        }
     } catch (error) {
         console.error('Error accepting mission:', error)
         return NextResponse.json(
