@@ -66,22 +66,21 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
             include: { payment: true }
         })
 
-        // Auto-refund if payment was successful
-        // With capture_method: 'manual', uncaptured PIs must be cancelled (not refunded)
-        if (updatedBooking.payment && updatedBooking.payment.status === 'SUCCEEDED' && updatedBooking.payment.stripePaymentIntentId) {
+        // Auto-refund: only needed if a Payment exists (i.e., after washer acceptance)
+        if (updatedBooking.payment && updatedBooking.payment.stripePaymentIntentId) {
             try {
                 const pi = await stripe.paymentIntents.retrieve(updatedBooking.payment.stripePaymentIntentId)
 
                 if (pi.status === 'requires_capture') {
-                    // PI not yet captured — cancel to release the hold
+                    // Legacy: manual-capture PI not yet captured — cancel to release hold
                     await stripe.paymentIntents.cancel(updatedBooking.payment.stripePaymentIntentId)
                     console.info(
                         '[cancel] Uncaptured PI cancelled for booking %s (PI: %s)',
                         bookingId,
                         updatedBooking.payment.stripePaymentIntentId
                     )
-                } else {
-                    // PI was captured — issue a refund
+                } else if (pi.status === 'succeeded') {
+                    // New flow or legacy captured: issue refund
                     await stripe.refunds.create({
                         payment_intent: updatedBooking.payment.stripePaymentIntentId,
                         amount: updatedBooking.payment.amountCents,
@@ -93,6 +92,7 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
                         updatedBooking.payment.amountCents
                     )
                 }
+                // If PI is in another state (cancelled, etc.), no action needed
 
                 await prisma.payment.update({
                     where: { id: updatedBooking.payment.id },
@@ -108,6 +108,7 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
                 console.error('[cancel] Auto-refund failed for booking %s:', bookingId, refundError)
             }
         }
+        // Before washer acceptance: no Payment exists, nothing to refund
 
         return NextResponse.json({
             success: true,
