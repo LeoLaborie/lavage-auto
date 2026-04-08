@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { capturePaymentIntent, createTransfer } from '@/lib/stripe'
+import { stripe, capturePaymentIntent, createTransfer } from '@/lib/stripe'
 
 export interface PayoutResult {
     success: boolean
@@ -86,19 +86,33 @@ export async function triggerPayout(bookingId: string): Promise<PayoutResult> {
             }
         }
 
-        // 7. Capture the PaymentIntent (release funds from manual-capture escrow)
-        const capturedIntent = await capturePaymentIntent(booking.payment.stripePaymentIntentId)
+        // 7. Get the PaymentIntent — may need capture (legacy) or already succeeded (new flow)
+        const pi = await stripe.paymentIntents.retrieve(booking.payment.stripePaymentIntentId)
 
-        // source_transaction requires a Charge ID (ch_...), NOT a PaymentIntent ID (pi_...).
-        // After capture, latest_charge holds the Charge ID linked to this PaymentIntent.
-        const chargeId = typeof capturedIntent.latest_charge === 'string'
-            ? capturedIntent.latest_charge
-            : capturedIntent.latest_charge?.id
+        let chargeId: string | undefined
+
+        if (pi.status === 'requires_capture') {
+            // Legacy flow: manual-capture PI — capture it now
+            const capturedIntent = await capturePaymentIntent(booking.payment.stripePaymentIntentId)
+            chargeId = typeof capturedIntent.latest_charge === 'string'
+                ? capturedIntent.latest_charge
+                : capturedIntent.latest_charge?.id
+        } else if (pi.status === 'succeeded') {
+            // New flow: PI already captured at washer acceptance
+            chargeId = typeof pi.latest_charge === 'string'
+                ? pi.latest_charge
+                : pi.latest_charge?.id
+        } else {
+            return {
+                success: false,
+                error: `PaymentIntent dans un état inattendu: ${pi.status}. Capture impossible.`,
+            }
+        }
 
         if (!chargeId) {
             return {
                 success: false,
-                error: 'Charge ID introuvable après capture du PaymentIntent — impossible de créer le transfert',
+                error: 'Charge ID introuvable — impossible de créer le transfert',
             }
         }
 
