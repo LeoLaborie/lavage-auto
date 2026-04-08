@@ -97,7 +97,8 @@ model Profile {
   siret           String?  @unique @map("siret")   // SIRET for professional verification (14 digits)
   companyName     String?  @map("company_name")
   status          ProfileStatus  @map("status")    // Set explicitly: VALIDATED for Clients, VALIDATION_PENDING for Laveurs
-  stripeAccountId String?  @unique @map("stripe_account_id")  // Stripe Connect
+  stripeAccountId  String?  @unique @map("stripe_account_id")   // Stripe Connect
+  stripeCustomerId String?  @unique @map("stripe_customer_id")  // Stripe Customer for saved payment methods
 
   // Laveur work preferences
   workRadius      Float?   @map("work_radius")   // Service radius in km
