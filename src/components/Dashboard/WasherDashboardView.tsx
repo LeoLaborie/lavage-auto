@@ -385,7 +385,7 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                     {isOnboarding ? 'Initialisation...' : (
                                         <>
                                             Connecter mon compte bancaire
-                                            <AppleEmoji name="rocket" className="w-5 h-5" />
+                                            <span aria-hidden className="text-lg leading-none">🚀</span>
                                         </>
                                     )}
                                 </button>
