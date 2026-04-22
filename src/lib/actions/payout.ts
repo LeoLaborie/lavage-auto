@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { stripe, capturePaymentIntent, createTransfer } from '@/lib/stripe'
+import { computeCommission, getCurrentCommissionRate } from '@/lib/constants/commission'
 
 export interface PayoutResult {
     success: boolean
@@ -116,9 +117,16 @@ export async function triggerPayout(bookingId: string): Promise<PayoutResult> {
             }
         }
 
-        // 8. Create a Stripe Transfer to the laveur's connected account
-        const transfer = await createTransfer(
+        // 8. Compute commission using the current platform rate (snapshot for this payout)
+        const currentRate = await getCurrentCommissionRate()
+        const { commissionCents, netAmountCents, rateUsed } = computeCommission(
             booking.payment.amountCents,
+            currentRate
+        )
+
+        // 9. Create a Stripe Transfer for the NET amount only — commission stays on platform
+        const transfer = await createTransfer(
+            netAmountCents,
             stripeAccountId,
             chargeId,
             bookingId
@@ -126,16 +134,17 @@ export async function triggerPayout(bookingId: string): Promise<PayoutResult> {
 
         const paidOutAt = new Date()
 
-        // 9. Persist transfer details atomically
-        await prisma.$transaction([
-            prisma.payment.update({
-                where: { id: booking.payment.id },
-                data: {
-                    stripeTransferId: transfer.id,
-                    paidOutAt,
-                },
-            }),
-        ])
+        // 10. Persist transfer details + commission snapshot atomically
+        await prisma.payment.update({
+            where: { id: booking.payment.id },
+            data: {
+                stripeTransferId: transfer.id,
+                paidOutAt,
+                commissionCents,
+                netAmountCents,
+                commissionRate: rateUsed,
+            },
+        })
 
         return {
             success: true,

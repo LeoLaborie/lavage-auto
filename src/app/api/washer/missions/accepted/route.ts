@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withWasherGuard } from '@/lib/auth/washerGuard'
 import { prisma } from '@/lib/prisma'
 import { services } from '@/lib/constants/services'
+import { computeCommission, getCurrentCommissionRate } from '@/lib/constants/commission'
 
 // Static catalog — safe to cache at module level because services.ts is a hardcoded constant.
 // If this ever moves to a DB source, move this Map inside the handler to avoid stale cache.
@@ -20,25 +21,26 @@ export const GET = withWasherGuard(async (_req, _user, profile) => {
     todayStart.setUTCHours(0, 0, 0, 0)
 
     try {
-        // client.profile may be null if the client registered but never completed their profile.
-        // The optional chain on client is defensive; clientId is non-nullable in the schema
-        // but belt-and-suspenders against inconsistent DB state.
-        const bookings = await prisma.booking.findMany({
-            where: {
-                laveurId: profile.userId,
-                status: { in: ['ACCEPTED', 'EN_ROUTE', 'IN_PROGRESS'] },
-                scheduledDate: { gte: todayStart }
-            },
-            orderBy: { scheduledDate: 'asc' },
-            take: 100,
-            include: {
-                client: { include: { profile: true } },
-                car: true
-            }
-        })
+        const [bookings, currentRate] = await Promise.all([
+            prisma.booking.findMany({
+                where: {
+                    laveurId: profile.userId,
+                    status: { in: ['ACCEPTED', 'EN_ROUTE', 'IN_PROGRESS'] },
+                    scheduledDate: { gte: todayStart }
+                },
+                orderBy: { scheduledDate: 'asc' },
+                take: 100,
+                include: {
+                    client: { include: { profile: true } },
+                    car: true
+                }
+            }),
+            getCurrentCommissionRate(),
+        ])
 
         const mapped = bookings.map((booking) => {
             const clientProfile = booking.client?.profile
+            const { netAmountCents, commissionCents } = computeCommission(booking.amountCents, currentRate)
             return {
                 id: booking.id,
                 // Expose status so E2E tests can assert that only active statuses are returned.
@@ -47,6 +49,9 @@ export const GET = withWasherGuard(async (_req, _user, profile) => {
                 serviceAddress: booking.serviceAddress,
                 // Store amountCents in DB; convert to euros with 2-decimal precision for display.
                 finalPrice: Number((booking.amountCents / 100).toFixed(2)),
+                grossAmountCents: booking.amountCents,
+                netAmountCents,
+                commissionCents,
                 // Photo URLs added by Story 5.1 — used by PhotoUploader component.
                 beforePhotoUrl: booking.beforePhotoUrl,
                 afterPhotoUrl: booking.afterPhotoUrl,
@@ -71,7 +76,7 @@ export const GET = withWasherGuard(async (_req, _user, profile) => {
         return NextResponse.json(
             {
                 success: true,
-                data: { bookings: mapped },
+                data: { bookings: mapped, currentCommissionRate: currentRate.toNumber() },
             },
             {
                 headers: {

@@ -144,6 +144,23 @@ export async function POST(request: Request) {
                 }
             });
             console.log(`[Stripe Webhook] Booking ${bookingId} cancelled due to payment failure`);
+        } else if (event.type === 'account.updated') {
+            const account = event.data.object as Stripe.Account;
+            const ready = Boolean(
+                account.charges_enabled &&
+                account.payouts_enabled &&
+                account.details_submitted
+            );
+
+            // Locate the profile by stripeAccountId. No-op if unknown (account not linked in our DB).
+            const updated = await prisma.profile.updateMany({
+                where: { stripeAccountId: account.id },
+                data: { stripeAccountReady: ready },
+            });
+
+            console.log(
+                `[Stripe Webhook] account.updated: ${account.id} → ready=${ready} (rows=${updated.count})`
+            );
         } else if (event.type === 'checkout.session.expired') {
             const session = event.data.object as Stripe.Checkout.Session;
             const bookingId = session.metadata?.bookingId;

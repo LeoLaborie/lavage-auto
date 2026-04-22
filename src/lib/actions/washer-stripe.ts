@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { createConnectAccount, createAccountLink } from '@/lib/stripe'
+import { createConnectAccount, createAccountLink, stripe } from '@/lib/stripe'
 
 export async function startStripeOnboarding() {
     try {
@@ -29,19 +29,31 @@ export async function startStripeOnboarding() {
 
         let stripeAccountId = dbUser.profile?.stripeAccountId
 
+        // Verify the saved account still exists on our Stripe platform. Stale IDs can remain
+        // if the Stripe secret key was rotated or the account was deleted — clear and recreate.
+        if (stripeAccountId) {
+            try {
+                await stripe.accounts.retrieve(stripeAccountId)
+            } catch (err: any) {
+                console.warn(`[stripe-onboarding] Stale stripeAccountId ${stripeAccountId}: ${err.message}. Resetting.`)
+                stripeAccountId = undefined
+                await prisma.profile.update({
+                    where: { userId: dbUser.id },
+                    data: { stripeAccountId: null, stripeAccountReady: false },
+                })
+            }
+        }
+
         if (!stripeAccountId) {
-            // Create new Stripe Connect account
             const account = await createConnectAccount(dbUser.email, dbUser.id)
             stripeAccountId = account.id
 
-            // Save to profile
             await prisma.profile.update({
                 where: { userId: dbUser.id },
-                data: { stripeAccountId: stripeAccountId }
+                data: { stripeAccountId },
             })
         }
 
-        // Create onboarding link
         const accountLink = await createAccountLink(stripeAccountId)
 
         return { success: true, data: { url: accountLink.url } }

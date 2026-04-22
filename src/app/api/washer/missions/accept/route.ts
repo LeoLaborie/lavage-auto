@@ -14,6 +14,15 @@ export const POST = withWasherGuard(async (req, _user, profile) => {
             )
         }
 
+        // Pre-guard: block acceptance if the laveur's Stripe Connect account isn't fully onboarded.
+        // Without this, we'd charge the client at accept time but fail to pay the laveur later.
+        if (!profile.stripeAccountReady) {
+            return NextResponse.json(
+                { success: false, error: 'Votre compte Stripe n\'est pas encore activé. Terminez l\'onboarding avant d\'accepter des missions.' },
+                { status: 403 }
+            )
+        }
+
         // 1. Atomic claim: only one washer can win
         const result = await prisma.booking.updateMany({
             where: {

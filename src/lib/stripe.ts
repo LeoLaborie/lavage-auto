@@ -111,7 +111,7 @@ export async function createSetupCheckoutSession(
 /**
  * Creates and confirms a PaymentIntent off-session using the customer's
  * saved payment method. Used when a washer accepts a mission.
- * Throws on failure (card declined, insufficient funds, etc.).
+ * Throws on failure (no saved PM, card declined, insufficient funds, etc.).
  */
 export async function chargeCustomer(
     stripeCustomerId: string,
@@ -119,10 +119,24 @@ export async function chargeCustomer(
     bookingId: string,
     serviceName: string
 ): Promise<Stripe.PaymentIntent> {
+    // Off-session charges require an explicit payment_method — the "default PM" field
+    // on the Customer object isn't populated by a Setup Checkout Session, so we must
+    // fetch the attached card and pass it explicitly.
+    const methods = await stripe.paymentMethods.list({
+        customer: stripeCustomerId,
+        type: 'card',
+        limit: 1,
+    });
+    const paymentMethodId = methods.data[0]?.id;
+    if (!paymentMethodId) {
+        throw new Error('Aucun moyen de paiement enregistré pour ce client');
+    }
+
     return await stripe.paymentIntents.create({
         amount: amountCents,
         currency: 'eur',
         customer: stripeCustomerId,
+        payment_method: paymentMethodId,
         off_session: true,
         confirm: true,
         description: `Lavage Auto: ${serviceName}`,
