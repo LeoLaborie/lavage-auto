@@ -121,9 +121,9 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={`Sélectionner une date et heure, actuel: ${displayText}`}
-        className="w-full pl-12 pr-6 py-4 rounded-lg bg-white/60 backdrop-blur-sm text-lg text-[#004aad] focus:outline-none focus:ring-2 focus:ring-[#004aad] border-none shadow-md text-left flex justify-between items-center"
+        className="w-full pl-12 pr-6 py-4 rounded-lg bg-white/60 backdrop-blur-sm text-sm sm:text-lg text-[#004aad] focus:outline-none focus:ring-2 focus:ring-[#004aad] border-none shadow-md text-left flex justify-between items-center"
       >
-        <span className="capitalize">{displayText}</span>
+        <span className="capitalize truncate mr-2">{displayText}</span>
         <svg
           className={`w-5 h-5 text-[#004aad] transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"

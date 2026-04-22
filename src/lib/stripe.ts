@@ -9,6 +9,34 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     typescript: true,
 });
 
+/**
+ * Gets or creates a Stripe Customer for the given user.
+ * Stores the customer ID on the user's Profile for reuse.
+ */
+export async function getOrCreateStripeCustomer(
+    userId: string,
+    email: string,
+    existingCustomerId: string | null
+): Promise<string> {
+    if (existingCustomerId) {
+        return existingCustomerId;
+    }
+
+    const customer = await stripe.customers.create({
+        email,
+        metadata: { userId },
+    });
+
+    // Import prisma here to avoid circular dependency at module level
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.profile.update({
+        where: { userId },
+        data: { stripeCustomerId: customer.id },
+    });
+
+    return customer.id;
+}
+
 export async function createCheckoutSession(
     bookingId: string,
     amountCents: number,
@@ -46,6 +74,78 @@ export async function createCheckoutSession(
         },
     });
 }
+
+/**
+ * Creates a Stripe Checkout Session in "setup" mode.
+ * The client's card is validated and saved on the Stripe Customer
+ * without any charge. The actual charge happens later when a washer accepts.
+ */
+export async function createSetupCheckoutSession(
+    bookingId: string,
+    stripeCustomerId: string,
+    customerEmail: string,
+    serviceName: string,
+    amountCents: number
+) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+    return await stripe.checkout.sessions.create({
+        mode: 'setup',
+        customer: stripeCustomerId,
+        payment_method_types: ['card'],
+        success_url: `${baseUrl}/booking/success?bookingId=${bookingId}`,
+        cancel_url: `${baseUrl}/api/booking/cancel?bookingId=${bookingId}`,
+        metadata: {
+            bookingId,
+            serviceName,
+            amountCents: String(amountCents),
+        },
+        setup_intent_data: {
+            metadata: {
+                bookingId,
+            },
+        },
+    });
+}
+
+/**
+ * Creates and confirms a PaymentIntent off-session using the customer's
+ * saved payment method. Used when a washer accepts a mission.
+ * Throws on failure (no saved PM, card declined, insufficient funds, etc.).
+ */
+export async function chargeCustomer(
+    stripeCustomerId: string,
+    amountCents: number,
+    bookingId: string,
+    serviceName: string
+): Promise<Stripe.PaymentIntent> {
+    // Off-session charges require an explicit payment_method — the "default PM" field
+    // on the Customer object isn't populated by a Setup Checkout Session, so we must
+    // fetch the attached card and pass it explicitly.
+    const methods = await stripe.paymentMethods.list({
+        customer: stripeCustomerId,
+        type: 'card',
+        limit: 1,
+    });
+    const paymentMethodId = methods.data[0]?.id;
+    if (!paymentMethodId) {
+        throw new Error('Aucun moyen de paiement enregistré pour ce client');
+    }
+
+    return await stripe.paymentIntents.create({
+        amount: amountCents,
+        currency: 'eur',
+        customer: stripeCustomerId,
+        payment_method: paymentMethodId,
+        off_session: true,
+        confirm: true,
+        description: `Lavage Auto: ${serviceName}`,
+        metadata: { bookingId },
+    }, {
+        idempotencyKey: `booking-${bookingId}-charge`,
+    });
+}
+
 export async function createConnectAccount(email: string, userId: string) {
     return await stripe.accounts.create({
         type: 'express',

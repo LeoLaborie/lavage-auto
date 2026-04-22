@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withClientGuard } from '@/lib/auth/clientGuard'
 import { prisma } from '@/lib/prisma'
 import { services } from '@/lib/constants/services'
-import { createCheckoutSession } from '@/lib/stripe'
+import { createSetupCheckoutSession, getOrCreateStripeCustomer } from '@/lib/stripe'
 
 /**
  * POST /api/booking/submit
@@ -213,18 +213,40 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     })
   }
 
-  // --- Create Stripe Checkout Session ---
+  // --- Get or create Stripe Customer for saved payment method ---
+  const profile = await prisma.profile.findUnique({
+    where: { userId: dbUser.id },
+    select: { stripeCustomerId: true },
+  })
+
+  let stripeCustomerId: string
   try {
-    const session = await createCheckoutSession(
-      booking.id,
-      amountCents,
+    stripeCustomerId = await getOrCreateStripeCustomer(
+      dbUser.id,
       dbUser.email,
-      matchedService.name
+      profile?.stripeCustomerId ?? null
+    )
+  } catch (error) {
+    console.error('[Stripe] Failed to get/create customer:', error)
+    await prisma.booking.delete({ where: { id: booking.id } })
+    return NextResponse.json(
+      { success: false, error: 'Impossible de configurer le paiement. Veuillez réessayer.' },
+      { status: 502 }
+    )
+  }
+
+  // --- Create Stripe Setup Checkout Session ---
+  try {
+    const session = await createSetupCheckoutSession(
+      booking.id,
+      stripeCustomerId,
+      dbUser.email,
+      matchedService.name,
+      amountCents
     )
 
     if (!session.url) {
-      // Stripe returned a session but without a redirect URL — delete orphan booking
-      console.error('[Stripe] Session created but missing URL for booking:', booking.id)
+      console.error('[Stripe] Setup session created but missing URL for booking:', booking.id)
       await prisma.booking.delete({ where: { id: booking.id } })
       return NextResponse.json(
         { success: false, error: 'Le paiement n\'a pas pu être initialisé. Veuillez réessayer.' },
@@ -240,8 +262,7 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
       },
     })
   } catch (error) {
-    console.error('[Stripe] Session creation failed:', error)
-    // Delete orphan booking — no payment was initiated
+    console.error('[Stripe] Setup session creation failed:', error)
     try {
       await prisma.booking.delete({ where: { id: booking.id } })
     } catch (deleteError) {

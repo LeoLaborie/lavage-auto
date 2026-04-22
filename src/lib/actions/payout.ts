@@ -1,7 +1,8 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { capturePaymentIntent, createTransfer } from '@/lib/stripe'
+import { stripe, capturePaymentIntent, createTransfer } from '@/lib/stripe'
+import { computeCommission, getCurrentCommissionRate } from '@/lib/constants/commission'
 
 export interface PayoutResult {
     success: boolean
@@ -86,25 +87,46 @@ export async function triggerPayout(bookingId: string): Promise<PayoutResult> {
             }
         }
 
-        // 7. Capture the PaymentIntent (release funds from manual-capture escrow)
-        const capturedIntent = await capturePaymentIntent(booking.payment.stripePaymentIntentId)
+        // 7. Get the PaymentIntent — may need capture (legacy) or already succeeded (new flow)
+        const pi = await stripe.paymentIntents.retrieve(booking.payment.stripePaymentIntentId)
 
-        // source_transaction requires a Charge ID (ch_...), NOT a PaymentIntent ID (pi_...).
-        // After capture, latest_charge holds the Charge ID linked to this PaymentIntent.
-        const chargeId = typeof capturedIntent.latest_charge === 'string'
-            ? capturedIntent.latest_charge
-            : capturedIntent.latest_charge?.id
+        let chargeId: string | undefined
+
+        if (pi.status === 'requires_capture') {
+            // Legacy flow: manual-capture PI — capture it now
+            const capturedIntent = await capturePaymentIntent(booking.payment.stripePaymentIntentId)
+            chargeId = typeof capturedIntent.latest_charge === 'string'
+                ? capturedIntent.latest_charge
+                : capturedIntent.latest_charge?.id
+        } else if (pi.status === 'succeeded') {
+            // New flow: PI already captured at washer acceptance
+            chargeId = typeof pi.latest_charge === 'string'
+                ? pi.latest_charge
+                : pi.latest_charge?.id
+        } else {
+            return {
+                success: false,
+                error: `PaymentIntent dans un état inattendu: ${pi.status}. Capture impossible.`,
+            }
+        }
 
         if (!chargeId) {
             return {
                 success: false,
-                error: 'Charge ID introuvable après capture du PaymentIntent — impossible de créer le transfert',
+                error: 'Charge ID introuvable — impossible de créer le transfert',
             }
         }
 
-        // 8. Create a Stripe Transfer to the laveur's connected account
-        const transfer = await createTransfer(
+        // 8. Compute commission using the current platform rate (snapshot for this payout)
+        const currentRate = await getCurrentCommissionRate()
+        const { commissionCents, netAmountCents, rateUsed } = computeCommission(
             booking.payment.amountCents,
+            currentRate
+        )
+
+        // 9. Create a Stripe Transfer for the NET amount only — commission stays on platform
+        const transfer = await createTransfer(
+            netAmountCents,
             stripeAccountId,
             chargeId,
             bookingId
@@ -112,16 +134,17 @@ export async function triggerPayout(bookingId: string): Promise<PayoutResult> {
 
         const paidOutAt = new Date()
 
-        // 9. Persist transfer details atomically
-        await prisma.$transaction([
-            prisma.payment.update({
-                where: { id: booking.payment.id },
-                data: {
-                    stripeTransferId: transfer.id,
-                    paidOutAt,
-                },
-            }),
-        ])
+        // 10. Persist transfer details + commission snapshot atomically
+        await prisma.payment.update({
+            where: { id: booking.payment.id },
+            data: {
+                stripeTransferId: transfer.id,
+                paidOutAt,
+                commissionCents,
+                netAmountCents,
+                commissionRate: rateUsed,
+            },
+        })
 
         return {
             success: true,

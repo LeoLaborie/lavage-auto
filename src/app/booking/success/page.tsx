@@ -65,36 +65,36 @@ export default async function BookingSuccessPage({
                 </div>
 
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    {booking.status === 'PENDING' ? 'Paiement en cours de traitement' : 'Réservation confirmée !'}
+                    {booking.status === 'PENDING' ? 'Carte en cours de vérification' : 'Réservation enregistrée !'}
                 </h1>
                 <p className="text-gray-500 mb-8">
                     {booking.status === 'PENDING'
-                        ? 'Votre paiement est en cours de vérification. Votre réservation sera confirmée dans quelques instants.'
-                        : 'Votre paiement a été accepté. Un laveur sera assigné à votre mission prochainement.'}
+                        ? 'Votre carte est en cours de vérification. Votre réservation sera confirmée dans quelques instants.'
+                        : 'Votre carte a été enregistrée avec succès. Vous ne serez débité que lorsqu\'un laveur acceptera votre mission.'}
                 </p>
 
                 <div className="bg-gray-50 rounded-xl p-6 text-left space-y-3 mb-8">
-                    <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Service</span>
-                        <span className="text-sm font-medium text-gray-900">{booking.serviceName}</span>
+                    <div className="flex justify-between gap-4">
+                        <span className="text-sm text-gray-500 shrink-0">Service</span>
+                        <span className="text-sm font-medium text-gray-900 text-right break-words min-w-0">{booking.serviceName}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Date</span>
-                        <span className="text-sm font-medium text-gray-900">{formattedDate}</span>
+                    <div className="flex justify-between gap-4">
+                        <span className="text-sm text-gray-500 shrink-0">Date</span>
+                        <span className="text-sm font-medium text-gray-900 text-right break-words min-w-0">{formattedDate}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Heure</span>
-                        <span className="text-sm font-medium text-gray-900">{formattedTime}</span>
+                    <div className="flex justify-between gap-4">
+                        <span className="text-sm text-gray-500 shrink-0">Heure</span>
+                        <span className="text-sm font-medium text-gray-900 text-right">{formattedTime}</span>
                     </div>
                     {booking.car && (
-                        <div className="flex justify-between">
-                            <span className="text-sm text-gray-500">Véhicule</span>
-                            <span className="text-sm font-medium text-gray-900">{booking.car.make} {booking.car.model}</span>
+                        <div className="flex justify-between gap-4">
+                            <span className="text-sm text-gray-500 shrink-0">Véhicule</span>
+                            <span className="text-sm font-medium text-gray-900 text-right">{booking.car.make} {booking.car.model}</span>
                         </div>
                     )}
-                    <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Adresse</span>
-                        <span className="text-sm font-medium text-gray-900 text-right max-w-[200px]">{booking.serviceAddress}</span>
+                    <div className="flex justify-between gap-4">
+                        <span className="text-sm text-gray-500 shrink-0">Adresse</span>
+                        <span className="text-sm font-medium text-gray-900 text-right break-words min-w-0">{booking.serviceAddress}</span>
                     </div>
                     <div className="border-t border-gray-200 pt-3 flex justify-between">
                         <span className="text-sm font-medium text-gray-700">Total</span>

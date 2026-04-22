@@ -46,9 +46,9 @@ export default function StepService({ selectedService, setSelectedService, handl
             <h3 className="text-2xl font-bold text-gray-900 mb-3 title-font">{service.name}</h3>
             <p className="text-gray-600 mb-6 text-sm leading-relaxed">{service.description}</p>
 
-            <div className="pt-4 border-t border-gray-100 flex justify-between items-center mt-auto">
-              <span className="text-3xl font-bold text-primary">{service.price}€</span>
-              <div className="flex items-center text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+            <div className="pt-4 border-t border-gray-100 flex justify-between items-center mt-auto gap-2">
+              <span className="text-2xl sm:text-3xl font-bold text-primary">{service.price}€</span>
+              <div className="flex items-center text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 sm:px-3 py-1 rounded-full shrink-0">
                 <span className="mr-1">⏱️</span>
                 {service.duration}
               </div>

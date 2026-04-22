@@ -389,20 +389,20 @@ export default function BookingWizard() {
             />
           </div>
 
-          <div className="flex justify-between w-full px-2 sm:px-4">
+          <div className="flex justify-between w-full px-0 sm:px-4">
             {[
-              { step: 1, icon: '/icons/step-service.png', label: 'Service' },
-              { step: 2, icon: '/icons/step-date.png', label: '📍 Lieu' },
-              { step: 3, icon: '/icons/step-date.png', label: '📅 Date/Heure' },
-              { step: 4, icon: '/icons/step-info.png', label: 'Infos' },
-              { step: 5, icon: '/icons/step-confirm.png', label: 'Confirmation' }
+              { step: 1, icon: '/icons/step-service.png', label: 'Service', shortLabel: 'Service' },
+              { step: 2, icon: '/icons/step-date.png', label: 'Lieu', shortLabel: 'Lieu' },
+              { step: 3, icon: '/icons/step-date.png', label: 'Date/Heure', shortLabel: 'Date' },
+              { step: 4, icon: '/icons/step-info.png', label: 'Infos', shortLabel: 'Infos' },
+              { step: 5, icon: '/icons/step-confirm.png', label: 'Confirmation', shortLabel: 'Confirmer' }
             ].map((item) => (
               <div
                 key={item.step}
                 className={`flex flex-col items-center gap-1 sm:gap-2 group ${item.step < currentStep ? 'cursor-pointer' : 'cursor-default'}`}
                 onClick={() => { if (item.step < currentStep) setCurrentStep(item.step); }}
               >
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-300 z-10 border-4 relative overflow-hidden bg-white ${currentStep >= item.step
+                <div className={`w-10 h-10 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-300 z-10 border-4 relative overflow-hidden bg-white ${currentStep >= item.step
                   ? 'border-primary shadow-lg scale-110'
                   : 'border-gray-200 grayscale opacity-60'
                   }`}>
@@ -411,12 +411,13 @@ export default function BookingWizard() {
                     alt={item.label}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 768px) 48px, 64px"
+                    sizes="(max-width: 768px) 40px, 64px"
                   />
                 </div>
-                <span className={`text-xs sm:text-sm md:text-base font-bold transition-colors duration-300 ${currentStep >= item.step ? 'text-primary' : 'text-gray-400'
+                <span className={`text-[10px] sm:text-sm md:text-base font-bold transition-colors duration-300 text-center leading-tight ${currentStep >= item.step ? 'text-primary' : 'text-gray-400'
                   }`}>
-                  {item.label}
+                  <span className="sm:hidden">{item.shortLabel}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
                 </span>
               </div>
             ))}

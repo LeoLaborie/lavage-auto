@@ -94,7 +94,7 @@ export default function Home() {
 
               <button
                 onClick={handleSearch}
-                className={`w-full md:w-1/5 h-14 bg-accent hover:bg-yellow-400 text-primary rounded-xl text-lg font-bold transition-all shadow-md flex items-center justify-center gap-2 ${!selectedAddress || !selectedTime
+                className={`w-full md:w-1/5 h-14 bg-accent hover:bg-yellow-400 text-primary rounded-xl text-base sm:text-lg font-bold transition-all shadow-md flex items-center justify-center gap-2 ${!selectedAddress || !selectedTime
                   ? 'opacity-70 cursor-not-allowed'
                   : 'hover:shadow-lg transform active:scale-95'
                   }`}
@@ -112,7 +112,7 @@ export default function Home() {
         <section id="services" className="py-24 bg-white">
           <div className="text-center mb-16">
             <span className="text-accent font-bold tracking-wider uppercase text-sm">Nos Services</span>
-            <h2 className="text-4xl font-bold text-primary mt-2 title-font">Formules de Lavage</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-primary mt-2 title-font">Formules de Lavage</h2>
             <p className="text-gray-500 mt-4 max-w-2xl mx-auto">Des solutions adaptées à tous les besoins et tous les budgets.</p>
           </div>
 
@@ -132,10 +132,10 @@ export default function Home() {
                   <div className={`w-16 h-16 ${style.iconBg} rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-sm ${style.iconHover} transition-colors`}>
                     {style.emoji}
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{service.name}</h3>
-                  <p className="text-gray-600 mb-6 leading-relaxed">{service.description}</p>
-                  <div className="flex items-center justify-between mt-auto">
-                    <p className="text-2xl font-bold text-primary">dès {service.amountCents / 100}€</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">{service.name}</h3>
+                  <p className="text-gray-600 mb-6 leading-relaxed text-sm sm:text-base">{service.description}</p>
+                  <div className="flex items-center justify-between mt-auto gap-2">
+                    <p className="text-xl sm:text-2xl font-bold text-primary">dès {service.amountCents / 100}€</p>
                     <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-accent group-hover:text-primary transition-colors">→</span>
                   </div>
                 </a>
@@ -163,7 +163,7 @@ export default function Home() {
               </div>
               <div className="order-1 md:order-2">
                 <span className="text-primary font-bold tracking-wider uppercase text-sm">Pour les clients</span>
-                <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">L'application Nealkar</h2>
+                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">L'application Nealkar</h2>
                 <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                   Simplifiez votre routine avec notre application dédiée. Réservez, suivez et payez en toute sécurité, le tout depuis votre poche.
                 </p>
@@ -196,7 +196,7 @@ export default function Home() {
             <div className="grid md:grid-cols-2 gap-16 items-center">
               <div>
                 <span className="text-secondary font-bold tracking-wider uppercase text-sm">Pour les professionnels</span>
-                <h2 className="text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">NEALKAR OPERATORS</h2>
+                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mt-2 mb-6 title-font">NEALKAR OPERATORS</h2>
                 <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                   Rejoignez le réseau Nealkar et développez votre activité de lavage auto avec nos outils professionnels.
                 </p>
@@ -244,7 +244,7 @@ export default function Home() {
 
         <section id="how-it-works" className="py-24 bg-white">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4 title-font">Comment ça marche ?</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-primary mb-4 title-font">Comment ça marche ?</h2>
             <p className="text-gray-500">Un processus simple et transparent.</p>
           </div>
 
@@ -280,7 +280,7 @@ export default function Home() {
 
         <section className="py-24 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4">
-            <h2 className="text-4xl font-bold text-center text-primary mb-16 title-font">Ils nous font confiance</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-center text-primary mb-16 title-font">Ils nous font confiance</h2>
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
@@ -330,9 +330,9 @@ export default function Home() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
 
             <div className="relative z-10 max-w-3xl mx-auto">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 title-font">Prêt à faire briller votre voiture ?</h2>
-              <p className="text-xl mb-10 opacity-90 font-light">Rejoignez des milliers de clients satisfaits et redécouvrez le plaisir de conduire une voiture propre.</p>
-              <a href="/reserver" className="bg-white text-primary px-10 py-5 rounded-xl text-xl font-bold hover:bg-gray-50 transition-all transform hover:scale-105 inline-block shadow-xl">
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-6 title-font">Prêt à faire briller votre voiture ?</h2>
+              <p className="text-base sm:text-xl mb-10 opacity-90 font-light">Rejoignez des milliers de clients satisfaits et redécouvrez le plaisir de conduire une voiture propre.</p>
+              <a href="/reserver" className="bg-white text-primary px-8 sm:px-10 py-4 sm:py-5 rounded-xl text-lg sm:text-xl font-bold hover:bg-gray-50 transition-all transform hover:scale-105 inline-block shadow-xl">
                 Réserver maintenant
               </a>
             </div>
@@ -342,9 +342,9 @@ export default function Home() {
 
       <footer className="bg-gray-900 text-white pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12 mb-16">
             {/* Première colonne - Brand */}
-            <div>
+            <div className="col-span-2 lg:col-span-1">
               <h3 className="text-2xl font-bold mb-6 text-white title-font">Nealkar</h3>
               <p className="text-gray-400 mb-6 leading-relaxed">
                 La référence du lavage auto à domicile. Qualité, écologie et satisfaction client sont nos priorités.
@@ -393,9 +393,9 @@ export default function Home() {
                   <span>📞</span>
                   <a href="tel:+33123456789" className="hover:text-white transition-colors">+33 1 23 45 67 89</a>
                 </li>
-                <li className="flex items-center gap-3 text-gray-400">
-                  <span>✉️</span>
-                  <a href="mailto:contact@nealkar.fr" className="hover:text-white transition-colors">contact@nealkar.fr</a>
+                <li className="flex items-center gap-3 text-gray-400 min-w-0">
+                  <span className="shrink-0">✉️</span>
+                  <a href="mailto:contact@nealkar.fr" className="hover:text-white transition-colors truncate">contact@nealkar.fr</a>
                 </li>
               </ul>
             </div>

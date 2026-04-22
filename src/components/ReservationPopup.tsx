@@ -41,7 +41,7 @@ export default function ReservationPopup({ isOpen, onClose, address, selectedTim
 
         <div className="mb-6">
           <p className="text-gray-600 mb-2">Adresse sélectionnée :</p>
-          <p className="text-[#004aad] font-medium">{address}</p>
+          <p className="text-[#004aad] font-medium break-words">{address}</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-8" style={{ minHeight: '250px' }}>

@@ -97,7 +97,9 @@ model Profile {
   siret           String?  @unique @map("siret")   // SIRET for professional verification (14 digits)
   companyName     String?  @map("company_name")
   status          ProfileStatus  @map("status")    // Set explicitly: VALIDATED for Clients, VALIDATION_PENDING for Laveurs
-  stripeAccountId String?  @unique @map("stripe_account_id")  // Stripe Connect
+  stripeAccountId      String?  @unique @map("stripe_account_id")   // Stripe Connect
+  stripeAccountReady   Boolean  @default(false) @map("stripe_account_ready") // true once charges_enabled && payouts_enabled && details_submitted (synced via account.updated webhook)
+  stripeCustomerId     String?  @unique @map("stripe_customer_id")  // Stripe Customer for saved payment methods
 
   // Laveur work preferences
   workRadius      Float?   @map("work_radius")   // Service radius in km
@@ -179,9 +181,14 @@ model Payment {
   user      User     @relation(fields: [userId], references: [id])
 
   // Financial
-  amountCents     Int          @map("amount_cents")    // Amount in cents
+  amountCents     Int          @map("amount_cents")    // Amount in cents (gross — charged to client)
   currency        String       @default("EUR") @map("currency")
   status          PaymentStatus @default(PENDING) @map("status")
+
+  // Commission snapshot — populated at payout time. Nullable for legacy rows (where laveur received 100%).
+  commissionCents  Int?     @map("commission_cents")
+  netAmountCents   Int?     @map("net_amount_cents")    // amountCents - commissionCents (transferred to laveur)
+  commissionRate   Decimal? @db.Decimal(5, 4) @map("commission_rate")
 
   // Stripe references
   stripeSessionId   String?  @unique @map("stripe_session_id")    // Checkout Session ID
@@ -204,6 +211,17 @@ model Payment {
   @@index([userId])
   @@index([status])
   @@map("payments")
+}
+
+/// Platform-wide settings (singleton row).
+/// Holds the commission rate the platform keeps on each completed booking.
+model PlatformSettings {
+  id                 String   @id @default(cuid())
+  commissionRate     Decimal  @db.Decimal(5, 4) @map("commission_rate") // e.g. 0.1500 = 15%
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  updatedByUserId    String?  @map("updated_by_user_id")
+
+  @@map("platform_settings")
 }
 
 /// A message submitted via the contact form.

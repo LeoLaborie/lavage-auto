@@ -18,6 +18,9 @@ interface Mission {
     scheduledDate: string
     serviceAddress: string
     finalPrice: number
+    grossAmountCents: number
+    netAmountCents: number
+    commissionCents: number
     beforePhotoUrl?: string | null
     afterPhotoUrl?: string | null
     service: {
@@ -39,6 +42,7 @@ interface WasherDashboardProps {
         email: string
         profile: {
             stripeAccountId: string | null
+            stripeAccountReady?: boolean
             status: string
             isAvailable?: boolean
         } | null
@@ -48,7 +52,10 @@ interface WasherDashboardProps {
 interface EarningsSummary {
     validatedEarningsCents: number
     pendingEarningsCents: number
+    upcomingEarningsCents: number
     completedMissionsCount: number
+    totalCommissionCents: number
+    currentCommissionRate: number
 }
 
 function formatEuros(amountCents: number): string {
@@ -124,12 +131,6 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
         }
     }
 
-    useEffect(() => {
-        if (user) {
-            fetchMissions()
-        }
-    }, [user])
-
     const fetchEarnings = async () => {
         setIsEarningsLoading(true)
         try {
@@ -148,13 +149,11 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
     }
 
     useEffect(() => {
-        if (user && activeTab === 'payments' && earnings === null) {
+        if (user) {
+            fetchMissions()
             fetchEarnings()
         }
-        // earnings intentionally omitted: we only fetch once on first tab activation.
-        // Adding it would cause an infinite loop (fetch → set earnings → re-trigger).
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, activeTab])
+    }, [user])
 
     const handleAcceptMission = async (missionId: string) => {
         setAcceptingId(missionId)
@@ -256,20 +255,23 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
     if (!user) return null
 
-    const stripeConnected = !!initialUser.profile?.stripeAccountId
+    // "Connected" now means the account is fully onboarded (charges_enabled && payouts_enabled),
+    // not just that a Stripe Connect account ID exists. Legacy profiles with an account id but
+    // stripeAccountReady still false are treated as not connected — they need to complete onboarding.
+    const stripeConnected = !!initialUser.profile?.stripeAccountReady
 
     return (
         <div className="min-h-screen bg-gray-50">
             <Header currentPage="dashboard" />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="flex justify-between items-start mb-8">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Espace Laveur</h1>
-                        <p className="text-gray-600 mt-2">Gérez vos missions et vos disponibilités</p>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Espace Laveur</h1>
+                        <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Gérez vos missions et vos disponibilités</p>
                     </div>
 
-                    <div className="flex items-center bg-white rounded-full p-1 shadow-sm border border-gray-200">
+                    <div className="flex items-center bg-white rounded-full p-1 shadow-sm border border-gray-200 shrink-0">
                         <button
                             onClick={() => handleUpdateAvailability(true)}
                             disabled={isUpdatingAvailability || isAvailable}
@@ -289,24 +291,28 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                     </div>
                 </div>
 
-                <div className="grid md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm text-gray-500 mb-1">Gains validés</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                            {earnings ? formatEuros(earnings.validatedEarningsCents) : '0,00 €'}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-xs sm:text-sm text-gray-500 mb-1">Gains validés</p>
+                        <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+                            {earnings ? formatEuros(earnings.validatedEarningsCents) : '—'}
                         </p>
+                        <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Net, virements effectués</p>
                     </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm text-gray-500 mb-1">Lavages réalisés</p>
-                        <p className="text-2xl font-bold text-gray-900">{earnings?.completedMissionsCount ?? 0}</p>
+                    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-xs sm:text-sm text-gray-500 mb-1">À venir</p>
+                        <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+                            {earnings ? formatEuros(earnings.upcomingEarningsCents) : '—'}
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Missions en cours</p>
                     </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm text-gray-500 mb-1">Note moyenne</p>
-                        <p className="text-2xl font-bold text-gray-900">-</p>
+                    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-xs sm:text-sm text-gray-500 mb-1">Lavages réalisés</p>
+                        <p className="text-lg sm:text-2xl font-bold text-gray-900">{earnings?.completedMissionsCount ?? 0}</p>
                     </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm text-gray-500 mb-1">Stripe Connect</p>
-                        <p className={`text-lg font-medium ${stripeConnected ? 'text-green-600' : 'text-amber-600'}`}>
+                    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-xs sm:text-sm text-gray-500 mb-1">Stripe Connect</p>
+                        <p className={`text-sm sm:text-lg font-medium truncate ${stripeConnected ? 'text-green-600' : 'text-amber-600'}`}>
                             {stripeConnected ? 'Activé' : 'Non configuré'}
                         </p>
                     </div>
@@ -314,28 +320,30 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="border-b border-gray-100">
-                        <div className="flex">
+                        <div className="flex overflow-x-auto">
                             <button
                                 onClick={() => setActiveTab('available')}
-                                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'available'
+                                className={`px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'available'
                                     ? 'border-blue-600 text-blue-600'
                                     : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}
                             >
-                                Missions disponibles ({availableMissions.length})
+                                <span className="sm:hidden">Dispo. ({availableMissions.length})</span>
+                                <span className="hidden sm:inline">Missions disponibles ({availableMissions.length})</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab('accepted')}
-                                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'accepted'
+                                className={`px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'accepted'
                                     ? 'border-blue-600 text-blue-600'
                                     : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}
                             >
-                                Mes missions ({acceptedMissions.length})
+                                <span className="sm:hidden">Missions ({acceptedMissions.length})</span>
+                                <span className="hidden sm:inline">Mes missions ({acceptedMissions.length})</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab('payments')}
-                                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'payments'
+                                className={`px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'payments'
                                     ? 'border-blue-600 text-blue-600'
                                     : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}
@@ -352,15 +360,15 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                 Pour recevoir vos paiements automatiquement après chaque mission, vous devez connecter un compte bancaire via notre partenaire Stripe.
                             </p>
 
-                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 flex items-start gap-4 mb-8">
-                                <div className="bg-blue-100 p-2 rounded-lg">
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 sm:p-6 flex items-start gap-3 sm:gap-4 mb-8">
+                                <div className="bg-blue-100 p-2 rounded-lg shrink-0">
                                     <AppleEmoji name="bank" className="w-6 h-6" />
                                 </div>
-                                <div>
-                                    <p className="font-medium text-blue-900">
+                                <div className="min-w-0">
+                                    <p className="font-medium text-blue-900 text-sm sm:text-base">
                                         {stripeConnected ? 'Votre compte Stripe est configuré' : 'Action requise : Configuration Stripe'}
                                     </p>
-                                    <p className="text-sm text-blue-800 mt-1">
+                                    <p className="text-xs sm:text-sm text-blue-800 mt-1 break-words">
                                         {stripeConnected
                                             ? `ID de compte : ${initialUser.profile?.stripeAccountId?.slice(0, 10)}...`
                                             : 'Vous devez compléter l\'onboarding Stripe pour pouvoir recevoir vos fonds.'}
@@ -372,12 +380,12 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                 <button
                                     onClick={handleConnectStripe}
                                     disabled={isOnboarding}
-                                    className="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition-shadow shadow-lg disabled:opacity-50 flex items-center gap-2"
+                                    className="bg-blue-600 text-white px-6 sm:px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition-shadow shadow-lg disabled:opacity-50 flex items-center gap-2 text-sm sm:text-base"
                                 >
                                     {isOnboarding ? 'Initialisation...' : (
                                         <>
                                             Connecter mon compte bancaire
-                                            <AppleEmoji name="rocket" className="w-5 h-5" />
+                                            <span aria-hidden className="text-lg leading-none">🚀</span>
                                         </>
                                     )}
                                 </button>
@@ -428,6 +436,14 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                         </div>
                                     </div>
                                 )}
+                                {earnings && (
+                                    <p className="text-xs text-gray-500 mt-4">
+                                        Commission plateforme prélevée à ce jour : <span className="font-medium text-gray-700">{formatEuros(earnings.totalCommissionCents)}</span>
+                                        {earnings.currentCommissionRate != null && (
+                                            <> · Taux actuel : {(earnings.currentCommissionRate * 100).toFixed(1)}%</>
+                                        )}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     ) : (
@@ -462,13 +478,13 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                         (activeTab === 'available' ? availableMissions : acceptedMissions).map((mission) => (
                                             <div key={mission.id} className="p-6 hover:bg-gray-50 transition-colors">
                                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${activeTab === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                            <span className={`px-2 py-1 text-xs font-medium rounded-full shrink-0 ${activeTab === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                                                                 }`}>
                                                                 {mission.service.name}
                                                             </span>
-                                                            <span className="text-sm text-gray-500">
+                                                            <span className="text-xs sm:text-sm text-gray-500">
                                                                 {new Date(mission.scheduledDate).toLocaleString('fr-FR', {
                                                                     weekday: 'long',
                                                                     day: 'numeric',
@@ -478,10 +494,10 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                                 })}
                                                             </span>
                                                         </div>
-                                                        <h3 className="text-lg font-medium text-gray-900 mb-1">
+                                                        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 break-words">
                                                             {mission.serviceAddress}
                                                         </h3>
-                                                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                                                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
                                                             <span className="flex items-center gap-1">
                                                                 <AppleEmoji name="car" className="w-4 h-4" />
                                                                 {mission.car.model}
@@ -501,8 +517,13 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
                                                      <div className="flex items-center gap-4 w-full md:w-auto">
                                                         <div className="text-right flex-1 md:flex-none">
-                                                            <p className="text-lg font-bold text-gray-900">{mission.finalPrice} €</p>
-                                                            <p className="text-xs text-gray-500">Commission incluse</p>
+                                                            <p className="text-lg font-bold text-gray-900">{formatEuros(mission.netAmountCents)}</p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {formatEuros(mission.grossAmountCents)} brut
+                                                                {earnings?.currentCommissionRate != null && (
+                                                                    <> · {(earnings.currentCommissionRate * 100).toFixed(0)}% commission</>
+                                                                )}
+                                                            </p>
                                                         </div>
                                                         {activeTab === 'available' && (
                                                             <button
