@@ -365,7 +365,7 @@ export default function AdminDashboard({
 
                                         return (
                                             <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                                <td className="px-4 py-3 text-gray-900">{u.email}</td>
+                                                <td className="px-4 py-3 text-gray-900 max-w-[200px] truncate">{u.email}</td>
                                                 <td className="px-4 py-3">
                                                     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-medium">
                                                         {u.role}
@@ -444,8 +444,8 @@ export default function AdminDashboard({
                                     {bookings.map((b) => (
                                         <tr key={b.id} className="border-b border-gray-100 hover:bg-gray-50">
                                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{b.id.slice(0, 8)}</td>
-                                            <td className="px-4 py-3 text-gray-700">{b.clientEmail}</td>
-                                            <td className="px-4 py-3 text-gray-600">{b.laveurEmail ?? 'Non assigné'}</td>
+                                            <td className="px-4 py-3 text-gray-700 max-w-[180px] truncate">{b.clientEmail}</td>
+                                            <td className="px-4 py-3 text-gray-600 max-w-[180px] truncate">{b.laveurEmail ?? 'Non assigné'}</td>
                                             <td className="px-4 py-3 text-gray-700">{b.serviceName}</td>
                                             <td className="px-4 py-3 text-gray-700">{b.amountEur.toFixed(2)} €</td>
                                             <td className="px-4 py-3"><BookingStatusBadge status={b.status} /></td>
@@ -500,7 +500,7 @@ export default function AdminDashboard({
                                         <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
                                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.id.slice(0, 8)}</td>
                                             <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.bookingId.slice(0, 8)}</td>
-                                            <td className="px-4 py-3 text-gray-700">{p.userEmail}</td>
+                                            <td className="px-4 py-3 text-gray-700 max-w-[180px] truncate">{p.userEmail}</td>
                                             <td className="px-4 py-3 text-gray-700">{p.amountEur.toFixed(2)} €</td>
                                             <td className="px-4 py-3"><PaymentStatusBadge status={p.status} /></td>
                                             <td className="px-4 py-3 font-mono text-xs text-gray-500">

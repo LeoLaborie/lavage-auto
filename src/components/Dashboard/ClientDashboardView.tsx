@@ -133,14 +133,14 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                         {/* Quick Action */}
                         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                             <h2 className="text-xl font-semibold mb-4">Réserver un lavage</h2>
-                            <div className="flex items-center justify-between bg-blue-50 p-4 rounded-lg">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-blue-50 p-4 rounded-lg">
                                 <div>
                                     <p className="font-medium text-blue-900">Besoin d'un lavage ?</p>
                                     <p className="text-sm text-blue-700">Réservez en quelques clics</p>
                                 </div>
                                 <button
                                     onClick={() => router.push('/reserver')}
-                                    className="px-4 py-2 bg-[#004aad] text-white rounded-lg hover:bg-[#003c8a] transition-colors"
+                                    className="px-4 py-2 bg-[#004aad] text-white rounded-lg hover:bg-[#003c8a] transition-colors whitespace-nowrap shrink-0 w-full sm:w-auto text-center"
                                 >
                                     Réserver maintenant
                                 </button>
@@ -161,11 +161,11 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                                 <div className="space-y-4">
                                     {activeBookings.map(booking => (
                                         <div key={booking.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <div className="flex items-center gap-2 mb-1">
+                                            <div className="flex justify-between items-start gap-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-wrap items-center gap-2 mb-1">
                                                         <span className="font-semibold text-gray-900">{booking.service.name}</span>
-                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
                                                             booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
                                                             booking.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-800' :
                                                             booking.status === 'IN_PROGRESS' ? 'bg-orange-100 text-orange-800' :
@@ -177,7 +177,7 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                                                                 booking.status}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600">
+                                                    <p className="text-sm text-gray-600 break-words">
                                                         {new Date(booking.scheduledDate).toLocaleString('fr-FR', {
                                                             dateStyle: 'full',
                                                             timeStyle: 'short'
@@ -193,7 +193,7 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                                                         </p>
                                                     )}
                                                 </div>
-                                                <div className="text-right">
+                                                <div className="text-right shrink-0">
                                                     <p className="font-bold text-gray-900 mb-2">{booking.finalPrice} €</p>
                                                     {booking.status === 'PENDING' || booking.status === 'ASSIGNED' || booking.status === 'CONFIRMED' ? (
                                                         <button

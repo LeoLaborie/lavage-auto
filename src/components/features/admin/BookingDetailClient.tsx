@@ -139,9 +139,9 @@ export function BookingDetailClient({ booking }: Props) {
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Détails de la réservation</h2>
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                    <div>
+                    <div className="min-w-0">
                         <dt className="text-gray-500">ID</dt>
-                        <dd className="font-mono text-gray-900">{booking.id}</dd>
+                        <dd className="font-mono text-gray-900 truncate">{booking.id}</dd>
                     </div>
                     <div>
                         <dt className="text-gray-500">Service</dt>

@@ -46,7 +46,7 @@ export default function StepVehicle({
 
       <div className="space-y-4">
         {/* Identity & Contact - Dense Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <div className="col-span-1">
             <label className="block text-xs font-bold text-gray-700 mb-1 ml-1">Prénom*</label>
             <input
