@@ -1,102 +1,143 @@
-# lavage-auto
+# Nealkar — lavage-auto
 
-A full-stack web application built with Next.js, designed to manage aspects related to car wash services. It utilizes Supabase for robust user authentication and Prisma for efficient database interactions.
+Plateforme de réservation de **lavage automobile à domicile (sans eau)**. Les clients réservent un créneau, un laveur indépendant accepte la mission, réalise la prestation, et est payé automatiquement après validation par le client. La plateforme conserve une commission configurable (15 % par défaut).
+
+## Rôles
+
+- **CLIENT** — réserve un lavage via un wizard multi-étapes, enregistre sa carte (Setup Intent), valide le travail une fois terminé.
+- **LAVEUR** — indépendant validé (SIRET + KYC Stripe Connect). Accepte des missions disponibles, renseigne des photos avant/après, est payé en net (brut − commission) par virement Stripe à la complétion.
+- **ADMIN** — back-office : validation des laveurs, supervision des réservations et paiements, gestion du taux de commission plateforme.
+
+## Stack
+
+- **Next.js 16** (App Router) + React 18 + TypeScript strict
+- **Prisma 6** → PostgreSQL (Supabase)
+- **Supabase Auth** en SSR (`@supabase/ssr`)
+- **Stripe** — Checkout en mode `setup` (carte enregistrée sans débit), capture manuelle différée à l'acceptation, Stripe Connect Express pour les reversements, commission snapshotée par mission
+- **Tailwind CSS** (thème custom)
+- **Playwright** pour les tests d'intégration/E2E
+
+## Prérequis
+
+- Node.js ≥ 18
+- Compte Supabase (projet PostgreSQL + Auth)
+- Compte Stripe avec Connect activé et un webhook configuré sur `POST /api/webhooks/stripe`
 
 ## Installation
 
-Follow these steps to set up and run the project locally:
+```bash
+git clone https://github.com/LeoLaborie/lavage-auto.git
+cd lavage-auto
+npm install
+```
 
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/LeoLaborie/lavage-auto.git
-    cd lavage-auto
-    ```
+Créer un fichier `.env.local` à la racine :
 
-2.  **Install Dependencies**
-    ```bash
-    npm install
-    ```
+```env
+# Prisma (Supabase — pooler et connexion directe)
+DATABASE_URL="postgresql://user:password@host:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://user:password@host:5432/postgres"
 
-3.  **Configure Environment Variables**
-    Create a `.env` file in the root of the project and add the following variables:
-    ```env
-    # Prisma Database Connection String
-    DATABASE_URL="postgresql://user:password@host:port/database?schema=public"
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL="https://xxx.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="..."
+SUPABASE_SERVICE_ROLE_KEY="..."
 
-    # Supabase Project Credentials
-    NEXT_PUBLIC_SUPABASE_URL="YOUR_SUPABASE_PROJECT_URL"
-    NEXT_PUBLIC_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
-    ```
-    Replace the placeholder values with your actual database and Supabase project credentials.
+# Stripe
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
 
-4.  **Set Up Database Schema**
-    Apply your Prisma schema to your database:
-    ```bash
-    npx prisma db push
-    ```
+Appliquer le schema Prisma :
 
-5.  **Start the Development Server**
-    ```bash
-    npm run dev
-    ```
-    The application will be accessible at `http://localhost:3000`.
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-## Usage
+Lancer le serveur :
 
-Once the development server is running, you can access the application in your web browser.
+```bash
+npm run dev   # http://localhost:3000
+```
 
-Available scripts:
+## Scripts
 
-*   `npm run dev`: Starts the application in development mode with hot-reloading.
-*   `npm run build`: Builds the application for production deployment.
-*   `npm start`: Starts the Next.js production server after building.
-*   `npm run lint`: Runs ESLint to check for code quality and style issues.
+| Commande | Description |
+| --- | --- |
+| `npm run dev` | Serveur Next.js en développement |
+| `npm run build` | `prisma generate` + build production |
+| `npm start` | Serveur Next.js en production (après build) |
+| `npm run lint` | ESLint |
+| `npx prisma generate` | Régénère le client Prisma |
+| `npx prisma db push` | Synchronise le schema avec la base |
+| `npx playwright test` | Lance les tests Playwright (démarre le dev server automatiquement) |
 
-## Features
+## Architecture
 
-*   Full-stack web application developed with Next.js.
-*   User authentication system powered by Supabase.
-*   Database management facilitated by Prisma ORM.
-*   Modern and responsive user interface built with React and Tailwind CSS.
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── admin/         # Users, bookings, payments, settings/commission
+│   │   ├── booking/       # submit, cancel, booked-slots, complete
+│   │   ├── customer/      # profile, cars, bookings
+│   │   ├── washer/        # missions, earnings, availability, photos
+│   │   └── webhooks/stripe
+│   ├── admin/ dashboard/ laveur/ reserver/ booking/
+│   └── washer/stripe-callback/
+├── components/
+│   ├── booking/           # BookingWizard multi-étapes
+│   ├── Dashboard/         # ClientDashboardView, WasherDashboardView, AdminDashboard
+│   └── …
+├── contexts/              # AuthContext (session Supabase), ToastContext
+├── lib/
+│   ├── supabase/          # client / server / admin
+│   ├── auth/              # adminGuard, clientGuard, washerGuard
+│   ├── actions/           # payout, refund, washer-stripe (onboarding)
+│   ├── constants/         # services.ts (catalogue), commission.ts
+│   ├── stripe.ts          # Helpers Stripe (setup/payment/connect)
+│   └── prisma.ts
+└── middleware.ts          # Protège /dashboard /laveur /admin /onboarding /reserver
+```
 
-## Tech Stack
+Pour une description détaillée (conventions, flux de paiement, guards, webhooks), voir [`CLAUDE.md`](./CLAUDE.md).
 
-*   **Languages**: TypeScript, JavaScript
-*   **Frameworks**: Next.js, React, Tailwind CSS, Prisma
-*   **Tools**: ESLint
-*   **Package Manager**: npm
+## Modèle de données (résumé)
 
-## Configuration
+- `User` — lié à Supabase Auth via `authId`, champ `role` (CLIENT/LAVEUR/ADMIN)
+- `Profile` — 1:1 avec User ; pour les laveurs : SIRET, statut de validation, `stripeAccountId` (Connect), `stripeAccountReady`, `stripeCustomerId`, rayon/adresse de travail
+- `Booking` — cycle `PENDING → CONFIRMED → ACCEPTED → EN_ROUTE → IN_PROGRESS → COMPLETED/CANCELLED`
+- `Payment` — 1:1 avec Booking ; montants en cents ; snapshot commission (`commissionCents`, `netAmountCents`, `commissionRate`) capturé au payout
+- `PlatformSettings` — singleton contenant le taux de commission courant
+- `Car`, `ContactMessage`
 
-The project utilizes several configuration files for various aspects:
+**Convention** : tous les montants sont en **centimes** (`Int`), tous les taux en `Decimal(5,4)`.
 
-*   `.env`: Stores environment-specific variables, including database connection strings and API keys.
-*   `next.config.js`: Configures Next.js settings, such as `reactStrictMode`.
-*   `tailwind.config.js`: Defines Tailwind CSS customizations, including themes and plugins.
-*   `postcss.config.js`: Configures PostCSS for processing CSS.
-*   `tsconfig.json`: Specifies TypeScript compiler options for the project.
-*   `.eslintrc.js`: Contains ESLint rules for maintaining code quality and consistency.
+## Flux de paiement (Setup Intent différé)
 
-## API Documentation
+1. Client termine le wizard → Booking `PENDING` + redirection Stripe Checkout mode `setup`.
+2. Webhook `checkout.session.completed` → Booking `CONFIRMED` (carte enregistrée, **pas de débit**).
+3. Un laveur accepte → débit off-session (PaymentIntent avec capture manuelle) → Booking `ACCEPTED`.
+4. Laveur réalise la prestation (photos avant/après), client valide → Booking `COMPLETED`.
+5. Payout : capture du PaymentIntent, calcul de la commission via `PlatformSettings.commissionRate`, transfer Stripe Connect du net au laveur, snapshot persisté sur le Payment.
 
-No explicit public API endpoints or documentation are currently provided within this project.
+## Tests
+
+```bash
+npx playwright test                              # Tous les tests
+npx playwright test tests/booking-submit.spec.ts # Un fichier
+npx playwright test tests/api/                   # Tests API uniquement
+npx playwright test tests/e2e/                   # Tests E2E
+```
 
 ## Contributing
 
-Contributions are welcome! If you'd like to contribute, please follow these guidelines:
-
-1.  Fork the repository.
-2.  Create a new branch for your feature or bug fix (`git checkout -b feature/your-feature-name`).
-3.  Make your changes and ensure they adhere to the project's coding standards.
-4.  Commit your changes with a clear and concise message (`git commit -m 'Add new feature'`).
-5.  Push your branch to your forked repository (`git push origin feature/your-feature-name`).
-6.  Open a Pull Request to the main repository, describing your changes in detail.
+1. Fork le repo, créer une branche (`feat/...` ou `fix/...`)
+2. `npm run lint` + `npx playwright test` avant de pousser
+3. Ouvrir une Pull Request en décrivant le changement
 
 ## License
 
-This project does not currently specify a license.
-
-## Badges
-
-![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue?style=flat-square)
-![npm](https://img.shields.io/badge/Package%20Manager-npm-red?style=flat-square)
+Projet propriétaire — tous droits réservés.
