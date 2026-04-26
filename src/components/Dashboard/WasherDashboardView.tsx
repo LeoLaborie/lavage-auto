@@ -14,7 +14,7 @@ import EmptyState, { MissionIcon } from '@/components/ui/EmptyState'
 
 interface Mission {
     id: string
-    status: string  // e.g. 'ACCEPTED' | 'EN_ROUTE' | 'IN_PROGRESS' — returned by API since Story 4.3 code review
+    status: string
     scheduledDate: string
     serviceAddress: string
     finalPrice: number
@@ -61,6 +61,30 @@ interface EarningsSummary {
 function formatEuros(amountCents: number): string {
     return (amountCents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
 }
+
+const PILL_BASE =
+    'inline-flex items-center rounded-md px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.05em]'
+
+const MISSION_STATUS: Record<string, { className: string; label: string }> = {
+    ACCEPTED: { className: 'bg-blue/10 text-blue', label: 'Accepté' },
+    EN_ROUTE: { className: 'bg-blue/10 text-blue', label: 'En route' },
+    IN_PROGRESS: { className: 'bg-blue-wash text-blue', label: 'En cours' },
+    COMPLETED: { className: 'bg-ink text-white', label: 'Terminé' },
+    CANCELLED: { className: 'bg-rule text-ink2', label: 'Annulé' },
+}
+
+function MissionStatusBadge({ status }: { status: string }) {
+    const cfg = MISSION_STATUS[status] ?? { className: 'bg-blue-wash text-ink2', label: status }
+    return <span className={`${PILL_BASE} ${cfg.className}`}>{cfg.label}</span>
+}
+
+const CARD_SHELL =
+    'rounded-[20px] bg-white p-5 shadow-cin-card border border-rule md:p-6'
+const KPI_LABEL =
+    'font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2/70 md:text-xs'
+const KPI_VALUE =
+    'mt-2 font-display text-[24px] font-extrabold leading-none tracking-[-0.03em] text-ink md:text-[32px]'
+const KPI_HINT = 'mt-1.5 text-[11px] text-ink2/60 md:text-xs'
 
 export default function WasherDashboardView({ user: initialUser }: WasherDashboardProps) {
     const { user, loading } = useAuth()
@@ -111,14 +135,12 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
     const fetchMissions = async () => {
         setIsLoading(true)
         try {
-            // Fetch available missions
             const availableRes = await fetch('/api/washer/missions/available')
             if (availableRes.ok) {
                 const data = await availableRes.json()
                 setAvailableMissions(data.data.bookings)
             }
 
-            // Fetch accepted missions
             const acceptedRes = await fetch('/api/washer/missions/accepted')
             if (acceptedRes.ok) {
                 const data = await acceptedRes.json()
@@ -160,16 +182,14 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
         try {
             const response = await fetch('/api/washer/missions/accept', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ bookingId: missionId })
             })
 
             if (response.ok) {
                 await fetchMissions()
                 toast.success('Mission acceptée avec succès !')
-                setActiveTab('accepted') // Switch to accepted tab
+                setActiveTab('accepted')
             } else {
                 const error = await response.json()
                 toast.error(error.error || 'Erreur lors de l\'acceptation de la mission')
@@ -191,7 +211,7 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                 body: JSON.stringify({ status: newStatus }),
             })
             if (response.ok) {
-                await fetchMissions() // Re-fetch to reflect the new status
+                await fetchMissions()
             } else {
                 const error = await response.json()
                 toast.error(error.error || 'Erreur lors de la mise à jour du statut')
@@ -223,26 +243,27 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-white">
                 <NavCinetique />
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <main className="mx-auto max-w-cin px-5 py-10 md:px-12 md:py-14">
                     <div className="mb-8">
-                        <Skeleton className="h-8 w-48 mb-2" />
-                        <Skeleton className="h-5 w-64" />
+                        <Skeleton className="h-4 w-24 mb-3" />
+                        <Skeleton className="h-12 w-64 mb-2" />
+                        <Skeleton className="h-5 w-72" />
                     </div>
-                    <div className="grid md:grid-cols-4 gap-6 mb-8">
+                    <div className="grid grid-cols-2 gap-4 sm:gap-5 mb-8 md:grid-cols-4">
                         <SkeletonStatsCard />
                         <SkeletonStatsCard />
                         <SkeletonStatsCard />
                         <SkeletonStatsCard />
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="border-b border-gray-100 p-4 flex gap-4">
+                    <div className="rounded-[20px] border border-rule bg-white shadow-cin-card overflow-hidden">
+                        <div className="border-b border-rule p-4 flex gap-4">
                             <Skeleton className="h-8 w-32" />
                             <Skeleton className="h-8 w-28" />
                             <Skeleton className="h-8 w-24" />
                         </div>
-                        <div className="divide-y divide-gray-100">
+                        <div className="divide-y divide-rule">
                             <SkeletonMissionCard />
                             <SkeletonMissionCard />
                             <SkeletonMissionCard />
@@ -255,122 +276,117 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
     if (!user) return null
 
-    // "Connected" now means the account is fully onboarded (charges_enabled && payouts_enabled),
-    // not just that a Stripe Connect account ID exists. Legacy profiles with an account id but
-    // stripeAccountReady still false are treated as not connected — they need to complete onboarding.
     const stripeConnected = !!initialUser.profile?.stripeAccountReady
 
+    function tabClass(tab: 'available' | 'accepted' | 'payments') {
+        const base = '-mb-px cursor-pointer whitespace-nowrap border-b-2 px-3 py-3 font-cinsans text-xs font-medium transition-colors sm:px-5 sm:py-4 sm:text-sm'
+        return activeTab === tab
+            ? `${base} border-blue text-blue`
+            : `${base} border-transparent text-ink2 hover:text-ink`
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-white">
             <NavCinetique />
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
+            <main className="mx-auto max-w-cin px-5 py-10 md:px-12 md:py-14">
+                <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row md:mb-10">
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Espace Laveur</h1>
-                        <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Gérez vos missions et vos disponibilités</p>
+                        <span className="mb-3 inline-block rounded-md bg-blue-wash px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue md:text-xs">
+                            Espace laveur
+                        </span>
+                        <h1 className="font-display text-[40px] font-extrabold leading-[0.95] tracking-[-0.04em] text-ink md:text-[56px]">
+                            Mes missions
+                        </h1>
+                        <p className="mt-3 text-[15px] text-ink2 md:text-[17px]">
+                            Gérez vos missions et vos disponibilités.
+                        </p>
                     </div>
 
-                    <div className="flex items-center bg-white rounded-full p-1 shadow-sm border border-gray-200 shrink-0">
+                    <div className="flex shrink-0 items-center rounded-full border border-rule bg-white p-1 shadow-cin-card">
                         <button
                             onClick={() => handleUpdateAvailability(true)}
                             disabled={isUpdatingAvailability || isAvailable}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${isAvailable ? 'bg-green-500 text-white' : 'text-gray-500 hover:text-gray-700'
-                                } disabled:opacity-50`}
+                            className={`rounded-full px-4 py-2 font-cinsans text-xs font-semibold transition-colors disabled:opacity-50 sm:text-sm ${isAvailable ? 'bg-ink text-white' : 'text-ink2 hover:text-ink'}`}
                         >
-                            {isUpdatingAvailability && isAvailable ? 'Mise à jour...' : 'Disponible'}
+                            {isUpdatingAvailability && isAvailable ? 'Mise à jour…' : 'Disponible'}
                         </button>
                         <button
                             onClick={() => handleUpdateAvailability(false)}
                             disabled={isUpdatingAvailability || !isAvailable}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${!isAvailable ? 'bg-red-500 text-white' : 'text-gray-500 hover:text-gray-700'
-                                } disabled:opacity-50`}
+                            className={`rounded-full px-4 py-2 font-cinsans text-xs font-semibold transition-colors disabled:opacity-50 sm:text-sm ${!isAvailable ? 'bg-rule text-ink' : 'text-ink2 hover:text-ink'}`}
                         >
-                            {isUpdatingAvailability && !isAvailable ? 'Mise à jour...' : 'Indisponible'}
+                            {isUpdatingAvailability && !isAvailable ? 'Mise à jour…' : 'Indisponible'}
                         </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
-                    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-xs sm:text-sm text-gray-500 mb-1">Gains validés</p>
-                        <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+                <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+                    <div className={CARD_SHELL}>
+                        <p className={KPI_LABEL}>Gains validés</p>
+                        <p className={`${KPI_VALUE} truncate`}>
                             {earnings ? formatEuros(earnings.validatedEarningsCents) : '—'}
                         </p>
-                        <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Net, virements effectués</p>
+                        <p className={KPI_HINT}>Net, virements effectués</p>
                     </div>
-                    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-xs sm:text-sm text-gray-500 mb-1">À venir</p>
-                        <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+                    <div className={CARD_SHELL}>
+                        <p className={KPI_LABEL}>À venir</p>
+                        <p className={`${KPI_VALUE} truncate`}>
                             {earnings ? formatEuros(earnings.upcomingEarningsCents) : '—'}
                         </p>
-                        <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Missions en cours</p>
+                        <p className={KPI_HINT}>Missions en cours</p>
                     </div>
-                    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-xs sm:text-sm text-gray-500 mb-1">Lavages réalisés</p>
-                        <p className="text-lg sm:text-2xl font-bold text-gray-900">{earnings?.completedMissionsCount ?? 0}</p>
+                    <div className={CARD_SHELL}>
+                        <p className={KPI_LABEL}>Lavages réalisés</p>
+                        <p className={KPI_VALUE}>{earnings?.completedMissionsCount ?? 0}</p>
+                        <p className={KPI_HINT}>Au total</p>
                     </div>
-                    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-xs sm:text-sm text-gray-500 mb-1">Stripe Connect</p>
-                        <p className={`text-sm sm:text-lg font-medium truncate ${stripeConnected ? 'text-green-600' : 'text-amber-600'}`}>
+                    <div className={CARD_SHELL}>
+                        <p className={KPI_LABEL}>Stripe Connect</p>
+                        <p className={`mt-2 font-display text-[18px] font-bold tracking-[-0.02em] md:text-[20px] ${stripeConnected ? 'text-ink' : 'text-amber-700'}`}>
                             {stripeConnected ? 'Activé' : 'Non configuré'}
                         </p>
+                        <p className={KPI_HINT}>{stripeConnected ? 'Compte prêt' : 'Action requise'}</p>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="border-b border-gray-100">
-                        <div className="flex overflow-x-auto">
-                            <button
-                                onClick={() => setActiveTab('available')}
-                                className={`px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'available'
-                                    ? 'border-blue-600 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                                    }`}
-                            >
+                <div className="overflow-hidden rounded-[20px] border border-rule bg-white shadow-cin-card">
+                    <div className="border-b border-rule">
+                        <div className="flex overflow-x-auto px-2 sm:px-4">
+                            <button onClick={() => setActiveTab('available')} className={tabClass('available')}>
                                 <span className="sm:hidden">Dispo. ({availableMissions.length})</span>
                                 <span className="hidden sm:inline">Missions disponibles ({availableMissions.length})</span>
                             </button>
-                            <button
-                                onClick={() => setActiveTab('accepted')}
-                                className={`px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'accepted'
-                                    ? 'border-blue-600 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                                    }`}
-                            >
-                                <span className="sm:hidden">Missions ({acceptedMissions.length})</span>
+                            <button onClick={() => setActiveTab('accepted')} className={tabClass('accepted')}>
+                                <span className="sm:hidden">Mes missions ({acceptedMissions.length})</span>
                                 <span className="hidden sm:inline">Mes missions ({acceptedMissions.length})</span>
                             </button>
-                            <button
-                                onClick={() => setActiveTab('payments')}
-                                className={`px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'payments'
-                                    ? 'border-blue-600 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                                    }`}
-                            >
+                            <button onClick={() => setActiveTab('payments')} className={tabClass('payments')}>
                                 Paiements
                             </button>
                         </div>
                     </div>
 
                     {activeTab === 'payments' ? (
-                        <div className="p-8 max-w-2xl">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">Configuration des revenus</h2>
-                            <p className="text-gray-600 mb-6">
-                                Pour recevoir vos paiements automatiquement après chaque mission, vous devez connecter un compte bancaire via notre partenaire Stripe.
+                        <div className="max-w-3xl p-6 md:p-8">
+                            <h2 className="font-display text-[22px] font-bold tracking-[-0.02em] text-ink md:text-[28px]">
+                                Configuration des revenus
+                            </h2>
+                            <p className="mt-3 text-[15px] leading-relaxed text-ink2 md:text-[17px]">
+                                Pour recevoir vos paiements automatiquement après chaque mission, connectez un compte bancaire via notre partenaire Stripe.
                             </p>
 
-                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 sm:p-6 flex items-start gap-3 sm:gap-4 mb-8">
-                                <div className="bg-blue-100 p-2 rounded-lg shrink-0">
-                                    <AppleEmoji name="bank" className="w-6 h-6" />
+                            <div className="mt-6 flex items-start gap-4 rounded-[16px] border border-rule bg-blue-wash p-5">
+                                <div className="shrink-0 rounded-[14px] bg-white p-2 shadow-cin-card">
+                                    <AppleEmoji name="bank" className="h-6 w-6" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="font-medium text-blue-900 text-sm sm:text-base">
-                                        {stripeConnected ? 'Votre compte Stripe est configuré' : 'Action requise : Configuration Stripe'}
+                                    <p className="font-display text-[15px] font-bold tracking-[-0.02em] text-ink md:text-[17px]">
+                                        {stripeConnected ? 'Votre compte Stripe est configuré' : 'Action requise : configuration Stripe'}
                                     </p>
-                                    <p className="text-xs sm:text-sm text-blue-800 mt-1 break-words">
+                                    <p className="mt-1 break-words text-sm text-ink2">
                                         {stripeConnected
-                                            ? `ID de compte : ${initialUser.profile?.stripeAccountId?.slice(0, 10)}...`
+                                            ? `ID de compte : ${initialUser.profile?.stripeAccountId?.slice(0, 10)}…`
                                             : 'Vous devez compléter l\'onboarding Stripe pour pouvoir recevoir vos fonds.'}
                                     </p>
                                 </div>
@@ -380,67 +396,67 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                 <button
                                     onClick={handleConnectStripe}
                                     disabled={isOnboarding}
-                                    className="bg-blue-600 text-white px-6 sm:px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition-shadow shadow-lg disabled:opacity-50 flex items-center gap-2 text-sm sm:text-base"
+                                    className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-6 py-3.5 font-cinsans text-sm font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 md:px-7 md:text-[15px]"
                                 >
-                                    {isOnboarding ? 'Initialisation...' : (
+                                    {isOnboarding ? 'Initialisation…' : (
                                         <>
                                             Connecter mon compte bancaire
-                                            <span aria-hidden className="text-lg leading-none">🚀</span>
+                                            <span aria-hidden className="text-base leading-none">→</span>
                                         </>
                                     )}
                                 </button>
                             ) : (
-                                <div className="flex gap-4">
-                                    <button
-                                        disabled
-                                        className="bg-green-100 text-green-700 px-6 py-2 rounded-lg font-medium cursor-not-allowed"
-                                    >
-                                        Compte déjà lié
-                                    </button>
-                                    <p className="text-sm text-gray-500 self-center italic">
+                                <div className="mt-6 flex flex-wrap items-center gap-4">
+                                    <span className={`${PILL_BASE} bg-ink text-white`}>Compte lié</span>
+                                    <p className="text-sm italic text-ink2">
                                         Les virements seront effectués automatiquement après validation de mission.
                                     </p>
                                 </div>
                             )}
 
                             <div className="mt-10">
-                                <h2 className="text-xl font-bold text-gray-900 mb-4">Récapitulatif des gains</h2>
+                                <h2 className="font-display text-[22px] font-bold tracking-[-0.02em] text-ink md:text-[28px]">
+                                    Récapitulatif des gains
+                                </h2>
                                 {isEarningsLoading ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                                         <SkeletonStatsCard />
                                         <SkeletonStatsCard />
                                         <SkeletonStatsCard />
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div className="bg-green-50 border border-green-100 rounded-xl p-5">
-                                            <p className="text-sm text-green-700 mb-1">Gains validés</p>
-                                            <p className="text-2xl font-bold text-green-900">
+                                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                        <div className="rounded-[16px] border border-rule bg-white p-5 shadow-cin-card">
+                                            <p className={KPI_LABEL}>Gains validés</p>
+                                            <p className={KPI_VALUE}>
                                                 {earnings ? formatEuros(earnings.validatedEarningsCents) : '0,00 €'}
                                             </p>
-                                            <p className="text-xs text-green-600 mt-1">Virements effectués</p>
+                                            <p className={KPI_HINT}>Virements effectués</p>
                                         </div>
-                                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
-                                            <p className="text-sm text-amber-700 mb-1">En attente de versement</p>
-                                            <p className="text-2xl font-bold text-amber-900">
+                                        <div className="rounded-[16px] border border-rule bg-white p-5 shadow-cin-card">
+                                            <p className={KPI_LABEL}>En attente de versement</p>
+                                            <p className={KPI_VALUE}>
                                                 {earnings ? formatEuros(earnings.pendingEarningsCents) : '0,00 €'}
                                             </p>
-                                            <p className="text-xs text-amber-600 mt-1">En cours de traitement</p>
+                                            <p className={KPI_HINT}>En cours de traitement</p>
                                         </div>
-                                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
-                                            <p className="text-sm text-blue-700 mb-1">Missions complétées</p>
-                                            <p className="text-2xl font-bold text-blue-900">
+                                        <div className="rounded-[16px] border border-rule bg-blue-wash p-5">
+                                            <p className={KPI_LABEL}>Missions complétées</p>
+                                            <p className={`${KPI_VALUE} text-blue`}>
                                                 {earnings ? earnings.completedMissionsCount : 0}
                                             </p>
-                                            <p className="text-xs text-blue-600 mt-1">Au total</p>
+                                            <p className={KPI_HINT}>Au total</p>
                                         </div>
                                     </div>
                                 )}
                                 {earnings && (
-                                    <p className="text-xs text-gray-500 mt-4">
-                                        Commission plateforme prélevée à ce jour : <span className="font-medium text-gray-700">{formatEuros(earnings.totalCommissionCents)}</span>
+                                    <p className="mt-4 text-xs text-ink2/70">
+                                        Commission plateforme prélevée à ce jour&nbsp;:{' '}
+                                        <span className="font-display font-semibold text-ink">
+                                            {formatEuros(earnings.totalCommissionCents)}
+                                        </span>
                                         {earnings.currentCommissionRate != null && (
-                                            <> · Taux actuel : {(earnings.currentCommissionRate * 100).toFixed(1)}%</>
+                                            <> · Taux actuel&nbsp;: {(earnings.currentCommissionRate * 100).toFixed(1)}%</>
                                         )}
                                     </p>
                                 )}
@@ -448,43 +464,45 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                         </div>
                     ) : (
                         <>
-                            <div className="p-6 flex justify-end">
+                            <div className="flex justify-end p-4 md:p-5">
                                 <button
                                     onClick={fetchMissions}
-                                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                    className="inline-flex items-center gap-1.5 font-cinsans text-xs font-semibold text-blue transition-colors hover:text-ink md:text-sm"
                                 >
-                                    <span className="text-lg">↻</span> Actualiser
+                                    <span className="text-base leading-none">↻</span> Actualiser
                                 </button>
                             </div>
 
                             {isLoading ? (
-                                <div className="divide-y divide-gray-100">
+                                <div className="divide-y divide-rule">
                                     <SkeletonMissionCard />
                                     <SkeletonMissionCard />
                                     <SkeletonMissionCard />
                                 </div>
                             ) : (
-                                <div className="divide-y divide-gray-100">
+                                <div className="divide-y divide-rule">
                                     {(activeTab === 'available' ? availableMissions : acceptedMissions).length === 0 ? (
                                         <EmptyState
                                             icon={<MissionIcon />}
-                                            title={activeTab === 'available' ? "Aucune mission disponible" : "Aucune mission prévue"}
+                                            title={activeTab === 'available' ? 'Aucune mission disponible' : 'Aucune mission prévue'}
                                             description={activeTab === 'available'
                                                 ? "Il n'y a pas de mission dans votre secteur pour le moment. Revenez bientôt !"
                                                 : "Vous n'avez aucune mission prévue. Consultez les missions disponibles."}
-                                            action={activeTab === 'accepted' ? { label: "Voir les missions disponibles", onClick: () => setActiveTab('available') } : undefined}
+                                            action={activeTab === 'accepted' ? { label: 'Voir les missions disponibles', onClick: () => setActiveTab('available') } : undefined}
                                         />
                                     ) : (
                                         (activeTab === 'available' ? availableMissions : acceptedMissions).map((mission) => (
-                                            <div key={mission.id} className="p-6 hover:bg-gray-50 transition-colors">
-                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                            <span className={`px-2 py-1 text-xs font-medium rounded-full shrink-0 ${activeTab === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                                                                }`}>
+                                            <div key={mission.id} className="p-5 transition-colors hover:bg-blue-wash/40 md:p-6">
+                                                <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                                                            <span className={`${PILL_BASE} bg-blue-wash text-blue`}>
                                                                 {mission.service.name}
                                                             </span>
-                                                            <span className="text-xs sm:text-sm text-gray-500">
+                                                            {activeTab === 'accepted' && (
+                                                                <MissionStatusBadge status={mission.status} />
+                                                            )}
+                                                            <span className="font-mono text-[11px] uppercase tracking-[0.05em] text-ink2/70 md:text-xs">
                                                                 {new Date(mission.scheduledDate).toLocaleString('fr-FR', {
                                                                     weekday: 'long',
                                                                     day: 'numeric',
@@ -494,31 +512,33 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                                 })}
                                                             </span>
                                                         </div>
-                                                        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 break-words">
+                                                        <h3 className="mb-2 break-words font-display text-[18px] font-bold tracking-[-0.02em] text-ink md:text-[22px]">
                                                             {mission.serviceAddress}
                                                         </h3>
-                                                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
-                                                            <span className="flex items-center gap-1">
-                                                                <AppleEmoji name="car" className="w-4 h-4" />
+                                                        <div className="flex flex-wrap items-center gap-3 text-sm text-ink2 sm:gap-4">
+                                                            <span className="inline-flex items-center gap-1.5">
+                                                                <AppleEmoji name="car" className="h-4 w-4" />
                                                                 {mission.car.model}
                                                             </span>
-                                                            <span className="flex items-center gap-1">
-                                                                <AppleEmoji name="clock" className="w-4 h-4" />
+                                                            <span className="inline-flex items-center gap-1.5">
+                                                                <AppleEmoji name="clock" className="h-4 w-4" />
                                                                 {mission.service.estimatedDuration} min
                                                             </span>
                                                             {activeTab === 'accepted' && (
-                                                                <span className="flex items-center gap-1 text-blue-600">
-                                                                    <AppleEmoji name="bust_in_silhouette" className="w-4 h-4" />
+                                                                <span className="inline-flex items-center gap-1.5 text-blue">
+                                                                    <AppleEmoji name="bust_in_silhouette" className="h-4 w-4" />
                                                                     {mission.customer.name}
                                                                 </span>
                                                             )}
                                                         </div>
                                                     </div>
 
-                                                     <div className="flex items-center gap-4 w-full md:w-auto">
-                                                        <div className="text-right flex-1 md:flex-none">
-                                                            <p className="text-lg font-bold text-gray-900">{formatEuros(mission.netAmountCents)}</p>
-                                                            <p className="text-xs text-gray-500">
+                                                    <div className="flex w-full items-center gap-4 md:w-auto">
+                                                        <div className="flex-1 text-right md:flex-none">
+                                                            <p className="font-display text-[22px] font-extrabold leading-none tracking-[-0.03em] text-ink md:text-[26px]">
+                                                                {formatEuros(mission.netAmountCents)}
+                                                            </p>
+                                                            <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.05em] text-ink2/70 md:text-[11px]">
                                                                 {formatEuros(mission.grossAmountCents)} brut
                                                                 {earnings?.currentCommissionRate != null && (
                                                                     <> · {(earnings.currentCommissionRate * 100).toFixed(0)}% commission</>
@@ -529,9 +549,9 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                             <button
                                                                 onClick={() => handleAcceptMission(mission.id)}
                                                                 disabled={acceptingId === mission.id}
-                                                                className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                                                className="whitespace-nowrap rounded-xl bg-ink px-5 py-2.5 font-cinsans text-sm font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                                                             >
-                                                                {acceptingId === mission.id ? 'Acceptation...' : 'Accepter'}
+                                                                {acceptingId === mission.id ? 'Acceptation…' : 'Accepter'}
                                                             </button>
                                                         )}
                                                         {activeTab === 'accepted' && (
@@ -540,40 +560,35 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                                     <button
                                                                         onClick={() => handleUpdateStatus(mission.id, 'EN_ROUTE')}
                                                                         disabled={updatingStatusId === mission.id}
-                                                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        className="rounded-xl bg-ink px-4 py-2 font-cinsans text-xs font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:text-sm"
                                                                     >
-                                                                        {updatingStatusId === mission.id ? 'Mise à jour...' : 'En route'}
+                                                                        {updatingStatusId === mission.id ? 'Mise à jour…' : 'En route'}
                                                                     </button>
                                                                 )}
                                                                 {mission.status === 'EN_ROUTE' && (
                                                                     <button
                                                                         onClick={() => handleUpdateStatus(mission.id, 'IN_PROGRESS')}
                                                                         disabled={updatingStatusId === mission.id}
-                                                                        className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        className="rounded-xl bg-ink px-4 py-2 font-cinsans text-xs font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:text-sm"
                                                                     >
-                                                                        {updatingStatusId === mission.id ? 'Mise à jour...' : 'Démarrer le lavage'}
+                                                                        {updatingStatusId === mission.id ? 'Mise à jour…' : 'Démarrer le lavage'}
                                                                     </button>
                                                                 )}
                                                                 {mission.status === 'IN_PROGRESS' && (
-                                                                    <div className="bg-orange-100 text-orange-700 px-4 py-2 rounded-lg font-medium text-sm">
+                                                                    <span className={`${PILL_BASE} bg-blue-wash text-blue`}>
                                                                         En cours
-                                                                    </div>
+                                                                    </span>
                                                                 )}
-                                                                {/* Fallback for unexpected active statuses */}
                                                                 {!['ACCEPTED', 'EN_ROUTE', 'IN_PROGRESS'].includes(mission.status) && (
-                                                                    <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg font-medium text-sm">
-                                                                        {mission.status}
-                                                                    </div>
+                                                                    <MissionStatusBadge status={mission.status} />
                                                                 )}
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
 
-                                                {/* Photo upload section — only shown for accepted missions */}
                                                 {activeTab === 'accepted' && (
-                                                    <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
-                                                        {/* Upload "Avant" photo if not yet uploaded and mission is in correct state */}
+                                                    <div className="mt-4 space-y-3 border-t border-rule pt-4">
                                                         {!mission.beforePhotoUrl &&
                                                             (mission.status === 'ACCEPTED' || mission.status === 'EN_ROUTE') && (
                                                                 <PhotoUploader
@@ -583,15 +598,13 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                                 />
                                                             )}
 
-                                                        {/* Show "Avant" photo confirmation */}
                                                         {mission.beforePhotoUrl && (
-                                                            <div className="flex items-center gap-2 text-green-700 text-sm">
-                                                                <span>✓</span>
+                                                            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.05em] text-blue md:text-xs">
+                                                                <span aria-hidden>✓</span>
                                                                 <span>Photo Avant enregistrée</span>
                                                             </div>
                                                         )}
 
-                                                        {/* Upload "Après" photo if "Avant" done and mission in progress */}
                                                         {mission.beforePhotoUrl &&
                                                             !mission.afterPhotoUrl &&
                                                             mission.status === 'IN_PROGRESS' && (
@@ -602,10 +615,9 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                                 />
                                                             )}
 
-                                                        {/* Show "Après" photo confirmation */}
                                                         {mission.afterPhotoUrl && (
-                                                            <div className="flex items-center gap-2 text-green-700 text-sm">
-                                                                <span>✓</span>
+                                                            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.05em] text-blue md:text-xs">
+                                                                <span aria-hidden>✓</span>
                                                                 <span>Photo Après enregistrée — En attente de validation client</span>
                                                             </div>
                                                         )}

@@ -47,6 +47,28 @@ interface ClientDashboardViewProps {
     initialCars: Car[]
 }
 
+const PILL_BASE =
+    'inline-flex items-center rounded-md px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.05em]'
+
+const STATUS_PILL: Record<string, { className: string; label: string }> = {
+    PENDING: { className: 'bg-blue-wash text-ink2', label: 'En attente' },
+    CONFIRMED: { className: 'bg-blue/10 text-blue', label: 'Confirmé' },
+    ASSIGNED: { className: 'bg-blue/10 text-blue', label: 'Laveur assigné' },
+    IN_PROGRESS: { className: 'bg-blue-wash text-blue', label: 'En cours' },
+    COMPLETED: { className: 'bg-ink text-white', label: 'Terminé' },
+    CANCELLED: { className: 'bg-rule text-ink2', label: 'Annulé' },
+}
+
+function StatusBadge({ status }: { status: string }) {
+    const cfg = STATUS_PILL[status] ?? { className: 'bg-blue-wash text-ink2', label: status }
+    return <span className={`${PILL_BASE} ${cfg.className}`}>{cfg.label}</span>
+}
+
+const CARD_SHELL =
+    'rounded-[20px] bg-white p-6 shadow-cin-card border border-rule md:p-7'
+const CARD_TITLE =
+    'font-display text-[20px] font-bold tracking-[-0.02em] text-ink mb-5 md:text-[24px]'
+
 export default function ClientDashboardView({ initialBookings, initialCars }: ClientDashboardViewProps) {
     const { user, loading } = useAuth()
     const { toast } = useToast()
@@ -54,7 +76,6 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
     const [bookings, setBookings] = useState<Booking[]>(initialBookings)
     const [cancelBookingId, setCancelBookingId] = useState<string | null>(null)
 
-    // Sync with props when navigation/revalidation happens
     useEffect(() => {
         setBookings(initialBookings)
     }, [initialBookings])
@@ -82,23 +103,24 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-white">
                 <NavCinetique />
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <main className="mx-auto max-w-cin px-5 py-10 md:px-12 md:py-14">
                     <div className="mb-8">
-                        <Skeleton className="h-8 w-48 mb-2" />
+                        <Skeleton className="h-4 w-24 mb-3" />
+                        <Skeleton className="h-12 w-72 mb-2" />
                         <Skeleton className="h-5 w-64" />
                     </div>
-                    <div className="grid md:grid-cols-3 gap-6">
-                        <div className="md:col-span-2 space-y-6">
-                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div className="grid gap-6 md:grid-cols-3">
+                        <div className="space-y-6 md:col-span-2">
+                            <div className={CARD_SHELL}>
                                 <Skeleton className="h-6 w-40 mb-4" />
                                 <SkeletonBookingCard />
                                 <div className="mt-4"><SkeletonBookingCard /></div>
                             </div>
                         </div>
                         <div className="space-y-6">
-                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <div className={CARD_SHELL}>
                                 <Skeleton className="h-6 w-32 mb-4" />
                                 <div className="space-y-3">
                                     <Skeleton className="h-16 w-full rounded-xl" />
@@ -118,38 +140,47 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
     const pastBookings = bookings.filter(b => ['COMPLETED', 'CANCELLED'].includes(b.status))
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-white">
             <NavCinetique />
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Mon Espace Client</h1>
-                    <p className="text-gray-600 mt-2">Gérez vos réservations et vos véhicules</p>
+            <main className="mx-auto max-w-cin px-5 py-10 md:px-12 md:py-14">
+                <div className="mb-8 md:mb-10">
+                    <span className="mb-3 inline-block rounded-md bg-blue-wash px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue md:text-xs">
+                        Mon espace
+                    </span>
+                    <h1 className="font-display text-[40px] font-extrabold leading-[0.95] tracking-[-0.04em] text-ink md:text-[56px]">
+                        Mes lavages
+                    </h1>
+                    <p className="mt-3 text-[15px] text-ink2 md:text-[17px]">
+                        Gérez vos réservations et vos véhicules.
+                    </p>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6">
-                    {/* Main Content */}
-                    <div className="md:col-span-2 space-y-6">
-                        {/* Quick Action */}
-                        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                            <h2 className="text-xl font-semibold mb-4">Réserver un lavage</h2>
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-blue-50 p-4 rounded-lg">
-                                <div>
-                                    <p className="font-medium text-blue-900">Besoin d'un lavage ?</p>
-                                    <p className="text-sm text-blue-700">Réservez en quelques clics</p>
+                <div className="grid gap-6 md:grid-cols-3">
+                    <div className="space-y-6 md:col-span-2">
+                        <div className={CARD_SHELL}>
+                            <h2 className={CARD_TITLE}>Réserver un lavage</h2>
+                            <div className="flex flex-col items-start justify-between gap-3 rounded-[16px] bg-blue-wash p-5 sm:flex-row sm:items-center">
+                                <div className="min-w-0">
+                                    <p className="font-display text-[17px] font-bold tracking-[-0.02em] text-ink">
+                                        Besoin d&apos;un lavage&nbsp;?
+                                    </p>
+                                    <p className="mt-1 text-sm text-ink2">Réservez en quelques clics.</p>
                                 </div>
                                 <button
                                     onClick={() => router.push('/reserver')}
-                                    className="px-4 py-2 bg-[#004aad] text-white rounded-lg hover:bg-[#003c8a] transition-colors whitespace-nowrap shrink-0 w-full sm:w-auto text-center"
+                                    className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3 font-cinsans text-sm font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 sm:w-auto"
                                 >
                                     Réserver maintenant
+                                    <span className="rounded-md bg-blue-electric px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.05em]">
+                                        2 min
+                                    </span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Active Bookings */}
-                        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                            <h2 className="text-xl font-semibold mb-4">Mes réservations en cours</h2>
+                        <div className={CARD_SHELL}>
+                            <h2 className={CARD_TITLE}>Mes réservations en cours</h2>
                             {activeBookings.length === 0 ? (
                                 <EmptyState
                                     icon={<CalendarIcon />}
@@ -160,53 +191,49 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                             ) : (
                                 <div className="space-y-4">
                                     {activeBookings.map(booking => (
-                                        <div key={booking.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                            <div className="flex justify-between items-start gap-3">
+                                        <div
+                                            key={booking.id}
+                                            className="rounded-[16px] border border-rule p-5 transition-colors hover:bg-blue-wash/40"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0 flex-1">
-                                                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                        <span className="font-semibold text-gray-900">{booking.service.name}</span>
-                                                        <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
-                                                            booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                                                            booking.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-800' :
-                                                            booking.status === 'IN_PROGRESS' ? 'bg-orange-100 text-orange-800' :
-                                                            'bg-green-100 text-green-800'
-                                                        }`}>
-                                                            {booking.status === 'PENDING' ? 'En attente' :
-                                                                booking.status === 'ASSIGNED' ? 'Laveur assigné' :
-                                                                booking.status === 'IN_PROGRESS' ? 'En cours' :
-                                                                booking.status}
+                                                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                                                        <span className="font-display text-[17px] font-bold tracking-[-0.02em] text-ink">
+                                                            {booking.service.name}
                                                         </span>
+                                                        <StatusBadge status={booking.status} />
                                                     </div>
-                                                    <p className="text-sm text-gray-600 break-words">
+                                                    <p className="break-words text-sm text-ink2">
                                                         {new Date(booking.scheduledDate).toLocaleString('fr-FR', {
                                                             dateStyle: 'full',
                                                             timeStyle: 'short'
                                                         })}
                                                     </p>
-                                                    <p className="text-sm text-gray-500 mt-1">
-                                                        <AppleEmoji name="car" className="w-4 h-4 inline mr-1" />
+                                                    <p className="mt-1 flex items-center gap-1.5 text-sm text-ink2">
+                                                        <AppleEmoji name="car" className="inline h-4 w-4" />
                                                         {booking.car.make} {booking.car.model}
                                                     </p>
                                                     {booking.assignment && (
-                                                        <p className="text-sm text-blue-600 mt-2">
-                                                            Laveur : {booking.assignment.washer.name}
+                                                        <p className="mt-2 text-sm text-blue">
+                                                            Laveur&nbsp;: <span className="font-semibold">{booking.assignment.washer.name}</span>
                                                         </p>
                                                     )}
                                                 </div>
-                                                <div className="text-right shrink-0">
-                                                    <p className="font-bold text-gray-900 mb-2">{booking.finalPrice} €</p>
-                                                    {booking.status === 'PENDING' || booking.status === 'ASSIGNED' || booking.status === 'CONFIRMED' ? (
+                                                <div className="shrink-0 text-right">
+                                                    <p className="font-display text-[22px] font-extrabold leading-none tracking-[-0.03em] text-ink md:text-[26px]">
+                                                        {booking.finalPrice}&nbsp;€
+                                                    </p>
+                                                    {(booking.status === 'PENDING' || booking.status === 'ASSIGNED' || booking.status === 'CONFIRMED') && (
                                                         <button
                                                             onClick={() => setCancelBookingId(booking.id)}
-                                                            className="text-sm text-red-600 hover:text-red-800 font-medium underline"
+                                                            className="mt-2 font-cinsans text-xs font-semibold text-red-700 underline-offset-2 transition-colors hover:underline"
                                                         >
                                                             Annuler
                                                         </button>
-                                                    ) : null}
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* Validation card for IN_PROGRESS missions */}
                                             <MissionValidationCard
                                                 booking={booking}
                                                 onValidated={() => router.refresh()}
@@ -217,47 +244,45 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                             )}
                         </div>
 
-                        {/* Past Bookings */}
                         {pastBookings.length > 0 && (
-                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                                <h2 className="text-xl font-semibold mb-4">Historique</h2>
+                            <div className={CARD_SHELL}>
+                                <h2 className={CARD_TITLE}>Historique</h2>
                                 <div className="space-y-4">
                                     {pastBookings.map(booking => (
-                                        <div key={booking.id} className="p-4 border-b border-gray-100 last:border-0">
-                                            <div className="flex justify-between items-center">
-                                                <div>
-                                                    <p className="font-medium text-gray-900">{booking.service.name}</p>
-                                                    <p className="text-sm text-gray-500">
+                                        <div key={booking.id} className="border-b border-rule pb-4 last:border-0 last:pb-0">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="font-display text-[15px] font-semibold tracking-[-0.01em] text-ink md:text-base">
+                                                        {booking.service.name}
+                                                    </p>
+                                                    <p className="text-sm text-ink2">
                                                         {new Date(booking.scheduledDate).toLocaleDateString('fr-FR')}
                                                     </p>
                                                 </div>
-                                                <span className={`text-xs px-2 py-1 rounded-full ${booking.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                    {booking.status === 'COMPLETED' ? 'Terminé' : 'Annulé'}
-                                                </span>
+                                                <StatusBadge status={booking.status} />
                                             </div>
 
-                                            {/* Read-only photo viewer for completed bookings (AC#9) */}
                                             {booking.status === 'COMPLETED' && booking.beforePhotoUrl && booking.afterPhotoUrl && (
                                                 <div className="mt-3 grid grid-cols-2 gap-2">
-                                                    <div className="space-y-1">
-                                                        <p className="text-xs text-gray-400 uppercase tracking-wide">Avant</p>
-                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                        <img
-                                                            src={booking.beforePhotoUrl}
-                                                            alt="Photo avant lavage"
-                                                            className="w-full h-20 object-cover rounded border border-gray-200"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <p className="text-xs text-gray-400 uppercase tracking-wide">Après</p>
-                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                        <img
-                                                            src={booking.afterPhotoUrl}
-                                                            alt="Photo après lavage"
-                                                            className="w-full h-20 object-cover rounded border border-gray-200"
-                                                        />
-                                                    </div>
+                                                    {(['Avant', 'Après'] as const).map((label) => {
+                                                        const url = label === 'Avant' ? booking.beforePhotoUrl : booking.afterPhotoUrl
+                                                        return (
+                                                            <div key={label} className="relative overflow-hidden rounded-[12px] border border-rule">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img
+                                                                    src={url!}
+                                                                    alt={`Photo ${label.toLowerCase()} lavage`}
+                                                                    className="h-24 w-full object-cover"
+                                                                />
+                                                                <span
+                                                                    className="absolute left-2 top-2 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-ink backdrop-blur-md"
+                                                                    style={{ background: 'rgba(255,255,255,0.82)' }}
+                                                                >
+                                                                    {label}
+                                                                </span>
+                                                            </div>
+                                                        )
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
@@ -267,10 +292,9 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                         )}
                     </div>
 
-                    {/* Sidebar */}
                     <div className="space-y-6">
-                        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                            <h2 className="text-lg font-semibold mb-4">Mes Véhicules</h2>
+                        <div className={CARD_SHELL}>
+                            <h2 className={CARD_TITLE}>Mes véhicules</h2>
                             <div className="space-y-4">
                                 <VehicleList cars={initialCars} />
                                 <VehicleForm />
