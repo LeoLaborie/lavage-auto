@@ -1,8 +1,9 @@
 'use client'
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import NavCinetique from '@/components/landing/NavCinetique'
+import Wordmark from '@/components/landing/Wordmark'
 
 export default function Login() {
   const router = useRouter()
@@ -24,14 +25,13 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
     })
     if (error) {
       setError('Erreur lors de la connexion Google. Veuillez réessayer.')
       setGoogleLoading(false)
     }
-    // Don't reset loading — browser will navigate away on success
   }
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -56,8 +56,8 @@ export default function Login() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`
-          }
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
         })
 
         if (error) {
@@ -89,7 +89,6 @@ export default function Login() {
           return
         }
 
-        // Check if user has a DB profile
         const roleRes = await fetch('/api/auth/role')
         if (roleRes.ok) {
           const roleData = await roleRes.json()
@@ -99,7 +98,6 @@ export default function Login() {
           }
         }
 
-        // No profile yet → onboarding
         router.push('/onboarding')
       }
     } catch {
@@ -109,44 +107,64 @@ export default function Login() {
     }
   }
 
+  const isBusy = loading || googleLoading
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#004aad]/5 to-[#004aad]/10">
-      <NavCinetique />
+    <div
+      className="min-h-screen bg-white font-cinsans text-ink antialiased"
+      style={{
+        background:
+          'radial-gradient(ellipse at 50% -10%, #eaf0fc 0%, #ffffff 55%)',
+      }}
+    >
+      <header className="border-b border-rule">
+        <div className="mx-auto flex h-16 max-w-cin items-center justify-between px-5 md:h-20 md:px-12">
+          <Link href="/" className="shrink-0">
+            <Wordmark />
+          </Link>
+          <Link
+            href="/"
+            className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink2/70 transition-colors hover:text-ink"
+          >
+            ← Accueil
+          </Link>
+        </div>
+      </header>
 
-      <main className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-[#004aad]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">👋</span>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Bienvenue sur Nealkar
-            </h1>
-            <p className="text-gray-600">
-              {mode === 'login'
-                ? 'Connectez-vous pour accéder à votre espace'
-                : 'Créez votre compte en quelques secondes'}
-            </p>
-          </div>
+      <main className="mx-auto w-full max-w-md px-5 py-14 md:py-20">
+        <div className="text-center">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-ink2/70">
+            {mode === 'login' ? 'Connexion' : 'Inscription'}
+          </p>
+          <h1 className="mt-5 font-display font-extrabold leading-[0.95] tracking-[-0.04em] text-ink text-[40px] md:text-[52px]">
+            Bienvenue sur Nealkar
+          </h1>
+          <p className="mt-4 text-[15px] leading-relaxed text-ink2 md:text-[17px]">
+            {mode === 'login'
+              ? 'Connectez-vous pour accéder à votre espace'
+              : 'Créez votre compte en quelques secondes'}
+          </p>
+        </div>
 
-          {/* Error Message */}
+        <div className="mt-10 rounded-2xl border border-rule bg-white p-6 shadow-cin-card md:p-8">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 text-sm">{error}</p>
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
-          {/* Success Message */}
           {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-700 text-sm">{success}</p>
+            <div className="mb-5 rounded-xl border border-blue-wash bg-blue-wash px-4 py-3">
+              <p className="text-sm text-blue-deep">{success}</p>
             </div>
           )}
 
-          {/* Email + Password Form */}
-          <form onSubmit={handleEmailAuth} className="space-y-4 mb-6">
+          <form onSubmit={handleEmailAuth} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="email"
+                className="mb-2 block font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-ink2"
+              >
                 Email
               </label>
               <input
@@ -155,13 +173,16 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre@email.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004aad] focus:border-transparent outline-none transition-all text-gray-900"
-                disabled={loading || googleLoading}
+                className="w-full rounded-xl border border-rule bg-white px-4 py-3 font-cinsans text-[15px] text-ink placeholder:text-ink2/50 outline-none transition-all focus:border-blue focus:ring-2 focus:ring-blue/20 disabled:opacity-60"
+                disabled={isBusy}
                 autoComplete="email"
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password"
+                className="mb-2 block font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-ink2"
+              >
                 Mot de passe
               </label>
               <input
@@ -170,18 +191,20 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004aad] focus:border-transparent outline-none transition-all text-gray-900"
-                disabled={loading || googleLoading}
+                className="w-full rounded-xl border border-rule bg-white px-4 py-3 font-cinsans text-[15px] text-ink placeholder:text-ink2/50 outline-none transition-all focus:border-blue focus:ring-2 focus:ring-blue/20 disabled:opacity-60"
+                disabled={isBusy}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
               {mode === 'signup' && (
-                <p className="text-xs text-gray-500 mt-1">Minimum 6 caractères</p>
+                <p className="mt-2 font-mono text-[11px] text-ink2/70">
+                  Minimum 6 caractères
+                </p>
               )}
             </div>
             <button
               type="submit"
-              disabled={loading || googleLoading}
-              className="w-full py-3 bg-[#004aad] text-white rounded-lg font-medium hover:bg-[#003c8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isBusy}
+              className="w-full rounded-xl bg-ink px-6 py-4 font-cinsans text-[15px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {loading
                 ? 'Chargement...'
@@ -191,52 +214,59 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Toggle login/signup */}
-          <div className="text-center text-sm text-gray-600 mb-6">
+          <p className="mt-6 text-center text-sm text-ink2">
             {mode === 'login' ? (
-              <p>
+              <>
                 Pas encore de compte ?{' '}
                 <button
-                  onClick={() => { setMode('signup'); setError(''); setSuccess('') }}
-                  className="text-[#004aad] font-medium hover:underline"
+                  onClick={() => {
+                    setMode('signup')
+                    setError('')
+                    setSuccess('')
+                  }}
+                  className="font-semibold text-blue underline-offset-4 hover:underline"
                 >
                   Créer un compte
                 </button>
-              </p>
+              </>
             ) : (
-              <p>
+              <>
                 Déjà un compte ?{' '}
                 <button
-                  onClick={() => { setMode('login'); setError(''); setSuccess('') }}
-                  className="text-[#004aad] font-medium hover:underline"
+                  onClick={() => {
+                    setMode('login')
+                    setError('')
+                    setSuccess('')
+                  }}
+                  className="font-semibold text-blue underline-offset-4 hover:underline"
                 >
                   Se connecter
                 </button>
-              </p>
+              </>
             )}
-          </div>
+          </p>
 
-          {/* Divider */}
-          <div className="relative mb-6">
+          <div className="relative my-7">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-rule" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">ou</span>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-ink2/70">
+                ou
+              </span>
             </div>
           </div>
 
-          {/* Google Login */}
           <button
             onClick={handleGoogleLogin}
-            disabled={loading || googleLoading}
-            className="w-full flex items-center justify-center px-6 py-3 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isBusy}
+            className="flex w-full items-center justify-center rounded-xl border-[1.5px] border-ink bg-white px-6 py-4 font-cinsans text-[15px] font-semibold text-ink transition-colors hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-white disabled:hover:text-ink"
           >
             {googleLoading ? (
               <span>Redirection vers Google...</span>
             ) : (
               <>
-                <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -246,31 +276,24 @@ export default function Login() {
               </>
             )}
           </button>
-
-          {/* Benefits section */}
-          <div className="mt-6">
-            <div className="bg-[#004aad]/5 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-[#004aad] mb-2">Pourquoi se connecter ?</h3>
-              <ul className="text-sm text-[#004aad]/90 space-y-1">
-                <li>• Suivre vos réservations en temps réel</li>
-                <li>• Historique de vos lavages</li>
-                <li>• Réserver plus rapidement</li>
-                <li>• Recevoir des notifications</li>
-              </ul>
-            </div>
-          </div>
         </div>
 
-        <div className="text-center mt-6">
-          <a href="/" className="text-[#004aad] hover:text-blue-700 transition-colors">
-            ← Retour à l&apos;accueil
-          </a>
+        <div className="mt-8 rounded-2xl border border-rule bg-blue-wash/60 p-5 md:p-6">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-deep">
+            Pourquoi se connecter ?
+          </p>
+          <ul className="mt-3 space-y-1.5 text-sm text-ink2">
+            <li>· Suivre vos réservations en temps réel</li>
+            <li>· Historique de vos lavages</li>
+            <li>· Réserver plus rapidement</li>
+            <li>· Recevoir des notifications</li>
+          </ul>
         </div>
       </main>
 
-      <footer className="bg-gray-900 text-white py-8 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p>&copy; {new Date().getFullYear()} Nealkar. Tous droits réservés.</p>
+      <footer className="border-t border-rule">
+        <div className="mx-auto max-w-cin px-5 py-8 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-ink2/70 md:px-12">
+          © {new Date().getFullYear()} Nealkar — Tous droits réservés
         </div>
       </footer>
     </div>
