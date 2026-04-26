@@ -121,11 +121,11 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={`Sélectionner une date et heure, actuel: ${displayText}`}
-        className="w-full pl-12 pr-6 py-4 rounded-lg bg-white/60 backdrop-blur-sm text-sm sm:text-lg text-[#004aad] focus:outline-none focus:ring-2 focus:ring-[#004aad] border-none shadow-md text-left flex justify-between items-center"
+        className="w-full pl-12 pr-6 py-4 rounded-[10px] bg-white text-sm sm:text-lg text-ink font-cinsans focus:outline-none focus:ring-2 focus:ring-blue focus:ring-offset-2 border border-rule shadow-cin-sm text-left flex justify-between items-center"
       >
         <span className="capitalize truncate mr-2">{displayText}</span>
         <svg
-          className={`w-5 h-5 text-[#004aad] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 text-ink transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -135,7 +135,7 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
       </button>
 
       <svg
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#004aad]"
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-ink"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -147,7 +147,7 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
         <div
           role="dialog"
           aria-label="Sélection de la date et de l'heure"
-          className="absolute left-0 right-0 mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-100 p-4 animate-fade-in-up"
+          className="absolute left-0 right-0 mt-2 z-50 bg-white rounded-[10px] shadow-cin-md border border-rule p-4 animate-fade-in-up"
         >
           <div className="mb-4">
             <Calendar
@@ -156,19 +156,19 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
               locale="fr-FR"
               tileDisabled={tileDisabled}
               className="w-full border-none !font-sans"
-              tileClassName="rounded-lg hover:bg-blue-50 focus:bg-blue-100"
+              tileClassName="rounded-[8px] hover:bg-blue-wash focus:bg-blue-wash font-cinsans"
             />
           </div>
 
           {selectedDate && (
             <div className="border-t border-gray-100 pt-4">
-              <h4 className="text-sm font-semibold text-gray-500 mb-3">
+              <h4 className="text-sm font-cinsans font-semibold text-ink/70 mb-3">
                 Horaires disponibles pour le {format(selectedDate, 'd MMMM', { locale: fr })}
               </h4>
 
               {isLoadingSlots ? (
                 <div className="flex justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-ink"></div>
                 </div>
               ) : availableSlots.length > 0 ? (
                 <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
@@ -178,9 +178,9 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
                       type="button"
                       onClick={() => handleTimeSelect(time)}
                       aria-pressed={selectedTime === time}
-                      className={`px-2 py-2 text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${selectedTime === time
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-primary'
+                      className={`px-2 py-2 text-sm font-cinsans rounded-[8px] transition-colors focus:outline-none focus:ring-2 focus:ring-blue ${selectedTime === time
+                        ? 'bg-ink text-white'
+                        : 'bg-white border border-rule text-ink hover:bg-blue-wash hover:text-blue'
                         }`}
                     >
                       {time}
@@ -188,7 +188,7 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-red-500 text-center py-2">Aucun créneau disponible pour cette date.</p>
+                <p className="text-sm font-cinsans text-red-600 text-center py-2">Aucun créneau disponible pour cette date.</p>
               )}
             </div>
           )}
