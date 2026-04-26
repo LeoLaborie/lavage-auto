@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import Header from '@/components/Header'
+import NavCinetique from '@/components/landing/NavCinetique'
 
 export default function Login() {
   const router = useRouter()
@@ -111,7 +111,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#004aad]/5 to-[#004aad]/10">
-      <Header currentPage="login" />
+      <NavCinetique />
 
       <main className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="bg-white rounded-2xl shadow-xl p-8">
