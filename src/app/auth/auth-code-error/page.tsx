@@ -1,27 +1,28 @@
+import Link from 'next/link'
+
 export default function AuthCodeError() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
-        <div className="text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-            <span className="text-red-600 text-xl">⚠️</span>
-          </div>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">
-            Erreur d'authentification
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Un problème est survenu lors de la connexion avec Google.
-          </p>
-          <div className="mt-6">
-            <a
-              href="/"
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Retour à l'accueil
-            </a>
-          </div>
-        </div>
+    <main className="min-h-screen bg-white px-5 py-20 md:px-12 md:py-32">
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center text-center">
+        <p className="font-display text-[13px] font-semibold uppercase tracking-[0.2em] text-ink2/70">
+          Authentification
+        </p>
+        <h1 className="mt-6 font-display font-extrabold leading-[0.95] tracking-[-0.04em] text-[44px] text-ink md:text-[64px]">
+          Lien expiré.
+          <br />
+          <span className="italic">Réessayons.</span>
+        </h1>
+        <p className="mt-6 text-[16px] leading-relaxed text-ink2 md:text-[18px]">
+          Un problème est survenu lors de la connexion avec Google. Le lien a
+          peut-être expiré ou déjà été utilisé.
+        </p>
+        <Link
+          href="/login"
+          className="mt-10 inline-block rounded-xl bg-ink px-8 py-4 font-display text-[15px] font-bold tracking-[-0.01em] text-white shadow-cin-button transition-transform hover:-translate-y-0.5 md:px-10 md:py-[18px] md:text-[16px]"
+        >
+          Retour à la connexion →
+        </Link>
       </div>
-    </div>
+    </main>
   )
 }
