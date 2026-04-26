@@ -2,8 +2,49 @@
 
 import { useState } from 'react';
 import NavCinetique from '@/components/landing/NavCinetique';
+import FooterCinetique from '@/components/landing/FooterCinetique';
 import { useToast } from '@/contexts/ToastContext';
 import { validateContactForm, ContactFormData } from '@/lib/validation';
+
+const SUBJECTS: { value: string; label: string }[] = [
+  { value: '', label: 'Choisissez un sujet' },
+  { value: 'question', label: 'Question générale' },
+  { value: 'booking', label: 'Problème de réservation' },
+  { value: 'service', label: 'Question sur un service' },
+  { value: 'complaint', label: 'Réclamation' },
+  { value: 'other', label: 'Autre' },
+];
+
+const INFO_ITEMS: { label: string; value: React.ReactNode }[] = [
+  { label: 'Adresse', value: <>123 Rue de la Propreté<br />75001 Paris, France</> },
+  { label: 'Téléphone', value: '+33 1 23 45 67 89' },
+  { label: 'Email', value: 'contact@lavage-auto.fr' },
+  {
+    label: 'Horaires',
+    value: (
+      <>
+        Lun – Ven : 8h00 – 19h00
+        <br />
+        Sam – Dim : 9h00 – 17h00
+      </>
+    ),
+  },
+];
+
+const FAQ_ITEMS: { q: string; a: string }[] = [
+  {
+    q: 'Combien de temps à l’avance réserver ?',
+    a: 'Vous pouvez réserver jusqu’à 2h à l’avance.',
+  },
+  {
+    q: 'Que faire en cas d’annulation ?',
+    a: 'Annulation gratuite jusqu’à 1h avant le rendez-vous.',
+  },
+  {
+    q: 'Zones de service ?',
+    a: 'Paris et petite couronne pour le moment.',
+  },
+];
 
 export default function Contact() {
   const { toast } = useToast();
@@ -13,17 +54,19 @@ export default function Contact() {
     email: '',
     phone: '',
     subject: '',
-    message: ''
+    message: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -53,7 +96,7 @@ export default function Contact() {
         if (data.errors) {
           setErrors(data.errors);
         } else {
-          toast.error(data.error || 'Erreur lors de l\'envoi du message');
+          toast.error(data.error || 'Erreur lors de l’envoi du message');
         }
       }
     } catch {
@@ -62,27 +105,56 @@ export default function Contact() {
       setIsSubmitting(false);
     }
   };
+
+  const inputClass = (hasError: boolean) =>
+    `w-full rounded-xl border bg-white px-4 py-3.5 text-[15px] text-ink placeholder:text-ink2/40 transition-colors focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/30 ${
+      hasError ? 'border-red-500' : 'border-rule'
+    }`;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">
+    <div
+      className="min-h-screen bg-white"
+      style={{
+        background:
+          'radial-gradient(ellipse at 70% 0%, #eaf0fc 0%, #ffffff 55%)',
+      }}
+    >
       <NavCinetique />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Contactez-nous
+      <main className="mx-auto max-w-cin px-5 py-16 md:px-12 md:py-[120px]">
+        <header className="mb-12 max-w-3xl md:mb-16">
+          <div className="mb-5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink2/60 md:text-xs">
+            Contact
+          </div>
+          <h1 className="font-display text-[40px] font-medium leading-[1.05] tracking-[-0.02em] text-ink md:text-[64px]">
+            Une question ?{' '}
+            <span className="inline-block pr-[0.25em] italic text-blue">
+              On vous répond.
+            </span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Une question ? Un problème ? Notre équipe est là pour vous aider.
+          <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-ink2/70 md:text-base">
+            Une demande, un retour, un imprévu ? Notre équipe lit chaque message et répond sous 24 heures ouvrées.
           </p>
-        </div>
+        </header>
 
-        <div className="grid lg:grid-cols-2 gap-16">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Envoyez-nous un message</h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-12">
+          <section className="rounded-[20px] bg-white p-6 shadow-cin-card md:p-9">
+            <div className="mb-7 flex items-baseline justify-between">
+              <h2 className="font-display text-2xl font-medium tracking-[-0.01em] text-ink md:text-[28px]">
+                Envoyez un message
+              </h2>
+              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink2/40">
+                01 / Formulaire
+              </span>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="firstName"
+                    className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/70"
+                  >
                     Prénom *
                   </label>
                   <input
@@ -91,17 +163,18 @@ export default function Contact() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.firstName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={inputClass(!!errors.firstName)}
                     placeholder="Votre prénom"
                   />
                   {errors.firstName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                    <p className="mt-1.5 text-sm text-red-600">{errors.firstName}</p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="lastName"
+                    className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/70"
+                  >
                     Nom *
                   </label>
                   <input
@@ -110,19 +183,20 @@ export default function Contact() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.lastName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={inputClass(!!errors.lastName)}
                     placeholder="Votre nom"
                   />
                   {errors.lastName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                    <p className="mt-1.5 text-sm text-red-600">{errors.lastName}</p>
                   )}
                 </div>
               </div>
-              
+
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="email"
+                  className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/70"
+                >
                   Email *
                 </label>
                 <input
@@ -131,18 +205,19 @@ export default function Contact() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={inputClass(!!errors.email)}
                   placeholder="votre@email.com"
                 />
                 {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  <p className="mt-1.5 text-sm text-red-600">{errors.email}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="phone"
+                  className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/70"
+                >
                   Téléphone *
                 </label>
                 <input
@@ -151,18 +226,19 @@ export default function Contact() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={inputClass(!!errors.phone)}
                   placeholder="06 12 34 56 78"
                 />
                 {errors.phone && (
-                  <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                  <p className="mt-1.5 text-sm text-red-600">{errors.phone}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="subject"
+                  className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/70"
+                >
                   Sujet *
                 </label>
                 <select
@@ -170,24 +246,24 @@ export default function Contact() {
                   name="subject"
                   value={formData.subject}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.subject ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={inputClass(!!errors.subject)}
                 >
-                  <option value="">Choisissez un sujet</option>
-                  <option value="question">Question générale</option>
-                  <option value="booking">Problème de réservation</option>
-                  <option value="service">Question sur un service</option>
-                  <option value="complaint">Réclamation</option>
-                  <option value="other">Autre</option>
+                  {SUBJECTS.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
                 </select>
                 {errors.subject && (
-                  <p className="mt-1 text-sm text-red-600">{errors.subject}</p>
+                  <p className="mt-1.5 text-sm text-red-600">{errors.subject}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="message"
+                  className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/70"
+                >
                   Message *
                 </label>
                 <textarea
@@ -196,101 +272,80 @@ export default function Contact() {
                   value={formData.message}
                   onChange={handleInputChange}
                   rows={6}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.message ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Décrivez votre demande..."
+                  className={`${inputClass(!!errors.message)} resize-none`}
+                  placeholder="Décrivez votre demande…"
                 />
                 {errors.message && (
-                  <p className="mt-1 text-sm text-red-600">{errors.message}</p>
+                  <p className="mt-1.5 text-sm text-red-600">{errors.message}</p>
                 )}
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-6 py-4 font-display text-[15px] font-medium text-white shadow-cin-button transition-all hover:bg-ink2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting ? 'Envoi en cours...' : 'Envoyer le message'}
+                {isSubmitting ? 'Envoi en cours…' : 'Envoyer le message'}
+                {!isSubmitting && (
+                  <span className="transition-transform group-hover:translate-x-0.5" aria-hidden>
+                    →
+                  </span>
+                )}
               </button>
             </form>
-          </div>
+          </section>
 
-          <div className="space-y-8">
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Informations de contact</h2>
-              <div className="space-y-6">
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-blue-600 text-xl">📍</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Adresse</h3>
-                    <p className="text-gray-600">123 Rue de la Propreté<br />75001 Paris, France</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-blue-600 text-xl">📞</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Téléphone</h3>
-                    <p className="text-gray-600">+33 1 23 45 67 89</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-blue-600 text-xl">📧</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Email</h3>
-                    <p className="text-gray-600">contact@lavage-auto.fr</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-blue-600 text-xl">⏰</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Horaires</h3>
-                    <p className="text-gray-600">
-                      Lun - Ven: 8h00 - 19h00<br />
-                      Sam - Dim: 9h00 - 17h00
-                    </p>
-                  </div>
-                </div>
+          <aside className="space-y-6">
+            <div className="rounded-[20px] bg-ink p-7 text-white shadow-cin-feature md:p-8">
+              <div className="mb-5 flex items-baseline justify-between">
+                <h2 className="font-display text-xl font-medium tracking-[-0.01em] md:text-2xl">
+                  Coordonnées
+                </h2>
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] opacity-50">
+                  02 / Direct
+                </span>
               </div>
+              <ul className="space-y-5">
+                {INFO_ITEMS.map((item) => (
+                  <li key={item.label} className="border-t border-white/10 pt-4 first:border-t-0 first:pt-0">
+                    <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.12em] opacity-50">
+                      {item.label}
+                    </div>
+                    <div className="text-[15px] leading-relaxed">{item.value}</div>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">FAQ Rapide</h2>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Combien de temps à l&apos;avance réserver ?</h3>
-                  <p className="text-gray-600 text-sm">Vous pouvez réserver jusqu&apos;à 2h à l&apos;avance.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Que faire en cas d&apos;annulation ?</h3>
-                  <p className="text-gray-600 text-sm">Annulation gratuite jusqu&apos;à 1h avant le rendez-vous.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Zones de service ?</h3>
-                  <p className="text-gray-600 text-sm">Paris et petite couronne pour le moment.</p>
-                </div>
+            <div className="rounded-[20px] bg-white p-7 shadow-cin-card md:p-8">
+              <div className="mb-5 flex items-baseline justify-between">
+                <h2 className="font-display text-xl font-medium tracking-[-0.01em] text-ink md:text-2xl">
+                  FAQ rapide
+                </h2>
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink2/40">
+                  03 / Express
+                </span>
               </div>
+              <ul className="space-y-4">
+                {FAQ_ITEMS.map((item) => (
+                  <li
+                    key={item.q}
+                    className="border-t pt-4 first:border-t-0 first:pt-0"
+                    style={{ borderColor: 'rgba(6, 8, 13, 0.094)' }}
+                  >
+                    <div className="mb-1 font-display text-[15px] font-medium text-ink">
+                      {item.q}
+                    </div>
+                    <p className="text-sm leading-relaxed text-ink2/70">{item.a}</p>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
+          </aside>
         </div>
       </main>
 
-      <footer className="bg-gray-900 text-white py-8 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p>&copy; {new Date().getFullYear()} Nealkar. Tous droits réservés.</p>
-        </div>
-      </footer>
+      <FooterCinetique />
     </div>
   );
 }
