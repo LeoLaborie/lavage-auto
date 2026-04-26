@@ -1,9 +1,8 @@
 'use client'
 import { useState, useMemo } from 'react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import Wordmark from '@/components/landing/Wordmark'
+import NavCinetique from '@/components/landing/NavCinetique'
 
 export default function Login() {
   const router = useRouter()
@@ -117,19 +116,7 @@ export default function Login() {
           'radial-gradient(ellipse at 50% -10%, #eaf0fc 0%, #ffffff 55%)',
       }}
     >
-      <header className="border-b border-rule">
-        <div className="mx-auto flex h-16 max-w-cin items-center justify-between px-5 md:h-20 md:px-12">
-          <Link href="/" className="shrink-0">
-            <Wordmark />
-          </Link>
-          <Link
-            href="/"
-            className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink2/70 transition-colors hover:text-ink"
-          >
-            ← Accueil
-          </Link>
-        </div>
-      </header>
+      <NavCinetique />
 
       <main className="mx-auto w-full max-w-md px-5 py-14 md:py-20">
         <div className="text-center">
