@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import NavCinetique from '@/components/landing/NavCinetique'
 
 type Step = 'role-selection' | 'laveur-siret'
 
@@ -18,7 +19,6 @@ export default function Onboarding() {
 
     const formatSiret = (value: string): string => {
         const digits = value.replace(/\D/g, '').slice(0, 14)
-        // Format as XXX XXX XXX XXXXX (SIREN + NIC)
         if (digits.length <= 3) return digits
         if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
         if (digits.length <= 9) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
@@ -46,8 +46,6 @@ export default function Onboarding() {
             setStep('laveur-siret')
             return
         }
-
-        // CLIENT flow — direct creation
         await submitProfile('CLIENT')
     }
 
@@ -113,171 +111,208 @@ export default function Onboarding() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#004aad]/5 to-[#004aad]/10 flex items-center justify-center p-4">
-            <div className="max-w-4xl w-full">
-                <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                        {step === 'role-selection'
-                            ? 'Bienvenue sur Nealkar !'
-                            : 'Inscription Laveur Professionnel'}
-                    </h1>
-                    <p className="text-xl text-gray-600">
-                        {step === 'role-selection'
-                            ? 'Comment souhaitez-vous utiliser l\'application ?'
-                            : 'Renseignez votre numéro SIRET pour finaliser votre inscription.'}
-                    </p>
-                </div>
+        <div
+            className="min-h-screen bg-white"
+            style={{
+                background:
+                    'radial-gradient(ellipse at 70% 20%, #eaf0fc 0%, #ffffff 55%)',
+            }}
+        >
+            <NavCinetique />
 
-                {error && (
-                    <div className="max-w-md mx-auto mb-8 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-center">
-                        {error}
+            <main className="mx-auto max-w-cin px-5 pt-[calc(var(--nav-h)+48px)] pb-16 md:px-12 md:pt-[calc(var(--nav-h)+96px)] md:pb-[120px]">
+                <div className="mx-auto max-w-3xl">
+                    <div className="text-center">
+                        <div className="mb-5 inline-block rounded-md bg-blue-wash px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue md:text-xs">
+                            {step === 'role-selection' ? 'Bienvenue' : 'Inscription Laveur'}
+                        </div>
+                        <h1 className="font-display font-extrabold leading-[0.95] tracking-[-0.04em] text-ink text-[44px] md:text-[64px] lg:text-[72px]">
+                            {step === 'role-selection' ? (
+                                <>Bienvenue sur <span className="italic text-blue">Nealkar.</span></>
+                            ) : (
+                                <>Devenir <span className="italic text-blue">laveur.</span></>
+                            )}
+                        </h1>
+                        <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-ink2 md:text-[17px]">
+                            {step === 'role-selection'
+                                ? 'Choisissez votre rôle pour finaliser la création de votre compte.'
+                                : 'Renseignez votre numéro SIRET pour finaliser votre inscription. Validation manuelle sous 24 h.'}
+                        </p>
                     </div>
-                )}
 
-                {/* Step 1: Role Selection */}
-                {step === 'role-selection' && (
-                    <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-                        {/* Client Card */}
-                        <button
-                            onClick={() => handleRoleSelection('CLIENT')}
-                            disabled={loading}
-                            className="group relative bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left border-2 border-transparent hover:border-[#004aad] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <div className="h-full flex flex-col items-center text-center">
-                                <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6 group-hover:bg-[#004aad]/10 transition-colors">
-                                    <span className="text-4xl">🚗</span>
+                    {error && (
+                        <div className="mx-auto mt-10 max-w-md rounded-[14px] border border-rule bg-white p-4 text-center shadow-cin-card">
+                            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-blue">Erreur</p>
+                            <p className="mt-1 text-sm text-ink2">{error}</p>
+                        </div>
+                    )}
+
+                    {step === 'role-selection' && (
+                        <div className="mt-12 grid gap-5 md:mt-16 md:grid-cols-2 md:gap-6">
+                            <button
+                                onClick={() => handleRoleSelection('CLIENT')}
+                                disabled={loading}
+                                className="group relative flex flex-col rounded-[20px] border border-rule bg-white p-7 text-left shadow-cin-card transition-transform hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-50 md:p-9"
+                            >
+                                <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-[14px] bg-blue-wash text-2xl md:h-14 md:w-14 md:text-3xl">
+                                    🚗
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                                <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue">
+                                    Client
+                                </span>
+                                <h2 className="mt-2 font-display text-[26px] font-bold leading-[1.05] tracking-[-0.03em] text-ink md:text-[34px]">
                                     Je veux faire laver ma voiture
                                 </h2>
-                                <p className="text-gray-600 mb-8 flex-grow">
-                                    Réservez un lavage professionnel à domicile ou au bureau en quelques clics.
+                                <p className="mt-3 flex-grow text-[13px] leading-relaxed text-ink2 md:text-sm">
+                                    Réservez un lavage sans eau à domicile ou au bureau. Paiement à l&apos;acceptation, annulation gratuite jusqu&apos;à 24 h avant.
                                 </p>
-                                <div className="w-full py-3 px-6 bg-[#004aad] text-white rounded-lg font-medium opacity-90 group-hover:opacity-100 transition-opacity">
-                                    {loading ? 'Création...' : 'Continuer comme Client'}
+                                <div className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-6 py-4 font-cinsans text-[15px] font-semibold text-white shadow-cin-button transition-transform group-hover:-translate-y-0.5">
+                                    {loading ? 'Création…' : 'Continuer comme Client →'}
                                 </div>
-                            </div>
-                        </button>
+                            </button>
 
-                        {/* Laveur Card */}
-                        <button
-                            onClick={() => handleRoleSelection('LAVEUR')}
-                            disabled={loading}
-                            className="group relative bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left border-2 border-transparent hover:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <div className="h-full flex flex-col items-center text-center">
-                                <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mb-6 group-hover:bg-green-100 transition-colors">
-                                    <span className="text-4xl">🧼</span>
+                            <button
+                                onClick={() => handleRoleSelection('LAVEUR')}
+                                disabled={loading}
+                                className="group relative flex flex-col rounded-[20px] bg-ink p-7 text-left text-white shadow-cin-feature transition-transform hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-50 md:p-9"
+                            >
+                                <div
+                                    className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-[14px] text-2xl md:h-14 md:w-14 md:text-3xl"
+                                    style={{ background: 'rgba(255,255,255,0.08)' }}
+                                >
+                                    🧼
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                                <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue-electric">
+                                    Laveur Pro
+                                </span>
+                                <h2 className="mt-2 font-display text-[26px] font-bold leading-[1.05] tracking-[-0.03em] text-white md:text-[34px]">
                                     Je veux devenir laveur
                                 </h2>
-                                <p className="text-gray-600 mb-8 flex-grow">
-                                    Rejoignez notre réseau de professionnels, gérez votre emploi du temps et augmentez vos revenus.
+                                <p className="mt-3 flex-grow text-[13px] leading-relaxed text-white/75 md:text-sm">
+                                    Rejoignez le réseau Nealkar : missions à proximité, paiement Stripe sécurisé, agenda flexible. Statut auto-entrepreneur ou société requis.
                                 </p>
-                                <div className="w-full py-3 px-6 bg-green-600 text-white rounded-lg font-medium opacity-90 group-hover:opacity-100 transition-opacity">
-                                    Continuer comme Laveur
+                                <div className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-4 font-cinsans text-[15px] font-semibold text-ink transition-transform group-hover:-translate-y-0.5">
+                                    Continuer comme Laveur →
                                 </div>
-                            </div>
-                        </button>
-                    </div>
-                )}
+                            </button>
+                        </div>
+                    )}
 
-                {/* Step 2: SIRET Form for Laveur */}
-                {step === 'laveur-siret' && (
-                    <div className="max-w-lg mx-auto">
-                        <form onSubmit={handleLaveurSubmit} className="bg-white rounded-2xl shadow-xl p-8">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
-                                    <span className="text-2xl">🧼</span>
+                    {step === 'laveur-siret' && (
+                        <div className="mx-auto mt-12 max-w-lg md:mt-16">
+                            <form
+                                onSubmit={handleLaveurSubmit}
+                                className="rounded-[20px] border border-rule bg-white p-7 shadow-cin-card md:p-9"
+                            >
+                                <div className="mb-7 flex items-center gap-3">
+                                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-[14px] bg-blue-wash text-2xl">
+                                        🧼
+                                    </div>
+                                    <div>
+                                        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue">
+                                            Étape 1 / 2
+                                        </span>
+                                        <h2 className="font-display text-[22px] font-bold leading-tight tracking-[-0.03em] text-ink">
+                                            Identifiant entreprise
+                                        </h2>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-lg font-bold text-gray-900">Devenir Laveur</h2>
-                                    <p className="text-sm text-gray-500">Statut auto-entrepreneur ou société</p>
-                                </div>
-                            </div>
 
-                            {/* SIRET Input */}
-                            <div className="mb-4">
-                                <label htmlFor="siret" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Numéro SIRET <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    id="siret"
-                                    type="text"
-                                    value={siret}
-                                    onChange={(e) => handleSiretChange(e.target.value)}
-                                    placeholder="123 456 789 01234"
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-gray-900 font-mono text-lg tracking-wider ${siretError && siret.replace(/\s/g, '').length === 14
-                                        ? 'border-red-300 bg-red-50'
-                                        : isSiretValid()
-                                            ? 'border-green-300 bg-green-50'
-                                            : 'border-gray-300'
-                                        }`}
-                                    disabled={loading}
-                                    maxLength={22} // Increased to prevent paste truncation with spaces
-                                    autoComplete="off"
-                                />
-                                {siretError && (
-                                    <p className={`text-xs mt-1 ${siret.replace(/\s/g, '').length < 14 ? 'text-gray-500' : 'text-red-600'
-                                        }`}>
-                                        {siretError}
+                                <div className="mb-5">
+                                    <label
+                                        htmlFor="siret"
+                                        className="mb-1.5 block font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2"
+                                    >
+                                        Numéro SIRET <span className="text-blue-electric">*</span>
+                                    </label>
+                                    <input
+                                        id="siret"
+                                        type="text"
+                                        value={siret}
+                                        onChange={(e) => handleSiretChange(e.target.value)}
+                                        placeholder="123 456 789 01234"
+                                        className={`w-full rounded-xl border bg-white px-4 py-3.5 font-mono text-lg tracking-wider text-ink outline-none transition-all focus:ring-2 focus:ring-blue ${siretError && siret.replace(/\s/g, '').length === 14
+                                            ? 'border-blue-electric'
+                                            : isSiretValid()
+                                                ? 'border-blue bg-blue-wash'
+                                                : 'border-rule'
+                                            }`}
+                                        disabled={loading}
+                                        maxLength={22}
+                                        autoComplete="off"
+                                    />
+                                    {siretError && (
+                                        <p
+                                            className={`mt-1.5 font-mono text-[11px] uppercase tracking-[0.05em] ${siret.replace(/\s/g, '').length < 14 ? 'text-ink2' : 'text-blue-electric'
+                                                }`}
+                                        >
+                                            {siretError}
+                                        </p>
+                                    )}
+                                    {isSiretValid() && !siretError && (
+                                        <p className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.05em] text-blue">
+                                            ✓ Format SIRET valide
+                                        </p>
+                                    )}
+                                    <p className="mt-1.5 text-xs text-ink2">
+                                        14 chiffres — disponible sur votre avis de situation INSEE.
                                     </p>
-                                )}
-                                {isSiretValid() && !siretError && (
-                                    <p className="text-xs text-green-600 mt-1">✓ Format SIRET valide</p>
-                                )}
-                                <p className="text-xs text-gray-400 mt-1">
-                                    14 chiffres — trouvable sur votre avis de situation INSEE
-                                </p>
-                            </div>
+                                </div>
 
-                            {/* Company Name (optional) */}
-                            <div className="mb-6">
-                                <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Nom de l&apos;entreprise <span className="text-gray-400">(optionnel)</span>
-                                </label>
-                                <input
-                                    id="companyName"
-                                    type="text"
-                                    value={companyName}
-                                    onChange={(e) => setCompanyName(e.target.value)}
-                                    placeholder="Ma Société SARL"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-gray-900"
-                                    disabled={loading}
-                                />
-                            </div>
+                                <div className="mb-7">
+                                    <label
+                                        htmlFor="companyName"
+                                        className="mb-1.5 block font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2"
+                                    >
+                                        Nom de l&apos;entreprise{' '}
+                                        <span className="normal-case tracking-normal text-ink2/60">(optionnel)</span>
+                                    </label>
+                                    <input
+                                        id="companyName"
+                                        type="text"
+                                        value={companyName}
+                                        onChange={(e) => setCompanyName(e.target.value)}
+                                        placeholder="Ma Société SARL"
+                                        className="w-full rounded-xl border border-rule bg-white px-4 py-3.5 text-ink outline-none transition-all focus:ring-2 focus:ring-blue"
+                                        disabled={loading}
+                                    />
+                                </div>
 
-                            {/* Info box */}
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                                <p className="text-sm text-yellow-800">
-                                    <strong>ℹ️ Bon à savoir :</strong> Votre inscription sera soumise à une validation manuelle.
-                                    Vous recevrez une confirmation une fois votre profil vérifié.
-                                </p>
-                            </div>
+                                <div className="mb-7 rounded-[14px] bg-blue-wash p-4">
+                                    <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-blue">
+                                        Validation manuelle
+                                    </p>
+                                    <p className="mt-1.5 text-[13px] leading-relaxed text-ink2 md:text-sm">
+                                        Votre dossier est revu sous 24 h. Une fois validé, vous configurerez Stripe Connect depuis votre tableau de bord pour recevoir vos paiements.
+                                    </p>
+                                </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => { setStep('role-selection'); setError(''); setSiretError('') }}
-                                    disabled={loading}
-                                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-                                >
-                                    ← Retour
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading || !isSiretValid()}
-                                    className="flex-1 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {loading ? 'Inscription en cours...' : 'Finaliser mon inscription'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-            </div>
+                                <div className="flex flex-col gap-3 sm:flex-row">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStep('role-selection')
+                                            setError('')
+                                            setSiretError('')
+                                        }}
+                                        disabled={loading}
+                                        className="inline-flex items-center justify-center rounded-xl border-[1.5px] border-ink bg-transparent px-6 py-4 font-cinsans text-[15px] font-semibold text-ink transition-colors hover:bg-ink hover:text-white disabled:opacity-50"
+                                    >
+                                        ← Retour
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading || !isSiretValid()}
+                                        className="inline-flex flex-1 items-center justify-center rounded-xl bg-ink px-6 py-4 font-cinsans text-[15px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                                    >
+                                        {loading ? 'Inscription en cours…' : 'Finaliser mon inscription →'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+                </div>
+            </main>
         </div>
     )
 }
