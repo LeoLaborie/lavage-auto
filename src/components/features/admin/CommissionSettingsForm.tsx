@@ -46,12 +46,32 @@ export default function CommissionSettingsForm({ initialRate, updatedAt: initial
         }
     }
 
+    const parsedPercent = Number(percent.replace(',', '.'))
+    const previewNet = Number.isFinite(parsedPercent)
+        ? (29 * (1 - parsedPercent / 100)).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
+        : '—'
+
     return (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8">
-            <label htmlFor="commission-rate" className="block text-sm font-medium text-gray-700 mb-2">
+        <form
+            onSubmit={handleSubmit}
+            className="rounded-[20px] bg-white p-7 shadow-cin-card md:p-9"
+            style={{ border: '1px solid rgba(6,8,13,0.094)' }}
+        >
+            <div className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2/70 md:text-xs">
+                Taux courant
+            </div>
+            <div className="mb-7 font-display text-[56px] font-extrabold leading-none tracking-[-0.04em] text-ink md:text-[72px]">
+                {Number.isFinite(parsedPercent) ? parsedPercent.toFixed(2) : '—'}
+                <span className="ml-2 font-display text-[28px] font-bold tracking-[-0.03em] text-blue md:text-[36px]">%</span>
+            </div>
+
+            <label
+                htmlFor="commission-rate"
+                className="mb-2 block font-cinsans text-[13px] font-semibold text-ink md:text-sm"
+            >
                 Taux de commission
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
                 <input
                     id="commission-rate"
                     type="number"
@@ -61,32 +81,25 @@ export default function CommissionSettingsForm({ initialRate, updatedAt: initial
                     inputMode="decimal"
                     value={percent}
                     onChange={(e) => setPercent(e.target.value)}
-                    className="flex-1 max-w-[160px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full max-w-[180px] rounded-xl border border-rule bg-white px-4 py-3 font-display text-lg font-semibold text-ink transition-shadow focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue"
                 />
-                <span className="text-gray-600">%</span>
+                <span className="font-cinsans text-[15px] font-medium text-ink2">%</span>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="mt-3 text-[13px] leading-relaxed text-ink2 md:text-sm">
                 Sur une mission à 29 € à {percent || '0'} %, le laveur recevra{' '}
-                <span className="font-medium text-gray-700">
-                    {(() => {
-                        const p = Number(percent.replace(',', '.'))
-                        if (!Number.isFinite(p)) return '—'
-                        const net = 29 * (1 - p / 100)
-                        return net.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
-                    })()}
-                </span>.
+                <span className="font-display font-semibold text-ink">{previewNet}</span>.
             </p>
 
-            <div className="mt-6 flex items-center gap-4">
+            <div className="mt-8 flex flex-wrap items-center gap-4 border-t border-rule pt-6">
                 <button
                     type="submit"
                     disabled={isSaving}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-6 py-3.5 font-cinsans text-[15px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 md:px-7 md:py-4"
                 >
                     {isSaving ? 'Enregistrement…' : 'Enregistrer'}
                 </button>
-                <span className="text-xs text-gray-500">
-                    Dernière modification : {new Date(updatedAt).toLocaleString('fr-FR')}
+                <span className="font-mono text-[11px] uppercase tracking-[0.05em] text-ink2/70 md:text-xs">
+                    Dernière modif. : {new Date(updatedAt).toLocaleString('fr-FR')}
                 </span>
             </div>
         </form>
