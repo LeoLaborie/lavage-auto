@@ -11,6 +11,13 @@
   --primary-light: #004aad10;
   --secondary-light: #19c0c610;
   --accent-light: #ffcc5310;
+  --nav-h: 64px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --nav-h: 70px;
+  }
 }
 
 @font-face {
