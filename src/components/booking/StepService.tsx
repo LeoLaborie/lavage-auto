@@ -13,48 +13,86 @@ const popularServiceId: ServiceId = 'lavage-complet';
 export default function StepService({ selectedService, setSelectedService, handleNext }: StepServiceProps) {
   return (
     <div className="animate-fade-in-up">
-      <h2 className="text-3xl font-bold text-gray-900 mb-8 title-font text-center">Choisissez votre formule</h2>
-      <div className="grid md:grid-cols-3 gap-8">
-        {services.map((service) => (
-          <div
-            key={service.id}
-            className={`relative p-8 rounded-3xl cursor-pointer transition-all duration-300 group overflow-hidden ${selectedService?.id === service.id
-              ? 'bg-white shadow-2xl ring-4 ring-primary scale-105 z-10'
-              : 'bg-white shadow-lg hover:shadow-xl hover:-translate-y-1 hover:bg-gray-50'
+      <div className="mb-6 md:mb-8">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2/60 md:text-xs">
+          Étape 01
+        </p>
+        <h2 className="mt-2 font-display text-[26px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[34px]">
+          Choisissez votre formule.
+        </h2>
+      </div>
+
+      <div className="grid gap-3.5 md:grid-cols-3 md:gap-5">
+        {services.map((service) => {
+          const isSelected = selectedService?.id === service.id;
+          const isFeatured = service.id === popularServiceId;
+
+          return (
+            <button
+              key={service.id}
+              type="button"
+              onClick={() => {
+                setSelectedService(service);
+                handleNext();
+              }}
+              className={`group relative flex flex-col rounded-[20px] p-6 text-left transition-all md:p-7 ${
+                isSelected
+                  ? 'bg-ink text-white shadow-cin-feature'
+                  : 'border border-rule bg-white text-ink shadow-cin-card hover:-translate-y-0.5'
               }`}
-            onClick={() => {
-              setSelectedService(service);
-              handleNext();
-            }}
-          >
-            {service.id === popularServiceId && (
-              <div className="absolute top-4 right-4 bg-accent text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide z-20">
-                Populaire
+            >
+              {isFeatured && !isSelected && (
+                <div className="absolute right-5 top-5 rounded-md bg-blue-wash px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-blue">
+                  Populaire
+                </div>
+              )}
+              {isFeatured && isSelected && (
+                <div
+                  className="absolute right-5 top-5 rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-electric"
+                  style={{ background: 'rgba(255,255,255,0.08)' }}
+                >
+                  Populaire
+                </div>
+              )}
+
+              <div
+                className={`mb-5 flex h-12 w-12 items-center justify-center overflow-hidden rounded-[14px] md:h-14 md:w-14 ${
+                  isSelected ? 'bg-blue-electric' : 'bg-blue-wash'
+                }`}
+              >
+                <AppleEmoji name={service.icon} className="h-7 w-7 object-contain md:h-8 md:w-8" />
               </div>
-            )}
 
-            <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110 opacity-10 ${service.id === 'lavage-premium' ? 'bg-secondary' : service.id === 'lavage-complet' ? 'bg-accent' : 'bg-primary'
-              }`} />
+              <h3 className="font-display text-[22px] font-bold tracking-[-0.03em] md:text-[26px]">
+                {service.name}
+              </h3>
+              <p
+                className={`mt-2 text-[13px] leading-relaxed md:text-sm ${
+                  isSelected ? 'text-white/75' : 'text-ink2'
+                }`}
+              >
+                {service.description}
+              </p>
 
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm transition-colors overflow-hidden border-2 ${selectedService?.id === service.id
-              ? 'bg-primary text-white border-primary'
-              : 'bg-gray-100 text-gray-600 border-gray-100 group-hover:bg-primary group-hover:text-white group-hover:border-primary'
-              }`}>
-              <AppleEmoji name={service.icon} className="w-full h-full object-contain" />
-            </div>
-
-            <h3 className="text-2xl font-bold text-gray-900 mb-3 title-font">{service.name}</h3>
-            <p className="text-gray-600 mb-6 text-sm leading-relaxed">{service.description}</p>
-
-            <div className="pt-4 border-t border-gray-100 flex justify-between items-center mt-auto gap-2">
-              <span className="text-2xl sm:text-3xl font-bold text-primary">{service.price}€</span>
-              <div className="flex items-center text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 sm:px-3 py-1 rounded-full shrink-0">
-                <span className="mr-1">⏱️</span>
-                {service.duration}
+              <div
+                className="mt-6 flex items-end justify-between border-t pt-4"
+                style={{ borderColor: isSelected ? 'rgba(255,255,255,0.13)' : 'rgba(6,8,13,0.094)' }}
+              >
+                <span className="font-display text-[40px] font-extrabold leading-none tracking-[-0.04em] md:text-[48px]">
+                  {service.price}
+                  <span className="text-[24px] md:text-[28px]">€</span>
+                </span>
+                <span
+                  className={`font-mono text-[11px] uppercase tracking-[0.08em] md:text-xs ${
+                    isSelected ? 'text-white/60' : 'text-ink2/60'
+                  }`}
+                >
+                  {service.duration}
+                </span>
               </div>
-            </div>
-          </div>
-        ))}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
