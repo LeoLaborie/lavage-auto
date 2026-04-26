@@ -60,20 +60,30 @@ export function RefundPanel({ bookingId, maxAmountEuros, externalSuccess, onRefu
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Remboursement</h2>
+        <div className="rounded-[20px] bg-white p-7 shadow-cin-card border border-rule md:p-9">
+            <div className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-red-700 md:text-xs">
+                Action destructive
+            </div>
+            <h2 className="font-display text-[22px] font-bold tracking-[-0.02em] text-ink mb-4 md:text-[26px]">
+                Remboursement
+            </h2>
 
-            <p className="text-sm text-gray-700 mb-4">
-                Montant remboursable restant :{' '}
-                <span className="font-semibold text-gray-900">{maxAmountEuros.toFixed(2)} €</span>
+            <p className="mb-6 text-[15px] leading-relaxed text-ink2 md:text-[16px]">
+                Montant remboursable restant&nbsp;:{' '}
+                <span className="font-display font-semibold text-ink">{maxAmountEuros.toFixed(2)}&nbsp;€</span>
             </p>
 
             {success ? (
-                <p className="text-green-600 text-sm font-medium">{success}</p>
+                <p className="font-mono text-[13px] font-semibold uppercase tracking-[0.05em] text-emerald-700 md:text-sm">
+                    {success}
+                </p>
             ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label htmlFor="refund-amount" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            htmlFor="refund-amount"
+                            className="mb-2 block font-cinsans text-[13px] font-semibold text-ink md:text-sm"
+                        >
                             Montant à rembourser (€)
                         </label>
                         <input
@@ -86,7 +96,7 @@ export function RefundPanel({ bookingId, maxAmountEuros, externalSuccess, onRefu
                             value={amountEuros}
                             onChange={(e) => setAmountEuros(e.target.value)}
                             disabled={loading}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#004aad] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full max-w-[220px] rounded-xl border border-rule bg-white px-4 py-3 font-display text-lg font-semibold text-ink transition-shadow focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue disabled:cursor-not-allowed disabled:opacity-50"
                             placeholder="0.00"
                         />
                     </div>
@@ -96,7 +106,7 @@ export function RefundPanel({ bookingId, maxAmountEuros, externalSuccess, onRefu
                             type="button"
                             disabled={loading}
                             onClick={() => setAmountEuros(maxAmountEuros.toFixed(2))}
-                            className="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="inline-flex items-center rounded-[10px] border border-rule bg-white px-3.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink transition-colors hover:bg-blue-wash disabled:cursor-not-allowed disabled:opacity-50 md:text-xs"
                         >
                             Total ({maxAmountEuros.toFixed(2)} €)
                         </button>
@@ -104,20 +114,20 @@ export function RefundPanel({ bookingId, maxAmountEuros, externalSuccess, onRefu
                             type="button"
                             disabled={loading}
                             onClick={() => inputRef.current?.focus()}
-                            className="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="inline-flex items-center rounded-[10px] border border-rule bg-white px-3.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink transition-colors hover:bg-blue-wash disabled:cursor-not-allowed disabled:opacity-50 md:text-xs"
                         >
                             Partiel
                         </button>
                     </div>
 
                     {error && (
-                        <p className="text-red-600 text-sm">{error}</p>
+                        <p className="text-[13px] leading-relaxed text-red-700 md:text-sm">{error}</p>
                     )}
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3.5 font-cinsans text-[15px] font-semibold text-white shadow-[0_8px_24px_rgba(220,38,38,0.25)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 md:px-7 md:py-4"
                     >
                         {loading ? 'Traitement en cours…' : 'Déclencher le remboursement'}
                     </button>
