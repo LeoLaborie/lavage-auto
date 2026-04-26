@@ -44,10 +44,17 @@ export default async function AdminBookingDetailPage({ params }: Props) {
 
     if (!booking) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 text-center">
-                    <h1 className="text-xl font-semibold text-gray-900 mb-2">Réservation introuvable</h1>
-                    <p className="text-gray-500 text-sm">L&apos;ID de réservation fourni n&apos;existe pas.</p>
+            <div className="min-h-screen bg-white flex items-center justify-center px-5">
+                <div className="rounded-[20px] bg-white p-9 shadow-cin-card border border-rule text-center max-w-md">
+                    <div className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink2/70 md:text-xs">
+                        404
+                    </div>
+                    <h1 className="font-display text-[28px] font-bold tracking-[-0.03em] text-ink mb-2 md:text-[34px]">
+                        Réservation introuvable.
+                    </h1>
+                    <p className="text-[13px] leading-relaxed text-ink2 md:text-sm">
+                        L&apos;ID de réservation fourni n&apos;existe pas.
+                    </p>
                 </div>
             </div>
         )
@@ -92,11 +99,21 @@ export default async function AdminBookingDetailPage({ params }: Props) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-4xl mx-auto px-4 py-8">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6">Détail de la réservation</h1>
+        <div className="min-h-screen bg-white">
+            <main className="mx-auto max-w-cin px-5 py-16 md:px-12 md:py-[120px]">
+                <div className="mb-10 max-w-2xl md:mb-14">
+                    <div className="mb-5 inline-block rounded-md bg-blue-wash px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue md:text-xs">
+                        Réservation
+                    </div>
+                    <h1 className="font-display text-[44px] font-extrabold leading-[0.95] tracking-[-0.04em] text-ink md:text-[64px]">
+                        Détail.
+                    </h1>
+                    <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/70 md:text-xs">
+                        ID&nbsp;<span className="text-ink2">{booking.id.slice(0, 8)}…</span>
+                    </p>
+                </div>
                 <BookingDetailClient booking={bookingDetail} />
-            </div>
+            </main>
         </div>
     )
 }

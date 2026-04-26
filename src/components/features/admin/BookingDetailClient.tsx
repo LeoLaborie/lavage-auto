@@ -69,13 +69,13 @@ const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
 }
 
 const BOOKING_STATUS_CLASS: Record<BookingStatus, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-800',
-    CONFIRMED: 'bg-blue-100 text-blue-800',
-    ACCEPTED: 'bg-indigo-100 text-indigo-800',
-    EN_ROUTE: 'bg-purple-100 text-purple-800',
-    IN_PROGRESS: 'bg-orange-100 text-orange-800',
-    COMPLETED: 'bg-green-100 text-green-800',
-    CANCELLED: 'bg-red-100 text-red-800',
+    PENDING: 'bg-yellow-100 text-yellow-900',
+    CONFIRMED: 'bg-blue-wash text-blue',
+    ACCEPTED: 'bg-blue-wash text-blue',
+    EN_ROUTE: 'bg-indigo-100 text-indigo-900',
+    IN_PROGRESS: 'bg-orange-100 text-orange-900',
+    COMPLETED: 'bg-emerald-100 text-emerald-900',
+    CANCELLED: 'bg-red-100 text-red-900',
 }
 
 const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
@@ -88,13 +88,26 @@ const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
 }
 
 const PAYMENT_STATUS_CLASS: Record<PaymentStatus, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-800',
-    PROCESSING: 'bg-blue-100 text-blue-800',
-    SUCCEEDED: 'bg-green-100 text-green-800',
-    FAILED: 'bg-red-100 text-red-800',
-    REFUNDED: 'bg-gray-100 text-gray-800',
-    PARTIALLY_REFUNDED: 'bg-orange-100 text-orange-800',
+    PENDING: 'bg-yellow-100 text-yellow-900',
+    PROCESSING: 'bg-blue-wash text-blue',
+    SUCCEEDED: 'bg-emerald-100 text-emerald-900',
+    FAILED: 'bg-red-100 text-red-900',
+    REFUNDED: 'bg-blue-wash text-ink2',
+    PARTIALLY_REFUNDED: 'bg-orange-100 text-orange-900',
 }
+
+// Pill: shared shape (Cinétique mono uppercase)
+const PILL_BASE =
+    'inline-flex items-center rounded-md px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] md:text-xs'
+
+// Card shell: shared structure (Cinétique)
+const CARD_SHELL =
+    'rounded-[20px] bg-white p-7 shadow-cin-card border border-rule md:p-9'
+const CARD_TITLE =
+    'font-display text-[22px] font-bold tracking-[-0.02em] text-ink mb-5 md:text-[26px]'
+const DT_CLASS =
+    'font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2/70 md:text-xs'
+const DD_CLASS = 'mt-1 text-[15px] text-ink md:text-[16px]'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -130,43 +143,45 @@ export function BookingDetailClient({ booking }: Props) {
             {/* Back link */}
             <Link
                 href="/admin"
-                className="inline-flex items-center gap-1 text-sm text-[#004aad] hover:underline"
+                className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-blue transition-colors hover:text-ink md:text-xs"
             >
                 ← Retour à la liste
             </Link>
 
             {/* Booking Metadata */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Détails de la réservation</h2>
-                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div className={CARD_SHELL}>
+                <h2 className={CARD_TITLE}>Détails de la réservation</h2>
+                <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
                     <div className="min-w-0">
-                        <dt className="text-gray-500">ID</dt>
-                        <dd className="font-mono text-gray-900 truncate">{booking.id}</dd>
+                        <dt className={DT_CLASS}>ID</dt>
+                        <dd className="mt-1 font-mono text-[13px] text-ink2 truncate md:text-sm">{booking.id}</dd>
                     </div>
                     <div>
-                        <dt className="text-gray-500">Service</dt>
-                        <dd className="text-gray-900">{booking.serviceName}</dd>
+                        <dt className={DT_CLASS}>Service</dt>
+                        <dd className={DD_CLASS}>{booking.serviceName}</dd>
                     </div>
                     <div>
-                        <dt className="text-gray-500">Date planifiée</dt>
-                        <dd className="text-gray-900">{formatDate(booking.scheduledDate)}</dd>
+                        <dt className={DT_CLASS}>Date planifiée</dt>
+                        <dd className={DD_CLASS}>{formatDate(booking.scheduledDate)}</dd>
                     </div>
                     <div>
-                        <dt className="text-gray-500">Montant</dt>
-                        <dd className="text-gray-900 font-medium">{(booking.amountCents / 100).toFixed(2)} €</dd>
+                        <dt className={DT_CLASS}>Montant</dt>
+                        <dd className="mt-1 font-display text-[22px] font-extrabold leading-none tracking-[-0.03em] text-ink md:text-[26px]">
+                            {(booking.amountCents / 100).toFixed(2)}&nbsp;€
+                        </dd>
                     </div>
                     <div>
-                        <dt className="text-gray-500">Statut</dt>
-                        <dd>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BOOKING_STATUS_CLASS[booking.status]}`}>
+                        <dt className={DT_CLASS}>Statut</dt>
+                        <dd className="mt-1.5">
+                            <span className={`${PILL_BASE} ${BOOKING_STATUS_CLASS[booking.status]}`}>
                                 {BOOKING_STATUS_LABEL[booking.status]}
                             </span>
                         </dd>
                     </div>
                     {booking.car && (
                         <div>
-                            <dt className="text-gray-500">Véhicule</dt>
-                            <dd className="text-gray-900">
+                            <dt className={DT_CLASS}>Véhicule</dt>
+                            <dd className={DD_CLASS}>
                                 {booking.car.make} {booking.car.model}
                                 {booking.car.plate ? ` — ${booking.car.plate}` : ''}
                             </dd>
@@ -176,44 +191,46 @@ export function BookingDetailClient({ booking }: Props) {
             </div>
 
             {/* Client & Laveur Info */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Personnes concernées</h2>
-                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div className={CARD_SHELL}>
+                <h2 className={CARD_TITLE}>Personnes concernées</h2>
+                <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
                     <div>
-                        <dt className="text-gray-500">Client</dt>
-                        <dd className="text-gray-900">{booking.clientEmail}</dd>
+                        <dt className={DT_CLASS}>Client</dt>
+                        <dd className={DD_CLASS}>{booking.clientEmail}</dd>
                     </div>
                     <div>
-                        <dt className="text-gray-500">Laveur</dt>
-                        <dd className="text-gray-900">{booking.laveurEmail ?? 'Non assigné'}</dd>
+                        <dt className={DT_CLASS}>Laveur</dt>
+                        <dd className={`${DD_CLASS} ${booking.laveurEmail ? '' : 'text-ink2/60'}`}>
+                            {booking.laveurEmail ?? 'Non assigné'}
+                        </dd>
                     </div>
                 </dl>
             </div>
 
             {/* Payment Info */}
             {payment && (
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Paiement</h2>
-                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <div className={CARD_SHELL}>
+                    <h2 className={CARD_TITLE}>Paiement</h2>
+                    <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
                         <div>
-                            <dt className="text-gray-500">Session Stripe</dt>
-                            <dd className="font-mono text-gray-900 text-xs">
+                            <dt className={DT_CLASS}>Session Stripe</dt>
+                            <dd className="mt-1 font-mono text-[13px] text-ink2 md:text-sm">
                                 {payment.stripeSessionId
                                     ? payment.stripeSessionId.slice(0, 16)
                                     : '—'}
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-gray-500">Statut paiement</dt>
-                            <dd>
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_CLASS[payment.status]}`}>
+                            <dt className={DT_CLASS}>Statut paiement</dt>
+                            <dd className="mt-1.5">
+                                <span className={`${PILL_BASE} ${PAYMENT_STATUS_CLASS[payment.status]}`}>
                                     {PAYMENT_STATUS_LABEL[payment.status]}
                                 </span>
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-gray-500">Reversement laveur</dt>
-                            <dd className="text-gray-900">
+                            <dt className={DT_CLASS}>Reversement laveur</dt>
+                            <dd className={`${DD_CLASS} ${payment.paidOutAt ? '' : 'text-ink2/60'}`}>
                                 {payment.paidOutAt
                                     ? formatDate(payment.paidOutAt)
                                     : 'Non encore versé'}
@@ -221,8 +238,10 @@ export function BookingDetailClient({ booking }: Props) {
                         </div>
                         {payment.refundAmountCents != null && payment.refundAmountCents > 0 && (
                             <div>
-                                <dt className="text-gray-500">Total remboursé</dt>
-                                <dd className="text-gray-900">{(payment.refundAmountCents / 100).toFixed(2)} €</dd>
+                                <dt className={DT_CLASS}>Total remboursé</dt>
+                                <dd className="mt-1 font-display text-[18px] font-bold tracking-[-0.02em] text-ink md:text-[20px]">
+                                    {(payment.refundAmountCents / 100).toFixed(2)}&nbsp;€
+                                </dd>
                             </div>
                         )}
                     </dl>
@@ -230,39 +249,37 @@ export function BookingDetailClient({ booking }: Props) {
             )}
 
             {/* Before / After Photos */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Photos</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <p className="text-sm text-gray-500 mb-2">Avant</p>
-                        {booking.beforePhotoUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                                src={booking.beforePhotoUrl}
-                                alt="Photo avant lavage"
-                                className="w-full object-cover rounded-lg h-48"
-                            />
-                        ) : (
-                            <div className="bg-gray-100 rounded-lg flex items-center justify-center h-48">
-                                <span className="text-gray-400 text-sm">Aucune photo</span>
+            <div className={CARD_SHELL}>
+                <h2 className={CARD_TITLE}>Photos</h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {(['Avant', 'Après'] as const).map((label) => {
+                        const url = label === 'Avant' ? booking.beforePhotoUrl : booking.afterPhotoUrl
+                        const alt = `Photo ${label.toLowerCase()} lavage`
+                        return (
+                            <div key={label} className="relative overflow-hidden rounded-[16px] border border-rule">
+                                {url ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={url}
+                                        alt={alt}
+                                        className="h-56 w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-56 w-full items-center justify-center bg-blue-wash">
+                                        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/60 md:text-xs">
+                                            Aucune photo
+                                        </span>
+                                    </div>
+                                )}
+                                <span
+                                    className="absolute left-3 top-3 rounded-md px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-ink backdrop-blur-md"
+                                    style={{ background: 'rgba(255,255,255,0.82)' }}
+                                >
+                                    {label}
+                                </span>
                             </div>
-                        )}
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-500 mb-2">Après</p>
-                        {booking.afterPhotoUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                                src={booking.afterPhotoUrl}
-                                alt="Photo après lavage"
-                                className="w-full object-cover rounded-lg h-48"
-                            />
-                        ) : (
-                            <div className="bg-gray-100 rounded-lg flex items-center justify-center h-48">
-                                <span className="text-gray-400 text-sm">Aucune photo</span>
-                            </div>
-                        )}
-                    </div>
+                        )
+                    })}
                 </div>
             </div>
 
@@ -280,24 +297,30 @@ export function BookingDetailClient({ booking }: Props) {
             )}
 
             {showFullyRefunded && (
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <p className="text-sm text-gray-700">
+                <div className={CARD_SHELL}>
+                    <p className="text-[15px] leading-relaxed text-ink2 md:text-[16px]">
                         Remboursement total effectué le{' '}
-                        <span className="font-medium">{payment?.refundedAt ? formatDate(payment.refundedAt) : '—'}</span>
+                        <span className="font-display font-semibold text-ink">
+                            {payment?.refundedAt ? formatDate(payment.refundedAt) : '—'}
+                        </span>
                     </p>
                 </div>
             )}
 
             {/* H3: Distinguish "no payment record" from "payment exists but no Stripe ID" */}
             {showNoStripeId && !showFullyRefunded && (
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <p className="text-sm text-gray-500">Aucun PaymentIntent Stripe associé à ce paiement</p>
+                <div className={CARD_SHELL}>
+                    <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/70 md:text-xs">
+                        Aucun PaymentIntent Stripe associé à ce paiement
+                    </p>
                 </div>
             )}
 
             {showNoPaymentRecord && (
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <p className="text-sm text-gray-500">Aucun paiement associé à cette réservation</p>
+                <div className={CARD_SHELL}>
+                    <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/70 md:text-xs">
+                        Aucun paiement associé à cette réservation
+                    </p>
                 </div>
             )}
         </div>
