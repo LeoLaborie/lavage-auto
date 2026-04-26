@@ -1,6 +1,6 @@
 'use client'
 
-import Header from '@/components/Header'
+import NavCinetique from '@/components/landing/NavCinetique'
 import { Skeleton, SkeletonBookingCard } from '@/components/ui/Skeleton'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
@@ -83,7 +83,7 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50">
-                <Header currentPage="dashboard" />
+                <NavCinetique />
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     <div className="mb-8">
                         <Skeleton className="h-8 w-48 mb-2" />
@@ -119,7 +119,7 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Header currentPage="dashboard" />
+            <NavCinetique />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-8">
