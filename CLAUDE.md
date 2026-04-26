@@ -25,7 +25,8 @@ npx playwright test tests/booking-submit.spec.ts  # Un seul fichier de test
 - **Prisma 6** ORM → PostgreSQL (Supabase)
 - **Supabase Auth** (SSR via `@supabase/ssr`) pour l'authentification
 - **Stripe** (API `2025-02-24.acacia`) : Checkout en mode `setup`, capture manuelle, Connect Express pour les reversements
-- **Tailwind CSS** (couleurs custom `primary`/`secondary`/`accent`, font `Intro Rust`)
+- **Tailwind CSS** : double palette — Cinétique (`ink`, `blue`, `blue-electric`, `blue-wash`, `rule`, `max-w-cin`, `shadow-cin-*`) pour la landing redesign, Legacy (`primary`/`secondary`/`accent`, font `Intro Rust`) pour dashboards et pages internes
+- **Polices** : Inter Tight (`font-display`), Inter (`font-cinsans`), JetBrains Mono (`font-mono`) chargées via `next/font/google` dans `app/layout.tsx`
 - **Playwright** pour les tests d'intégration et E2E
 
 ### Structure du code (`src/`)
@@ -45,9 +46,11 @@ npx playwright test tests/booking-submit.spec.ts  # Un seul fichier de test
   - `booking/` — `BookingWizard.tsx` + `StepService`/`StepAddress`/`StepSchedule`/`StepVehicle`/`StepConfirmation`
   - `Dashboard/` — `ClientDashboardView`, `WasherDashboardView`, `AdminDashboard`
   - `features/admin/`, `features/laveur/`, `features/dashboard/` — widgets par rôle
+  - `landing/` — Composants de la landing Cinétique : `NavCinetique`, `HeroCinetique`, `IsometricCar`, `TickerCinetique`, `HowItWorksCinetique`, `BeforeAfterCinetique`, `LaveursCinetique`, `PricingCinetique`, `CtaCinetique`, `FooterCinetique`, `Wordmark`. Lecture obligatoire avant tout changement UI : `docs/DESIGN.md` (charte graphique complète)
   - `Navigation/`, `Header`, `ReservationPopup`, `TimeSelector`, `AddressAutocomplete`, UI primitives
 - `contexts/` — `AuthContext.tsx` (session Supabase uniquement, **pas** le rôle DB — lu côté serveur via les guards), `ToastContext.tsx`
 - `lib/` — Couche logique partagée :
+  - `hooks/` — Hooks React : `useScrollProgress` (animation scroll-driven du hero Cinétique)
   - `supabase/` — `client.ts` (browser), `server.ts` (RSC/API), `admin.ts` (service role)
   - `auth/` — Guards par rôle : `adminGuard.ts`, `clientGuard.ts`, `washerGuard.ts` — pattern HOC (`withAdminGuard`) ou fonction directe (`checkAdminAuth`) pour les routes dynamiques
   - `actions/` — Server actions Stripe : `payout.ts` (capture + transfer + snapshot commission), `refund.ts`, `washer-stripe.ts` (onboarding Connect)
@@ -134,6 +137,16 @@ Flux principal actuel (les helpers `createCheckoutSession` / mode `payment` rest
   - `tests/e2e/` — `home`, `login`, `reserver`
 - `playwright.config.ts` lance `npm run dev` automatiquement (`reuseExistingServer` en local)
 - Pas de framework de test unitaire configuré (vitest a été retiré)
+
+### Landing Cinétique (design system)
+- **Charte graphique complète** : `docs/DESIGN.md` — couleurs, typographie, layout, ombres, composants types, animations, voix éditoriale. **À consulter avant toute modification UI sur la landing.**
+- **Direction artistique** : Cinétique (éditoriale, contrastée, typographique, accents bleus électriques). Ne pas mélanger avec les tokens Legacy.
+- **Conteneur** : `max-w-cin` (1320px), `px-5 md:px-12`, `py-16 md:py-[120px]`
+- **Variable CSS** `--nav-h` (64px mobile, 70px desktop) pour tous les offsets sticky / smooth scroll. Référencer cette variable, jamais coder en dur.
+- **Smooth scroll** sur ancres : pattern unifié dans Nav, Footer, Hero — `getBoundingClientRect().top + window.scrollY - navH`
+- **Pas de hardcoded metrics** non vérifiables (notes moyennes, nombre de laveurs en ligne) — n'afficher que des engagements vérifiables (KYC, support 24/7, sans eau, < 24h)
+- **Source de vérité prix** : `lib/constants/services.ts` (filtré par `isVisible`) — `PricingCinetique` lit ce catalogue, jamais de prix hardcodés ailleurs
+- **Piège connu** : les italiques en `background-clip: text` clippent les glyphes débordants (`?`, `j`...). Toujours envelopper dans `inline-block` + `padding-right: 0.25em`
 
 ### Variables d'environnement requises
 Configurées dans `.env.local` (pas de `.env.example` committed). Clés principales :

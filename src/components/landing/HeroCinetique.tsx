@@ -5,7 +5,6 @@ import { useScrollProgress } from '@/lib/hooks/useScrollProgress'
 import IsometricCar from './IsometricCar'
 
 const stats = [
-  { k: '4.93', l: 'sur 5' },
   { k: '0L', l: "d'eau" },
   { k: '< 24h', l: 'créneau' },
 ]
@@ -44,21 +43,6 @@ export default function HeroCinetique() {
         <div className="relative mx-auto grid w-full max-w-cin items-center gap-10 md:grid-cols-[1.1fr_1fr]">
           {/* Left column */}
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-rule bg-white px-3 py-1.5 font-mono text-[11px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.04)] md:mb-8 md:text-xs">
-              <span
-                className="inline-block animate-cin-pulse rounded-full bg-[#22c55e]"
-                style={{
-                  width: 8,
-                  height: 8,
-                  boxShadow: '0 0 0 3px rgba(34,197,94,0.19)',
-                }}
-              />
-              <span className="hidden sm:inline">
-                187 laveurs en ligne · acceptation moyenne 2 min
-              </span>
-              <span className="sm:hidden">187 laveurs · 2 min</span>
-            </div>
-
             <h1 className="font-display font-extrabold leading-[0.88] tracking-[-0.05em] text-ink text-[64px] sm:text-[88px] md:text-[96px] lg:text-[124px]">
               Lavage
               <br />
@@ -95,6 +79,17 @@ export default function HeroCinetique() {
               </Link>
               <a
                 href="#how"
+                onClick={(e) => {
+                  e.preventDefault()
+                  const target = document.querySelector('#how')
+                  if (!target) return
+                  const navH = parseInt(
+                    getComputedStyle(document.documentElement).getPropertyValue('--nav-h') || '0',
+                    10,
+                  )
+                  const top = target.getBoundingClientRect().top + window.scrollY - navH
+                  window.scrollTo({ top, behavior: 'smooth' })
+                }}
                 className="inline-flex items-center justify-center rounded-xl border-[1.5px] border-ink bg-transparent px-6 py-4 font-cinsans text-[15px] font-semibold text-ink transition-colors hover:bg-ink hover:text-white md:px-[26px] md:py-[18px]"
               >
                 Voir le procédé →

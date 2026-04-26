@@ -1,8 +1,6 @@
 import Image from 'next/image'
 
 const stats = [
-  { k: '4.93', l: 'Note moyenne' },
-  { k: '187', l: 'Laveurs actifs' },
   { k: 'KYC', l: 'Stripe + SIRET vérifiés' },
   { k: '24/7', l: 'Support client' },
 ]
@@ -22,12 +20,6 @@ export default function LaveursCinetique() {
             sizes="(max-width: 768px) 100vw, 600px"
             className="object-cover"
           />
-          <div
-            className="absolute bottom-3 left-3 rounded-md px-3 py-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-white backdrop-blur-md md:bottom-5 md:left-5 md:text-[11px]"
-            style={{ background: 'rgba(0,0,0,0.62)' }}
-          >
-            Karim · Paris 11ᵉ · ⋆ 4.97
-          </div>
         </div>
 
         <div>
@@ -44,8 +36,8 @@ export default function LaveursCinetique() {
           </h2>
           <p className="m-0 mb-9 max-w-[520px] text-[14px] leading-relaxed text-white/75 md:text-[17px]">
             Chaque laveur Nealkar est un indépendant vérifié SIRET, formé à
-            notre protocole et noté à chaque mission. Sous 4.7 de moyenne, il
-            quitte la plateforme.
+            notre protocole et noté après chaque mission. Une note trop basse
+            l&apos;écarte automatiquement de la plateforme.
           </p>
           <div className="grid grid-cols-2 gap-4 md:gap-5">
             {stats.map((s) => (

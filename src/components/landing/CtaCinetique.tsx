@@ -16,20 +16,21 @@ export default function CtaCinetique() {
           Prêt à rouler
           <br />
           <span
-            className="italic"
+            className="inline-block italic"
             style={{
               background: 'linear-gradient(120deg, #3b82f6, #ffffff)',
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',
               color: 'transparent',
+              paddingRight: '0.25em',
             }}
           >
             impeccable&nbsp;?
           </span>
         </h2>
         <p className="mx-auto mt-7 max-w-[560px] text-[15px] opacity-70 md:mt-9 md:text-[19px]">
-          Premier créneau dès demain matin. Annulation gratuite jusqu&apos;à 2h
-          avant.
+          Premier créneau dès demain matin. Annulation gratuite jusqu&apos;à
+          24h avant.
         </p>
         <Link
           href="/reserver"

@@ -18,7 +18,7 @@ const steps: Step[] = [
     span: 5,
     n: '02',
     t: 'Un laveur accepte',
-    d: 'Notification temps réel. Acceptation moyenne 2 min.',
+    d: "Notification temps réel, acceptation moyenne en 2 min. C'est à ce moment-là que votre carte est débitée — pas avant.",
   },
   {
     span: 5,
@@ -29,8 +29,8 @@ const steps: Step[] = [
   {
     span: 7,
     n: '04',
-    t: 'Vous validez. Vous payez.',
-    d: "Inspectez le résultat, validez. C'est seulement à ce moment que votre carte est débitée. Pas avant.",
+    t: 'Vous validez le résultat',
+    d: "Inspectez les photos avant/après. Si quelque chose cloche, on intervient. Annulation gratuite jusqu'à 24h avant le créneau.",
     big: true,
   },
 ]
@@ -60,8 +60,9 @@ export default function HowItWorksCinetique() {
         </div>
         <p className="text-base leading-relaxed text-ink2 md:text-lg">
           On a remplacé l&apos;attente, le déplacement, et la mauvaise surprise
-          par 4 étapes simples — et un paiement qui ne passe que si vous êtes
-          content.
+          par 4 étapes simples — votre carte n&apos;est débitée qu&apos;à
+          l&apos;acceptation, et l&apos;annulation reste gratuite jusqu&apos;à
+          24h avant.
         </p>
       </div>
 

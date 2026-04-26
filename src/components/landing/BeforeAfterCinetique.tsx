@@ -28,8 +28,8 @@ export default function BeforeAfterCinetique() {
         <Image
           src="/images/before-after.png"
           alt="Comparaison avant / après lavage Nealkar"
-          width={1000}
-          height={500}
+          width={880}
+          height={572}
           className="block h-auto w-full"
           sizes="(max-width: 768px) 100vw, 1320px"
         />

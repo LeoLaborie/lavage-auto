@@ -1,7 +1,7 @@
 const ITEMS = [
   "0 LITRE D'EAU",
   'LAVEURS CERTIFIÉS',
-  'PAIEMENT APRÈS VALIDATION',
+  'SATISFAIT OU REMBOURSÉ',
 ]
 
 export default function TickerCinetique() {
