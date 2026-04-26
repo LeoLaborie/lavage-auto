@@ -1,13 +1,13 @@
 'use client';
 
 import { Suspense } from 'react';
-import Header from '@/components/Header';
+import NavCinetique from '@/components/landing/NavCinetique';
 import BookingWizard from '@/components/booking/BookingWizard';
 
 export default function Reserver() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">
-      <Header currentPage="booking" />
+      <NavCinetique />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Chargement...</div>}>
