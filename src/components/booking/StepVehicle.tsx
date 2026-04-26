@@ -2,7 +2,6 @@ import { UserCar, BookingFormData } from './constants';
 import { User } from '@supabase/supabase-js';
 import { validateEmail, validatePhone } from '@/lib/validation';
 
-// Extend the User type to handle the metadata we access
 interface CustomUser extends User {
   user_metadata: {
     full_name?: string;
@@ -15,7 +14,7 @@ interface StepVehicleProps {
   setCustomerInfo: (info: BookingFormData) => void;
   formErrors: Record<string, string>;
   setFormErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  user: CustomUser | null | any; // Accept any fallback just in case the context type is broad
+  user: CustomUser | null | any;
   userCars: UserCar[];
   selectedCarId: string;
   setSelectedCarId: (id: string) => void;
@@ -24,6 +23,15 @@ interface StepVehicleProps {
   handleBack: () => void;
   handleNext: () => void;
 }
+
+const inputBase =
+  'w-full rounded-[10px] border bg-white px-3.5 py-2.5 font-cinsans text-sm text-ink placeholder-ink2/40 transition-colors focus:outline-none focus:ring-2 focus:ring-blue/30';
+
+const inputClass = (hasError: boolean) =>
+  `${inputBase} ${hasError ? 'border-red-500' : 'border-rule focus:border-ink'}`;
+
+const labelClass =
+  'mb-1.5 block font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2';
 
 export default function StepVehicle({
   customerInfo, setCustomerInfo, formErrors, setFormErrors, user,
@@ -42,86 +50,106 @@ export default function StepVehicle({
 
   return (
     <div className="animate-fade-in-up">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 title-font text-center">Vos coordonnées</h2>
+      <div className="mb-6 md:mb-8">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2/60 md:text-xs">
+          Étape 04
+        </p>
+        <h2 className="mt-2 font-display text-[26px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[34px]">
+          Vos coordonnées.
+        </h2>
+      </div>
 
-      <div className="space-y-4">
-        {/* Identity & Contact - Dense Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="col-span-1">
-            <label className="block text-xs font-bold text-gray-700 mb-1 ml-1">Prénom*</label>
-            <input
-              type="text"
-              value={customerInfo.firstName}
-              onChange={(e) => {
-                setCustomerInfo({ ...customerInfo, firstName: e.target.value });
-                if (formErrors.firstName) setFormErrors((prev) => ({ ...prev, firstName: '' }));
-              }}
-              onBlur={(e) => validateField('firstName', e.target.value)}
-              className={`w-full px-3 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-primary transition-all text-sm ${formErrors.firstName ? 'border-red-500' : 'border-gray-200'}`}
-              placeholder="Jean"
-            />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-xs font-bold text-gray-700 mb-1 ml-1">Nom*</label>
-            <input
-              type="text"
-              value={customerInfo.lastName}
-              onChange={(e) => {
-                setCustomerInfo({ ...customerInfo, lastName: e.target.value });
-                if (formErrors.lastName) setFormErrors((prev) => ({ ...prev, lastName: '' }));
-              }}
-              onBlur={(e) => validateField('lastName', e.target.value)}
-              className={`w-full px-3 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-primary transition-all text-sm ${formErrors.lastName ? 'border-red-500' : 'border-gray-200'}`}
-              placeholder="Dupont"
-            />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-xs font-bold text-gray-700 mb-1 ml-1">Email*</label>
-            <input
-              type="email"
-              value={customerInfo.email}
-              onChange={(e) => {
-                setCustomerInfo({ ...customerInfo, email: e.target.value });
-                if (formErrors.email) setFormErrors((prev) => ({ ...prev, email: '' }));
-              }}
-              onBlur={(e) => !user && validateField('email', e.target.value)}
-              className={`w-full px-3 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-primary transition-all text-sm ${formErrors.email ? 'border-red-500' : 'border-gray-200'} ${user ? 'opacity-75' : ''}`}
-              disabled={!!user}
-              placeholder="jean@mail.com"
-            />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-xs font-bold text-gray-700 mb-1 ml-1">Tél*</label>
-            <input
-              type="tel"
-              value={customerInfo.phone}
-              onChange={(e) => {
-                setCustomerInfo({ ...customerInfo, phone: e.target.value });
-                if (formErrors.phone) setFormErrors((prev) => ({ ...prev, phone: '' }));
-              }}
-              onBlur={(e) => validateField('phone', e.target.value)}
-              placeholder="06 12..."
-              className={`w-full px-3 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-primary transition-all text-sm ${formErrors.phone ? 'border-red-500' : 'border-gray-200'}`}
-            />
+      <div className="space-y-6">
+        <div>
+          <h3 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink2/70 md:text-xs">
+            Identité
+          </h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
+            <div>
+              <label className={labelClass}>Prénom*</label>
+              <input
+                type="text"
+                value={customerInfo.firstName}
+                onChange={(e) => {
+                  setCustomerInfo({ ...customerInfo, firstName: e.target.value });
+                  if (formErrors.firstName) setFormErrors((prev) => ({ ...prev, firstName: '' }));
+                }}
+                onBlur={(e) => validateField('firstName', e.target.value)}
+                className={inputClass(!!formErrors.firstName)}
+                placeholder="Jean"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Nom*</label>
+              <input
+                type="text"
+                value={customerInfo.lastName}
+                onChange={(e) => {
+                  setCustomerInfo({ ...customerInfo, lastName: e.target.value });
+                  if (formErrors.lastName) setFormErrors((prev) => ({ ...prev, lastName: '' }));
+                }}
+                onBlur={(e) => validateField('lastName', e.target.value)}
+                className={inputClass(!!formErrors.lastName)}
+                placeholder="Dupont"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Email*</label>
+              <input
+                type="email"
+                value={customerInfo.email}
+                onChange={(e) => {
+                  setCustomerInfo({ ...customerInfo, email: e.target.value });
+                  if (formErrors.email) setFormErrors((prev) => ({ ...prev, email: '' }));
+                }}
+                onBlur={(e) => !user && validateField('email', e.target.value)}
+                className={`${inputClass(!!formErrors.email)} ${user ? 'opacity-60' : ''}`}
+                disabled={!!user}
+                placeholder="jean@mail.com"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Téléphone*</label>
+              <input
+                type="tel"
+                value={customerInfo.phone}
+                onChange={(e) => {
+                  setCustomerInfo({ ...customerInfo, phone: e.target.value });
+                  if (formErrors.phone) setFormErrors((prev) => ({ ...prev, phone: '' }));
+                }}
+                onBlur={(e) => validateField('phone', e.target.value)}
+                placeholder="06 12…"
+                className={inputClass(!!formErrors.phone)}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Vehicle Selection - Compact */}
-        <div className="border-t border-gray-100 pt-3">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-sm font-bold text-gray-900 title-font">Votre Véhicule</h3>
+        <div className="border-t border-rule pt-6">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink2/70 md:text-xs">
+              Véhicule
+            </h3>
             {userCars.length > 0 && (
-              <div className="flex gap-2 p-1 bg-gray-100 rounded-lg scale-90 origin-right">
-                <label className={`flex items-center gap-1 px-2 py-1 rounded cursor-pointer text-xs transition-all ${!isNewCar ? 'bg-white shadow-sm text-primary font-bold' : 'text-gray-500'
-                  }`}>
-                  <input type="radio" name="carSelection" checked={!isNewCar} onChange={() => setIsNewCar(false)} className="hidden" />
-                  <span>Existant</span>
-                </label>
-                <label className={`flex items-center gap-1 px-2 py-1 rounded cursor-pointer text-xs transition-all ${isNewCar ? 'bg-white shadow-sm text-primary font-bold' : 'text-gray-500'
-                  }`}>
-                  <input type="radio" name="carSelection" checked={isNewCar} onChange={() => setIsNewCar(true)} className="hidden" />
-                  <span>Nouveau</span>
-                </label>
+              <div className="inline-flex rounded-[10px] border border-rule bg-white p-1">
+                <button
+                  type="button"
+                  onClick={() => setIsNewCar(false)}
+                  className={`rounded-[8px] px-3 py-1.5 font-cinsans text-xs font-semibold transition-colors ${
+                    !isNewCar ? 'bg-ink text-white' : 'text-ink2 hover:text-ink'
+                  }`}
+                >
+                  Existant
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsNewCar(true)}
+                  className={`rounded-[8px] px-3 py-1.5 font-cinsans text-xs font-semibold transition-colors ${
+                    isNewCar ? 'bg-ink text-white' : 'text-ink2 hover:text-ink'
+                  }`}
+                >
+                  Nouveau
+                </button>
               </div>
             )}
           </div>
@@ -133,16 +161,17 @@ export default function StepVehicle({
                 setSelectedCarId(e.target.value);
                 if (formErrors.carSelection) setFormErrors((prev) => ({ ...prev, carSelection: '' }));
               }}
-              className={`w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm ${formErrors.carSelection ? 'border-red-500' : 'border-gray-200'}`}
+              className={inputClass(!!formErrors.carSelection)}
             >
-              <option value="">Choisir un véhicule...</option>
+              <option value="">Choisir un véhicule…</option>
               {userCars.map(car => (
-                <option key={car.id} value={car.id}>{car.make} {car.model}{car.plate ? ` - ${car.plate}` : ''}</option>
+                <option key={car.id} value={car.id}>{car.make} {car.model}{car.plate ? ` · ${car.plate}` : ''}</option>
               ))}
             </select>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
+                <label className={labelClass}>Marque</label>
                 <input
                   type="text"
                   value={customerInfo.make || ''}
@@ -151,11 +180,12 @@ export default function StepVehicle({
                     if (formErrors.make) setFormErrors((prev) => ({ ...prev, make: '' }));
                   }}
                   onBlur={(e) => validateField('make', e.target.value)}
-                  placeholder="Marque"
-                  className={`w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm ${formErrors.make ? 'border-red-500' : 'border-gray-200'}`}
+                  placeholder="Renault"
+                  className={inputClass(!!formErrors.make)}
                 />
               </div>
               <div>
+                <label className={labelClass}>Modèle</label>
                 <input
                   type="text"
                   value={customerInfo.model || ''}
@@ -164,11 +194,12 @@ export default function StepVehicle({
                     if (formErrors.model) setFormErrors((prev) => ({ ...prev, model: '' }));
                   }}
                   onBlur={(e) => validateField('model', e.target.value)}
-                  placeholder="Modèle"
-                  className={`w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm ${formErrors.model ? 'border-red-500' : 'border-gray-200'}`}
+                  placeholder="Clio"
+                  className={inputClass(!!formErrors.model)}
                 />
               </div>
               <div>
+                <label className={labelClass}>Plaque</label>
                 <input
                   type="text"
                   value={customerInfo.licensePlate || ''}
@@ -176,37 +207,45 @@ export default function StepVehicle({
                     setCustomerInfo({ ...customerInfo, licensePlate: e.target.value.toUpperCase() });
                     if (formErrors.licensePlate) setFormErrors((prev) => ({ ...prev, licensePlate: '' }));
                   }}
-                  placeholder="Plaque"
-                  className={`w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm ${formErrors.licensePlate ? 'border-red-500' : 'border-gray-200'}`}
+                  placeholder="AA-123-AA"
+                  className={inputClass(!!formErrors.licensePlate)}
                 />
               </div>
             </div>
           )}
+          {formErrors.carSelection && (
+            <p className="mt-3 flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 font-cinsans text-xs text-red-600">
+              <span aria-hidden>⚠</span> {formErrors.carSelection}
+            </p>
+          )}
         </div>
 
-        <div>
+        <div className="border-t border-rule pt-6">
+          <label className={labelClass}>Notes (optionnel)</label>
           <textarea
             value={customerInfo.notes}
             onChange={(e) => setCustomerInfo({ ...customerInfo, notes: e.target.value })}
             rows={2}
-            placeholder="Notes (code portail, etc.)"
-            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+            placeholder="Code portail, étage, instructions d'accès…"
+            className={inputClass(false)}
           />
         </div>
       </div>
 
-      <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
+      <div className="mt-10 flex flex-col-reverse items-stretch gap-3 border-t border-rule pt-6 sm:flex-row sm:items-center sm:justify-between">
         <button
+          type="button"
           onClick={handleBack}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors text-sm"
+          className="inline-flex items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-ink bg-transparent px-6 py-3.5 font-cinsans text-[14px] font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
         >
-          <span>←</span> Retour
+          <span aria-hidden>←</span> Retour
         </button>
         <button
+          type="button"
           onClick={handleNext}
-          className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all transform hover:scale-105 shadow-xl text-sm"
+          className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-ink px-7 py-3.5 font-cinsans text-[14px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5"
         >
-          Continuer <span className="ml-2">→</span>
+          Continuer <span aria-hidden>→</span>
         </button>
       </div>
     </div>

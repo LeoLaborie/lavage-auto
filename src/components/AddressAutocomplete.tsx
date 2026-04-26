@@ -134,10 +134,10 @@ export default function AddressAutocomplete({ onAddressSelect, value = '' }: Pro
         value={input}
         onChange={handleInputChange}
         placeholder="Saisissez votre adresse"
-        className="w-full pl-12 pr-6 py-4 rounded-lg bg-white/60 backdrop-blur-sm text-lg text-[#004aad] placeholder-[#004aad] focus:outline-none focus:ring-2 focus:ring-[#004aad] border-none shadow-md"
+        className="w-full rounded-[10px] border border-rule bg-white pl-12 pr-6 py-4 font-cinsans text-base text-ink placeholder-ink2/50 focus:border-ink focus:outline-none focus:ring-2 focus:ring-blue/30"
       />
       <svg
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#004aad]"
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-ink"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -160,7 +160,7 @@ export default function AddressAutocomplete({ onAddressSelect, value = '' }: Pro
         <ul
           id="address-suggestions"
           role="listbox"
-          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden z-50 m-0 p-0 list-none"
+          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-[10px] shadow-cin-card border border-rule overflow-hidden z-50 m-0 p-0 list-none"
         >
           {suggestions.map((suggestion, index) => (
             <li
@@ -170,9 +170,9 @@ export default function AddressAutocomplete({ onAddressSelect, value = '' }: Pro
             >
               <button
                 onClick={() => handleSelect(suggestion.properties.label)}
-                className="w-full px-4 py-3 hover:bg-gray-50 cursor-pointer text-left border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
+                className="w-full px-4 py-3 hover:bg-blue-wash cursor-pointer text-left border-b border-rule last:border-b-0 focus:outline-none focus:bg-blue-wash"
               >
-                <span className="text-[#004aad]">{suggestion.properties.label}</span>
+                <span className="font-cinsans text-sm text-ink">{suggestion.properties.label}</span>
               </button>
             </li>
           ))}

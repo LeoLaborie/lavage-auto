@@ -6,14 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { validateBookingForm, validateDateTimeBooking } from '@/lib/validation';
 import type { ServiceId } from '@/lib/constants/services';
-import Image from 'next/image';
 
 import StepService from './StepService';
 import StepAddress from './StepAddress';
 import StepSchedule from './StepSchedule';
 import StepVehicle from './StepVehicle';
 import StepConfirmation from './StepConfirmation';
-import { Service, UserCar, services, BookingFormData, getServiceById } from './constants';
+import { Service, UserCar, BookingFormData, getServiceById } from './constants';
 
 const CANONICAL_SERVICE_KEY = 'booking_service_id';
 const STORAGE_VERSION_KEY = 'booking_storage_version';
@@ -375,57 +374,68 @@ export default function BookingWizard() {
     }
   };
 
+  const steps = [
+    { step: 1, label: 'Service', shortLabel: 'Service' },
+    { step: 2, label: 'Lieu', shortLabel: 'Lieu' },
+    { step: 3, label: 'Date & heure', shortLabel: 'Date' },
+    { step: 4, label: 'Infos', shortLabel: 'Infos' },
+    { step: 5, label: 'Confirmation', shortLabel: 'Valider' },
+  ];
+
   return (
     <>
-      <div className="text-center mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-          Réservez votre lavage
+      <div className="mb-8 md:mb-12">
+        <div className="mb-5 inline-block rounded-md bg-blue-wash px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue md:text-xs">
+          Réservation · {String(currentStep).padStart(2, '0')} / 05
+        </div>
+        <h1 className="font-display font-extrabold leading-[0.95] tracking-[-0.04em] text-[40px] md:text-[64px]">
+          Réservez votre lavage.
         </h1>
-        <div className="flex justify-center items-center mb-8 relative max-w-4xl mx-auto">
-          <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-10 rounded-full overflow-hidden">
+
+        <div className="mt-8 md:mt-10">
+          <div className="relative h-[2px] w-full bg-rule">
             <div
-              className="h-full bg-primary transition-all duration-500 ease-out"
-              style={{ width: `${((currentStep - 1) / 4) * 100}%` }}
+              className="absolute left-0 top-0 h-full bg-ink transition-all duration-500 ease-out"
+              style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
             />
           </div>
 
-          <div className="flex justify-between w-full px-0 sm:px-4">
-            {[
-              { step: 1, icon: '/icons/step-service.png', label: 'Service', shortLabel: 'Service' },
-              { step: 2, icon: '/icons/step-date.png', label: 'Lieu', shortLabel: 'Lieu' },
-              { step: 3, icon: '/icons/step-date.png', label: 'Date/Heure', shortLabel: 'Date' },
-              { step: 4, icon: '/icons/step-info.png', label: 'Infos', shortLabel: 'Infos' },
-              { step: 5, icon: '/icons/step-confirm.png', label: 'Confirmation', shortLabel: 'Confirmer' }
-            ].map((item) => (
-              <div
-                key={item.step}
-                className={`flex flex-col items-center gap-1 sm:gap-2 group ${item.step < currentStep ? 'cursor-pointer' : 'cursor-default'}`}
-                onClick={() => { if (item.step < currentStep) setCurrentStep(item.step); }}
-              >
-                <div className={`w-10 h-10 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-300 z-10 border-4 relative overflow-hidden bg-white ${currentStep >= item.step
-                  ? 'border-primary shadow-lg scale-110'
-                  : 'border-gray-200 grayscale opacity-60'
-                  }`}>
-                  <Image
-                    src={item.icon}
-                    alt={item.label}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 40px, 64px"
-                  />
-                </div>
-                <span className={`text-[10px] sm:text-sm md:text-base font-bold transition-colors duration-300 text-center leading-tight ${currentStep >= item.step ? 'text-primary' : 'text-gray-400'
-                  }`}>
-                  <span className="sm:hidden">{item.shortLabel}</span>
-                  <span className="hidden sm:inline">{item.label}</span>
-                </span>
-              </div>
-            ))}
+          <div className="mt-4 flex justify-between gap-2">
+            {steps.map((item) => {
+              const isActive = currentStep === item.step;
+              const isDone = currentStep > item.step;
+              const isClickable = item.step < currentStep;
+              return (
+                <button
+                  key={item.step}
+                  type="button"
+                  onClick={() => { if (isClickable) setCurrentStep(item.step); }}
+                  disabled={!isClickable}
+                  className={`flex flex-1 flex-col items-start gap-1.5 text-left ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
+                >
+                  <span
+                    className={`font-mono text-[10px] font-semibold uppercase tracking-[0.08em] md:text-[11px] ${
+                      isActive ? 'text-blue' : isDone ? 'text-ink2' : 'text-ink2/40'
+                    }`}
+                  >
+                    {String(item.step).padStart(2, '0')}
+                  </span>
+                  <span
+                    className={`font-cinsans text-[12px] font-semibold leading-tight md:text-sm ${
+                      isActive ? 'text-ink' : isDone ? 'text-ink2' : 'text-ink2/40'
+                    }`}
+                  >
+                    <span className="sm:hidden">{item.shortLabel}</span>
+                    <span className="hidden sm:inline">{item.label}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8">
+      <div className="rounded-[20px] border border-rule bg-white p-5 shadow-cin-card md:p-9">
         {currentStep === 1 && (
           <StepService
             selectedService={selectedService}

@@ -161,7 +161,7 @@ export default function TimeSelector({ onSelect, isShaking = false }: TimeSelect
           </div>
 
           {selectedDate && (
-            <div className="border-t border-gray-100 pt-4">
+            <div className="border-t border-rule pt-4">
               <h4 className="text-sm font-cinsans font-semibold text-ink/70 mb-3">
                 Horaires disponibles pour le {format(selectedDate, 'd MMMM', { locale: fr })}
               </h4>
