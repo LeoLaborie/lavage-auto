@@ -55,68 +55,114 @@ export default async function BookingSuccessPage({
         minute: '2-digit',
     })
 
+    const isPending = booking.status === 'PENDING'
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center px-4">
-            <div className="max-w-lg w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
+        <div
+            className="flex min-h-screen items-center justify-center px-5 py-16 md:px-12 md:py-[120px]"
+            style={{
+                background: 'radial-gradient(ellipse at 70% 30%, #eaf0fc 0%, #ffffff 60%)',
+            }}
+        >
+            <div className="w-full max-w-[560px]">
+                <div className="rounded-[20px] bg-white p-7 shadow-cin-card md:p-9">
+                    <div className="mb-5 flex items-center gap-3">
+                        <span
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-wash text-blue"
+                            aria-hidden
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </span>
+                        <span className="inline-block rounded-md bg-blue-wash px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue md:text-xs">
+                            Confirmation
+                        </span>
+                    </div>
 
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    {booking.status === 'PENDING' ? 'Carte en cours de vérification' : 'Réservation enregistrée !'}
-                </h1>
-                <p className="text-gray-500 mb-8">
-                    {booking.status === 'PENDING'
-                        ? 'Votre carte est en cours de vérification. Votre réservation sera confirmée dans quelques instants.'
-                        : 'Votre carte a été enregistrée avec succès. Vous ne serez débité que lorsqu\'un laveur acceptera votre mission.'}
-                </p>
+                    <h1 className="font-display text-[32px] font-extrabold leading-[1.05] tracking-[-0.04em] text-ink md:text-[44px]">
+                        {isPending ? 'Carte en cours de vérification.' : 'Réservation enregistrée.'}
+                    </h1>
+                    <p className="mt-4 text-[15px] leading-relaxed text-ink2 md:text-[17px]">
+                        {isPending
+                            ? 'Votre carte est en cours de vérification. La confirmation arrive dans quelques instants.'
+                            : 'Votre carte a été enregistrée. Vous ne serez débité qu’au moment où un laveur acceptera votre mission.'}
+                    </p>
 
-                <div className="bg-gray-50 rounded-xl p-6 text-left space-y-3 mb-8">
-                    <div className="flex justify-between gap-4">
-                        <span className="text-sm text-gray-500 shrink-0">Service</span>
-                        <span className="text-sm font-medium text-gray-900 text-right break-words min-w-0">{booking.serviceName}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                        <span className="text-sm text-gray-500 shrink-0">Date</span>
-                        <span className="text-sm font-medium text-gray-900 text-right break-words min-w-0">{formattedDate}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                        <span className="text-sm text-gray-500 shrink-0">Heure</span>
-                        <span className="text-sm font-medium text-gray-900 text-right">{formattedTime}</span>
-                    </div>
-                    {booking.car && (
-                        <div className="flex justify-between gap-4">
-                            <span className="text-sm text-gray-500 shrink-0">Véhicule</span>
-                            <span className="text-sm font-medium text-gray-900 text-right">{booking.car.make} {booking.car.model}</span>
+                    <div className="mt-7 border-t border-rule pt-6">
+                        <div className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink2 md:text-xs">
+                            Récapitulatif
                         </div>
-                    )}
-                    <div className="flex justify-between gap-4">
-                        <span className="text-sm text-gray-500 shrink-0">Adresse</span>
-                        <span className="text-sm font-medium text-gray-900 text-right break-words min-w-0">{booking.serviceAddress}</span>
+                        <dl className="space-y-3">
+                            <Row label="Service" value={booking.serviceName} />
+                            <Row label="Date" value={formattedDate} capitalize />
+                            <Row label="Heure" value={formattedTime} />
+                            {booking.car && (
+                                <Row label="Véhicule" value={`${booking.car.make} ${booking.car.model}`} />
+                            )}
+                            <Row label="Adresse" value={booking.serviceAddress} />
+                        </dl>
+                        <div className="mt-5 flex items-baseline justify-between border-t border-rule pt-5">
+                            <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink2 md:text-xs">
+                                Total
+                            </span>
+                            <span className="font-display text-[28px] font-extrabold leading-none tracking-[-0.03em] text-ink md:text-[32px]">
+                                {booking.amountCents / 100} €
+                            </span>
+                        </div>
                     </div>
-                    <div className="border-t border-gray-200 pt-3 flex justify-between">
-                        <span className="text-sm font-medium text-gray-700">Total</span>
-                        <span className="text-lg font-bold text-gray-900">{booking.amountCents / 100} €</span>
+
+                    <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                        <Link
+                            href="/dashboard"
+                            className="inline-flex flex-1 items-center justify-center gap-2.5 rounded-xl bg-ink px-6 py-4 font-cinsans text-[15px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5"
+                        >
+                            Voir mes réservations
+                            <span aria-hidden>→</span>
+                        </Link>
+                        <Link
+                            href="/"
+                            className="inline-flex flex-1 items-center justify-center rounded-xl border-[1.5px] border-ink bg-transparent px-6 py-4 font-cinsans text-[15px] font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
+                        >
+                            Retour à l&apos;accueil
+                        </Link>
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <Link
-                        href="/dashboard"
-                        className="flex-1 px-6 py-3 bg-[#004aad] text-white font-medium rounded-lg hover:bg-[#003c8a] transition-colors text-center"
-                    >
-                        Voir mes réservations
-                    </Link>
-                    <Link
-                        href="/"
-                        className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors text-center"
-                    >
-                        Retour à l&apos;accueil
-                    </Link>
-                </div>
+                <p className="mt-5 text-center font-mono text-[11px] uppercase tracking-[0.08em] text-ink2 md:text-xs">
+                    Sans eau · Débit à l&apos;acceptation du laveur · Annulation gratuite jusqu&apos;à 24h avant
+                </p>
             </div>
+        </div>
+    )
+}
+
+function Row({
+    label,
+    value,
+    capitalize = false,
+}: {
+    label: string
+    value: string
+    capitalize?: boolean
+}) {
+    return (
+        <div className="flex justify-between gap-4">
+            <dt className="shrink-0 text-[13px] text-ink2 md:text-sm">{label}</dt>
+            <dd
+                className={`min-w-0 break-words text-right text-[13px] font-medium text-ink md:text-sm${
+                    capitalize ? ' first-letter:uppercase' : ''
+                }`}
+            >
+                {value}
+            </dd>
         </div>
     )
 }
