@@ -23,10 +23,19 @@ export default async function AdminSettingsPage() {
         (await prisma.platformSettings.create({ data: { commissionRate: DEFAULT_COMMISSION_RATE } }))
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12">
-            <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Paramètres plateforme</h1>
-                <p className="text-gray-600 mb-8">Gérez le taux de commission prélevé sur chaque mission.</p>
+        <div className="min-h-screen bg-white">
+            <main className="mx-auto max-w-cin px-5 py-16 md:px-12 md:py-[120px]">
+                <div className="mb-10 max-w-2xl md:mb-14">
+                    <div className="mb-5 inline-block rounded-md bg-blue-wash px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-blue md:text-xs">
+                        Paramètres
+                    </div>
+                    <h1 className="font-display text-[44px] font-extrabold leading-[0.95] tracking-[-0.04em] text-ink md:text-[64px]">
+                        Plateforme.
+                    </h1>
+                    <p className="mt-4 text-[15px] leading-relaxed text-ink2 md:text-[17px]">
+                        Gérez le taux de commission prélevé sur chaque mission.
+                    </p>
+                </div>
 
                 <CommissionSettingsForm
                     initialRate={settings.commissionRate.toNumber()}
