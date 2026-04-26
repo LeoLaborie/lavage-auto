@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { AppleEmoji } from '@/components/AppleEmoji'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
@@ -43,33 +42,77 @@ export default async function StripeCallbackPage() {
         }
     }
 
-    const title = ready ? 'Configuration terminée !' : 'Onboarding non terminé'
+    const eyebrow = ready ? 'Onboarding · Terminé' : 'Onboarding · En attente'
+    const title = ready ? 'Configuration terminée.' : 'Onboarding non terminé.'
     const message = ready
         ? 'Votre compte Stripe est activé. Vous pouvez maintenant accepter des missions et recevoir vos virements.'
         : hasAccount
-            ? 'Stripe n\'a pas encore activé votre compte. Il vous manque peut-être des informations. Revenez au tableau de bord pour reprendre l\'onboarding.'
-            : 'Aucun compte Stripe trouvé. Revenez au tableau de bord pour démarrer la configuration.'
+            ? 'Stripe n\'a pas encore activé votre compte. Il manque peut-être des informations à compléter. Reprenez l\'onboarding depuis votre tableau de bord.'
+            : 'Aucun compte Stripe trouvé. Démarrez la configuration depuis votre tableau de bord.'
 
-    const badgeClass = ready ? 'bg-green-100' : 'bg-amber-100'
-    const emojiName = ready ? 'white_check_mark' : 'warning'
+    const ctaLabel = ready ? 'Aller au tableau de bord' : 'Reprendre l\'onboarding'
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
-                <div className={`${badgeClass} w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6`}>
-                    <AppleEmoji name={emojiName} className="w-10 h-10" />
+        <main className="min-h-screen bg-blue-wash">
+            <div className="mx-auto flex min-h-screen w-full max-w-cin items-center justify-center px-5 py-16 md:px-12 md:py-[120px]">
+                <div className="w-full max-w-md rounded-[20px] bg-white p-8 text-center shadow-cin-card md:p-10">
+                    <div
+                        className={`mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-full ${
+                            ready ? 'bg-ink text-white' : 'bg-blue-wash text-blue'
+                        }`}
+                        aria-hidden="true"
+                    >
+                        {ready ? (
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-7 w-7"
+                            >
+                                <path d="M5 12.5l5 5L20 7" />
+                            </svg>
+                        ) : (
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-7 w-7"
+                            >
+                                <circle cx="12" cy="12" r="9" />
+                                <line x1="12" y1="8" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12" y2="17" />
+                            </svg>
+                        )}
+                    </div>
+
+                    <p className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-blue md:text-xs">
+                        {eyebrow}
+                    </p>
+
+                    <h1 className="mb-4 font-display text-[28px] font-extrabold leading-[1.05] tracking-[-0.03em] text-ink md:text-[34px]">
+                        {title}
+                    </h1>
+
+                    <p className="mb-8 text-[15px] leading-relaxed text-ink2 md:text-[17px]">
+                        {message}
+                    </p>
+
+                    <Link
+                        href="/dashboard"
+                        className="inline-flex w-full items-center justify-center rounded-xl bg-ink px-6 py-4 font-cinsans text-[15px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5"
+                    >
+                        {ctaLabel}
+                    </Link>
                 </div>
-
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
-                <p className="text-gray-600 mb-8">{message}</p>
-
-                <Link
-                    href="/dashboard"
-                    className="block w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
-                >
-                    Retour au tableau de bord
-                </Link>
             </div>
-        </div>
+        </main>
     )
 }
