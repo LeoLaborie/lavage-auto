@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { RefundPanel } from './RefundPanel'
+import { BookingStatusBadge, PaymentStatusBadge } from './StatusPill'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -57,48 +58,6 @@ function formatDate(iso: string) {
         minute: '2-digit',
     })
 }
-
-const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
-    PENDING: 'En attente',
-    CONFIRMED: 'Confirmé',
-    ACCEPTED: 'Accepté',
-    EN_ROUTE: 'En route',
-    IN_PROGRESS: 'En cours',
-    COMPLETED: 'Terminé',
-    CANCELLED: 'Annulé',
-}
-
-const BOOKING_STATUS_CLASS: Record<BookingStatus, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-900',
-    CONFIRMED: 'bg-blue-wash text-blue',
-    ACCEPTED: 'bg-blue-wash text-blue',
-    EN_ROUTE: 'bg-indigo-100 text-indigo-900',
-    IN_PROGRESS: 'bg-orange-100 text-orange-900',
-    COMPLETED: 'bg-emerald-100 text-emerald-900',
-    CANCELLED: 'bg-red-100 text-red-900',
-}
-
-const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
-    PENDING: 'En attente',
-    PROCESSING: 'En cours',
-    SUCCEEDED: 'Réussi',
-    FAILED: 'Échoué',
-    REFUNDED: 'Remboursé',
-    PARTIALLY_REFUNDED: 'Part. remboursé',
-}
-
-const PAYMENT_STATUS_CLASS: Record<PaymentStatus, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-900',
-    PROCESSING: 'bg-blue-wash text-blue',
-    SUCCEEDED: 'bg-emerald-100 text-emerald-900',
-    FAILED: 'bg-red-100 text-red-900',
-    REFUNDED: 'bg-blue-wash text-ink2',
-    PARTIALLY_REFUNDED: 'bg-orange-100 text-orange-900',
-}
-
-// Pill: shared shape (Cinétique mono uppercase)
-const PILL_BASE =
-    'inline-flex items-center rounded-md px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] md:text-xs'
 
 // Card shell: shared structure (Cinétique)
 const CARD_SHELL =
@@ -172,11 +131,7 @@ export function BookingDetailClient({ booking }: Props) {
                     </div>
                     <div>
                         <dt className={DT_CLASS}>Statut</dt>
-                        <dd className="mt-1.5">
-                            <span className={`${PILL_BASE} ${BOOKING_STATUS_CLASS[booking.status]}`}>
-                                {BOOKING_STATUS_LABEL[booking.status]}
-                            </span>
-                        </dd>
+                        <dd className="mt-1.5"><BookingStatusBadge status={booking.status} /></dd>
                     </div>
                     {booking.car && (
                         <div>
@@ -222,11 +177,7 @@ export function BookingDetailClient({ booking }: Props) {
                         </div>
                         <div>
                             <dt className={DT_CLASS}>Statut paiement</dt>
-                            <dd className="mt-1.5">
-                                <span className={`${PILL_BASE} ${PAYMENT_STATUS_CLASS[payment.status]}`}>
-                                    {PAYMENT_STATUS_LABEL[payment.status]}
-                                </span>
-                            </dd>
+                            <dd className="mt-1.5"><PaymentStatusBadge status={payment.status} /></dd>
                         </div>
                         <div>
                             <dt className={DT_CLASS}>Reversement laveur</dt>

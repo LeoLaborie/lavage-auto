@@ -2,6 +2,12 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import {
+    BookingStatusBadge,
+    PaymentStatusBadge,
+    ProfileStatusBadge,
+    RoleBadge,
+} from './StatusPill'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -77,75 +83,10 @@ function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function BookingStatusBadge({ status }: { status: BookingStatus }) {
-    const classes: Record<BookingStatus, string> = {
-        PENDING: 'bg-yellow-100 text-yellow-800',
-        CONFIRMED: 'bg-blue-100 text-blue-800',
-        ACCEPTED: 'bg-indigo-100 text-indigo-800',
-        EN_ROUTE: 'bg-purple-100 text-purple-800',
-        IN_PROGRESS: 'bg-orange-100 text-orange-800',
-        COMPLETED: 'bg-green-100 text-green-800',
-        CANCELLED: 'bg-red-100 text-red-800',
-    }
-    const labels: Record<BookingStatus, string> = {
-        PENDING: 'En attente',
-        CONFIRMED: 'Confirmé',
-        ACCEPTED: 'Accepté',
-        EN_ROUTE: 'En route',
-        IN_PROGRESS: 'En cours',
-        COMPLETED: 'Terminé',
-        CANCELLED: 'Annulé',
-    }
-    return (
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${classes[status]}`}>
-            {labels[status]}
-        </span>
-    )
-}
-
-function PaymentStatusBadge({ status }: { status: PaymentStatus | null }) {
-    if (!status) return <span className="text-gray-400 text-xs">—</span>
-    const classes: Record<PaymentStatus, string> = {
-        PENDING: 'bg-yellow-100 text-yellow-800',
-        PROCESSING: 'bg-blue-100 text-blue-800',
-        SUCCEEDED: 'bg-green-100 text-green-800',
-        FAILED: 'bg-red-100 text-red-800',
-        REFUNDED: 'bg-gray-100 text-gray-800',
-        PARTIALLY_REFUNDED: 'bg-orange-100 text-orange-800',
-    }
-    const labels: Record<PaymentStatus, string> = {
-        PENDING: 'En attente',
-        PROCESSING: 'En cours',
-        SUCCEEDED: 'Réussi',
-        FAILED: 'Échoué',
-        REFUNDED: 'Remboursé',
-        PARTIALLY_REFUNDED: 'Part. remboursé',
-    }
-    return (
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${classes[status]}`}>
-            {labels[status]}
-        </span>
-    )
-}
-
-function ProfileStatusBadge({ status }: { status: ProfileStatus | null }) {
-    if (!status) return <span className="text-gray-400 text-xs">—</span>
-    const classes: Record<ProfileStatus, string> = {
-        VALIDATION_PENDING: 'bg-yellow-100 text-yellow-800',
-        VALIDATED: 'bg-green-100 text-green-800',
-        REJECTED: 'bg-red-100 text-red-800',
-    }
-    const labels: Record<ProfileStatus, string> = {
-        VALIDATION_PENDING: 'En attente',
-        VALIDATED: 'Validé',
-        REJECTED: 'Rejeté',
-    }
-    return (
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${classes[status]}`}>
-            {labels[status]}
-        </span>
-    )
-}
+const TH_CLASS = 'px-4 py-3 text-left font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2/70'
+const TD_CLASS = 'px-4 py-3 text-sm text-ink'
+const TR_CLASS = 'border-b border-rule transition-colors hover:bg-blue-wash/40'
+const ALERT_CLASS = 'mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700'
 
 function Pagination({
     page,
@@ -163,23 +104,21 @@ function Pagination({
     onNext: () => void
 }) {
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
+    const btn =
+        'rounded-lg border-[1.5px] border-ink bg-white px-3 py-1.5 font-cinsans text-xs font-semibold text-ink transition-colors hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-ink'
     return (
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
-            <span>
+        <div className="mt-5 flex items-center justify-between">
+            <span className="font-mono text-[11px] uppercase tracking-[0.05em] text-ink2/70 md:text-xs">
                 Page {page} / {totalPages} &mdash; {total} entrée{total !== 1 ? 's' : ''}
             </span>
             <div className="flex gap-2">
-                <button
-                    onClick={onPrev}
-                    disabled={page <= 1 || loading}
-                    className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
+                <button onClick={onPrev} disabled={page <= 1 || loading} className={btn}>
                     Précédent
                 </button>
                 <button
                     onClick={onNext}
                     disabled={page * pageSize >= total || loading}
-                    className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className={btn}
                 >
                     Suivant
                 </button>
@@ -203,12 +142,10 @@ export default function AdminDashboard({
 }: Props) {
     const [activeTab, setActiveTab] = useState<Tab>('users')
 
-    // Per-tab data state
     const [users, setUsers] = useState<AdminUser[]>(initialUsers)
     const [bookings, setBookings] = useState<AdminBooking[]>(initialBookings)
     const [payments, setPayments] = useState<AdminPayment[]>(initialPayments)
 
-    // Per-tab pagination state
     const [usersPagination, setUsersPagination] = useState<PaginationState>({
         page: 1, total: usersTotal, loading: false, error: null,
     })
@@ -219,7 +156,6 @@ export default function AdminDashboard({
         page: 1, total: paymentsTotal, loading: false, error: null,
     })
 
-    // Per-row validate/reject state: key = userId
     const [actionState, setActionState] = useState<Record<string, {
         loading: boolean
         error: string | null
@@ -286,7 +222,6 @@ export default function AdminDashboard({
                 ...s,
                 [userId]: { loading: false, error: null, done: true, result },
             }))
-            // Update the user row's profile status in the local state
             setUsers(prev => prev.map(u =>
                 u.id === userId && u.profile
                     ? { ...u, profile: { ...u.profile, status: result } }
@@ -304,22 +239,24 @@ export default function AdminDashboard({
     // ── Tab styles ───────────────────────────────────────────────────────────
 
     function tabClass(tab: Tab) {
-        const base = 'px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer'
+        const base = '-mb-px cursor-pointer border-b-2 px-4 py-3 font-cinsans text-sm font-medium transition-colors'
         return activeTab === tab
-            ? `${base} border-[#004aad] text-[#004aad]`
-            : `${base} border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300`
+            ? `${base} border-blue text-blue`
+            : `${base} border-transparent text-ink2 hover:text-ink`
     }
 
     // ── Render ───────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 py-8">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6">Administration</h1>
+        <div className="min-h-screen bg-white">
+            <div className="mx-auto max-w-cin px-5 py-10 md:px-12 md:py-14">
+                <h1 className="mb-8 font-display text-[44px] font-extrabold leading-[0.95] tracking-[-0.04em] text-ink md:text-[56px]">
+                    Administration
+                </h1>
 
                 {/* Tabs */}
-                <div className="border-b border-gray-200 mb-6">
-                    <nav className="flex gap-0 -mb-px">
+                <div className="mb-8 border-b border-rule">
+                    <nav className="flex gap-0">
                         <button className={tabClass('users')} onClick={() => setActiveTab('users')}>
                             Utilisateurs
                         </button>
@@ -335,21 +272,17 @@ export default function AdminDashboard({
                 {/* Users Tab */}
                 {activeTab === 'users' && (
                     <div>
-                        {usersPagination.error && (
-                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-                                {usersPagination.error}
-                            </div>
-                        )}
+                        {usersPagination.error && <div className={ALERT_CLASS}>{usersPagination.error}</div>}
                         <div className={`overflow-x-auto transition-opacity ${usersPagination.loading ? 'opacity-50' : 'opacity-100'}`}>
-                            <table className="w-full text-sm text-left border-collapse">
+                            <table className="w-full border-collapse">
                                 <thead>
-                                    <tr className="border-b border-gray-200 bg-gray-50">
-                                        <th className="px-4 py-3 font-medium text-gray-600">Email</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Rôle</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Statut profil</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">SIRET</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Date d&apos;inscription</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Actions</th>
+                                    <tr className="border-b border-rule">
+                                        <th className={TH_CLASS}>Email</th>
+                                        <th className={TH_CLASS}>Rôle</th>
+                                        <th className={TH_CLASS}>Statut profil</th>
+                                        <th className={TH_CLASS}>SIRET</th>
+                                        <th className={TH_CLASS}>Date d&apos;inscription</th>
+                                        <th className={TH_CLASS}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -364,41 +297,37 @@ export default function AdminDashboard({
                                             !state?.done
 
                                         return (
-                                            <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                                <td className="px-4 py-3 text-gray-900 max-w-[200px] truncate">{u.email}</td>
-                                                <td className="px-4 py-3">
-                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-medium">
-                                                        {u.role}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3">
+                                            <tr key={u.id} className={TR_CLASS}>
+                                                <td className={`${TD_CLASS} max-w-[200px] truncate`}>{u.email}</td>
+                                                <td className={TD_CLASS}><RoleBadge role={u.role} /></td>
+                                                <td className={TD_CLASS}>
                                                     <ProfileStatusBadge status={profileStatus as ProfileStatus | null} />
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-600 font-mono text-xs">
+                                                <td className={`${TD_CLASS} font-mono text-xs text-ink2`}>
                                                     {u.profile?.siret ?? '—'}
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-600">{formatDate(u.createdAt)}</td>
-                                                <td className="px-4 py-3">
+                                                <td className={`${TD_CLASS} text-ink2`}>{formatDate(u.createdAt)}</td>
+                                                <td className={TD_CLASS}>
                                                     {showActions && (
-                                                        <div className="flex gap-2 flex-wrap">
+                                                        <div className="flex flex-wrap gap-2">
                                                             <button
                                                                 onClick={() => handleProfileAction(u.id, 'validate')}
                                                                 disabled={state?.loading}
-                                                                className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                                className="rounded-lg bg-ink px-3 py-1.5 font-cinsans text-xs font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                                                             >
-                                                                {state?.loading ? 'En cours…' : 'Valider le profil'}
+                                                                {state?.loading ? 'En cours…' : 'Valider'}
                                                             </button>
                                                             <button
                                                                 onClick={() => handleProfileAction(u.id, 'reject')}
                                                                 disabled={state?.loading}
-                                                                className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                                className="rounded-lg border-[1.5px] border-red-300 bg-white px-3 py-1.5 font-cinsans text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
                                                             >
-                                                                {state?.loading ? 'En cours…' : 'Rejeter le profil'}
+                                                                {state?.loading ? 'En cours…' : 'Rejeter'}
                                                             </button>
                                                         </div>
                                                     )}
                                                     {state?.error && (
-                                                        <p className="text-xs text-red-600 mt-1">{state.error}</p>
+                                                        <p className="mt-1 text-xs text-red-700">{state.error}</p>
                                                     )}
                                                 </td>
                                             </tr>
@@ -421,41 +350,37 @@ export default function AdminDashboard({
                 {/* Bookings Tab */}
                 {activeTab === 'bookings' && (
                     <div>
-                        {bookingsPagination.error && (
-                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-                                {bookingsPagination.error}
-                            </div>
-                        )}
+                        {bookingsPagination.error && <div className={ALERT_CLASS}>{bookingsPagination.error}</div>}
                         <div className={`overflow-x-auto transition-opacity ${bookingsPagination.loading ? 'opacity-50' : 'opacity-100'}`}>
-                            <table className="w-full text-sm text-left border-collapse">
+                            <table className="w-full border-collapse">
                                 <thead>
-                                    <tr className="border-b border-gray-200 bg-gray-50">
-                                        <th className="px-4 py-3 font-medium text-gray-600">ID</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Client</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Laveur</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Service</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Montant</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Statut</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Date planifiée</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Actions</th>
+                                    <tr className="border-b border-rule">
+                                        <th className={TH_CLASS}>ID</th>
+                                        <th className={TH_CLASS}>Client</th>
+                                        <th className={TH_CLASS}>Laveur</th>
+                                        <th className={TH_CLASS}>Service</th>
+                                        <th className={TH_CLASS}>Montant</th>
+                                        <th className={TH_CLASS}>Statut</th>
+                                        <th className={TH_CLASS}>Date planifiée</th>
+                                        <th className={TH_CLASS}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {bookings.map((b) => (
-                                        <tr key={b.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                            <td className="px-4 py-3 font-mono text-xs text-gray-500">{b.id.slice(0, 8)}</td>
-                                            <td className="px-4 py-3 text-gray-700 max-w-[180px] truncate">{b.clientEmail}</td>
-                                            <td className="px-4 py-3 text-gray-600 max-w-[180px] truncate">{b.laveurEmail ?? 'Non assigné'}</td>
-                                            <td className="px-4 py-3 text-gray-700">{b.serviceName}</td>
-                                            <td className="px-4 py-3 text-gray-700">{b.amountEur.toFixed(2)} €</td>
-                                            <td className="px-4 py-3"><BookingStatusBadge status={b.status} /></td>
-                                            <td className="px-4 py-3 text-gray-600">{formatDate(b.scheduledDate)}</td>
-                                            <td className="px-4 py-3">
+                                        <tr key={b.id} className={TR_CLASS}>
+                                            <td className={`${TD_CLASS} font-mono text-xs text-ink2/70`}>{b.id.slice(0, 8)}</td>
+                                            <td className={`${TD_CLASS} max-w-[180px] truncate text-ink2`}>{b.clientEmail}</td>
+                                            <td className={`${TD_CLASS} max-w-[180px] truncate text-ink2`}>{b.laveurEmail ?? 'Non assigné'}</td>
+                                            <td className={`${TD_CLASS} text-ink2`}>{b.serviceName}</td>
+                                            <td className={`${TD_CLASS} font-display font-semibold`}>{b.amountEur.toFixed(2)} €</td>
+                                            <td className={TD_CLASS}><BookingStatusBadge status={b.status} /></td>
+                                            <td className={`${TD_CLASS} text-ink2`}>{formatDate(b.scheduledDate)}</td>
+                                            <td className={TD_CLASS}>
                                                 <Link
                                                     href={`/admin/bookings/${b.id}`}
-                                                    className="text-xs text-[#004aad] hover:underline font-medium"
+                                                    className="font-cinsans text-xs font-semibold text-blue hover:underline"
                                                 >
-                                                    Voir détail
+                                                    Voir détail →
                                                 </Link>
                                             </td>
                                         </tr>
@@ -477,36 +402,32 @@ export default function AdminDashboard({
                 {/* Payments Tab */}
                 {activeTab === 'payments' && (
                     <div>
-                        {paymentsPagination.error && (
-                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-                                {paymentsPagination.error}
-                            </div>
-                        )}
+                        {paymentsPagination.error && <div className={ALERT_CLASS}>{paymentsPagination.error}</div>}
                         <div className={`overflow-x-auto transition-opacity ${paymentsPagination.loading ? 'opacity-50' : 'opacity-100'}`}>
-                            <table className="w-full text-sm text-left border-collapse">
+                            <table className="w-full border-collapse">
                                 <thead>
-                                    <tr className="border-b border-gray-200 bg-gray-50">
-                                        <th className="px-4 py-3 font-medium text-gray-600">ID</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Réservation</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Utilisateur</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Montant</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Statut</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Session Stripe</th>
-                                        <th className="px-4 py-3 font-medium text-gray-600">Date</th>
+                                    <tr className="border-b border-rule">
+                                        <th className={TH_CLASS}>ID</th>
+                                        <th className={TH_CLASS}>Réservation</th>
+                                        <th className={TH_CLASS}>Utilisateur</th>
+                                        <th className={TH_CLASS}>Montant</th>
+                                        <th className={TH_CLASS}>Statut</th>
+                                        <th className={TH_CLASS}>Session Stripe</th>
+                                        <th className={TH_CLASS}>Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {payments.map((p) => (
-                                        <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                            <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.id.slice(0, 8)}</td>
-                                            <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.bookingId.slice(0, 8)}</td>
-                                            <td className="px-4 py-3 text-gray-700 max-w-[180px] truncate">{p.userEmail}</td>
-                                            <td className="px-4 py-3 text-gray-700">{p.amountEur.toFixed(2)} €</td>
-                                            <td className="px-4 py-3"><PaymentStatusBadge status={p.status} /></td>
-                                            <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                                        <tr key={p.id} className={TR_CLASS}>
+                                            <td className={`${TD_CLASS} font-mono text-xs text-ink2/70`}>{p.id.slice(0, 8)}</td>
+                                            <td className={`${TD_CLASS} font-mono text-xs text-ink2/70`}>{p.bookingId.slice(0, 8)}</td>
+                                            <td className={`${TD_CLASS} max-w-[180px] truncate text-ink2`}>{p.userEmail}</td>
+                                            <td className={`${TD_CLASS} font-display font-semibold`}>{p.amountEur.toFixed(2)} €</td>
+                                            <td className={TD_CLASS}><PaymentStatusBadge status={p.status} /></td>
+                                            <td className={`${TD_CLASS} font-mono text-xs text-ink2/70`}>
                                                 {p.stripeSessionId ? truncate(p.stripeSessionId, 16) : '—'}
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600">{formatDate(p.createdAt)}</td>
+                                            <td className={`${TD_CLASS} text-ink2`}>{formatDate(p.createdAt)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
