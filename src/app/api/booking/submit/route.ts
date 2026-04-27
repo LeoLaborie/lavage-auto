@@ -14,7 +14,22 @@ import { createSetupCheckoutSession, getOrCreateStripeCustomer } from '@/lib/str
 export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
   const body = await (req as NextRequest).json()
 
-  const { service, date, time, address, notes, make, model, licensePlate, carId, phone, firstName, lastName } = body
+  const {
+    service,
+    date,
+    time,
+    address,
+    notes,
+    make,
+    model,
+    licensePlate,
+    carId,
+    phone,
+    firstName,
+    lastName,
+    serviceLat,
+    serviceLng,
+  } = body
 
   // --- Validation ---
 
@@ -63,6 +78,26 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
       { success: false, error: 'Veuillez fournir une adresse valide.' },
       { status: 400 }
     )
+  }
+
+  // --- Optional coordinate validation ---
+  let validatedLat: number | null = null
+  let validatedLng: number | null = null
+  if (serviceLat != null && serviceLng != null) {
+    if (
+      typeof serviceLat !== 'number' ||
+      typeof serviceLng !== 'number' ||
+      serviceLat < -90 || serviceLat > 90 ||
+      serviceLng < -180 || serviceLng > 180 ||
+      Number.isNaN(serviceLat) || Number.isNaN(serviceLng)
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'Coordonnées GPS invalides.' },
+        { status: 400 }
+      )
+    }
+    validatedLat = serviceLat
+    validatedLng = serviceLng
   }
 
   // --- Rate limit: reject if last booking was created < 10s ago ---
@@ -184,6 +219,8 @@ export const POST = withClientGuard(async (req: Request, _authUser, dbUser) => {
     amountCents,
     scheduledDate,
     serviceAddress: address.trim(),
+    serviceLat: validatedLat,
+    serviceLng: validatedLng,
     accessNotes: finalAccessNotes || null,
     status: 'PENDING',
     ...(validatedCarId && { carId: validatedCarId }),
