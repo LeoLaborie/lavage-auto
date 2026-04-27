@@ -3,6 +3,7 @@ import { withWasherGuard } from '@/lib/auth/washerGuard'
 import { prisma } from '@/lib/prisma'
 import { services } from '@/lib/constants/services'
 import { computeCommission, getCurrentCommissionRate } from '@/lib/constants/commission'
+import { geocodeAddress } from '@/lib/geocoding'
 
 const durationMap = new Map<string, number>(
     services.map(s => [s.name, s.estimatedDuration ?? 60])
@@ -34,6 +35,30 @@ export const GET = withWasherGuard(async (req, user, profile) => {
         getCurrentCommissionRate(),
     ])
 
+    // --- Lazy backfill: persist coords for legacy bookings ---
+    const needsBackfill = bookings.filter((b) => b.serviceLat == null || b.serviceLng == null)
+    if (needsBackfill.length > 0) {
+        const updates = await Promise.all(
+            needsBackfill.map(async (b) => {
+                const coords = await geocodeAddress(b.serviceAddress)
+                if (!coords) return null
+                await prisma.booking.update({
+                    where: { id: b.id },
+                    data: { serviceLat: coords.lat, serviceLng: coords.lng },
+                })
+                return { id: b.id, ...coords }
+            })
+        )
+        for (const u of updates) {
+            if (!u) continue
+            const target = bookings.find((b) => b.id === u.id)
+            if (target) {
+                target.serviceLat = u.lat
+                target.serviceLng = u.lng
+            }
+        }
+    }
+
     const mapped = bookings.map((booking) => {
         const clientProfile = booking.client?.profile
         const { netAmountCents, commissionCents } = computeCommission(booking.amountCents, currentRate)
@@ -41,6 +66,8 @@ export const GET = withWasherGuard(async (req, user, profile) => {
             id: booking.id,
             scheduledDate: booking.scheduledDate.toISOString(),
             serviceAddress: booking.serviceAddress,
+            serviceLat: booking.serviceLat ?? null,
+            serviceLng: booking.serviceLng ?? null,
             finalPrice: Number((booking.amountCents / 100).toFixed(2)),
             grossAmountCents: booking.amountCents,
             netAmountCents,
