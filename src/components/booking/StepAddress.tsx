@@ -1,17 +1,39 @@
-import AddressAutocomplete from '@/components/AddressAutocomplete';
+'use client'
+
+import dynamic from 'next/dynamic'
+import AddressAutocomplete from '@/components/AddressAutocomplete'
+import MapSkeleton from '@/components/Map/MapSkeleton'
+
+const AddressMap = dynamic(() => import('@/components/Map/AddressMap'), {
+  ssr: false,
+  loading: () => <MapSkeleton height={240} />,
+})
 
 interface StepAddressProps {
-  address: string;
-  setAddress: (address: string) => void;
-  addressError: string;
-  setAddressError: (error: string) => void;
-  handleBack: () => void;
-  handleNext: () => void;
+  address: string
+  setAddress: (address: string) => void
+  serviceLat: number | null
+  serviceLng: number | null
+  setCoords: (coords: { lat: number; lng: number } | null) => void
+  addressError: string
+  setAddressError: (error: string) => void
+  handleBack: () => void
+  handleNext: () => void
 }
 
 export default function StepAddress({
-  address, setAddress, addressError, setAddressError, handleBack, handleNext
+  address,
+  setAddress,
+  serviceLat,
+  serviceLng,
+  setCoords,
+  addressError,
+  setAddressError,
+  handleBack,
+  handleNext,
 }: StepAddressProps) {
+  const hasCoords = serviceLat != null && serviceLng != null
+
   return (
     <div className="animate-fade-in-up">
       <div className="mb-6 md:mb-8">
@@ -30,10 +52,11 @@ export default function StepAddress({
         <div className={addressError ? 'animate-shake' : ''}>
           <AddressAutocomplete
             value={address}
-            onAddressSelect={(selectedAddress) => {
-              setAddress(selectedAddress);
+            onAddressSelect={(selectedAddress, selectedCoords) => {
+              setAddress(selectedAddress)
+              setCoords(selectedCoords ?? null)
               if (addressError) {
-                setAddressError('');
+                setAddressError('')
               }
             }}
           />
@@ -46,6 +69,25 @@ export default function StepAddress({
         <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/60">
           Numéro · rue · code postal · ville
         </p>
+
+        {hasCoords && (
+          <div className="mt-6">
+            <AddressMap
+              address={address}
+              lat={serviceLat}
+              lng={serviceLng}
+              draggable
+              height={240}
+              onPositionChange={(coords) => setCoords(coords)}
+            />
+            <p
+              data-testid="map-hint"
+              className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-ink2/60"
+            >
+              Glissez le repère si la position n&apos;est pas exacte.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mt-10 flex flex-col-reverse items-stretch gap-3 border-t border-rule pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -66,5 +108,5 @@ export default function StepAddress({
         </button>
       </div>
     </div>
-  );
+  )
 }
