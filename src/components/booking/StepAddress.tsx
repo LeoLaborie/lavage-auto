@@ -1,8 +1,10 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import MapSkeleton from '@/components/Map/MapSkeleton'
+import { geocodeAddress } from '@/lib/geocoding'
 
 const AddressMap = dynamic(() => import('@/components/Map/AddressMap'), {
   ssr: false,
@@ -33,6 +35,42 @@ export default function StepAddress({
   handleNext,
 }: StepAddressProps) {
   const hasCoords = serviceLat != null && serviceLng != null
+  const [isGeocoding, setIsGeocoding] = useState(false)
+  const [geocodeFailed, setGeocodeFailed] = useState(false)
+  const requestIdRef = useRef(0)
+
+  useEffect(() => {
+    setGeocodeFailed(false)
+
+    if (hasCoords || !address.trim() || address.trim().length < 3) {
+      setIsGeocoding(false)
+      return
+    }
+
+    const id = ++requestIdRef.current
+    setIsGeocoding(true)
+
+    const handle = setTimeout(async () => {
+      const coords = await geocodeAddress(address)
+      if (id !== requestIdRef.current) return
+      if (coords) {
+        setCoords(coords)
+        setGeocodeFailed(false)
+      } else {
+        setGeocodeFailed(true)
+      }
+      setIsGeocoding(false)
+    }, 600)
+
+    return () => {
+      clearTimeout(handle)
+    }
+    // setCoords identity changes each render; intentionally excluded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, hasCoords])
+
+  const showMapZone = address.trim().length > 0
+  const continueDisabled = !address || !hasCoords
 
   return (
     <div className="animate-fade-in-up">
@@ -70,21 +108,31 @@ export default function StepAddress({
           Numéro · rue · code postal · ville
         </p>
 
-        {hasCoords && (
+        {showMapZone && (
           <div className="mt-6">
-            <AddressMap
-              address={address}
-              lat={serviceLat}
-              lng={serviceLng}
-              draggable
-              height={240}
-              onPositionChange={(coords) => setCoords(coords)}
-            />
+            {isGeocoding && !hasCoords ? (
+              <MapSkeleton height={240} />
+            ) : (
+              <AddressMap
+                address={address}
+                lat={serviceLat}
+                lng={serviceLng}
+                draggable
+                height={240}
+                onPositionChange={(coords) => setCoords(coords)}
+              />
+            )}
             <p
               data-testid="map-hint"
               className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-ink2/60"
             >
-              Glissez le repère si la position n&apos;est pas exacte.
+              {hasCoords
+                ? "Glissez le repère si la position n'est pas exacte."
+                : isGeocoding
+                ? 'Recherche de la position…'
+                : geocodeFailed
+                ? "Adresse introuvable. Précisez le numéro, la rue, le code postal."
+                : 'Continuez de saisir votre adresse.'}
             </p>
           </div>
         )}
@@ -101,7 +149,7 @@ export default function StepAddress({
         <button
           type="button"
           onClick={handleNext}
-          disabled={!address}
+          disabled={continueDisabled}
           className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-ink px-7 py-3.5 font-cinsans text-[14px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
         >
           Continuer <span aria-hidden>→</span>
