@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { AppleEmoji } from '@/components/AppleEmoji'
+import { Icon } from '@/components/ui/Icon'
 
 import { startStripeOnboarding } from '@/lib/actions/washer-stripe'
 import PhotoUploader from '@/components/features/laveur/PhotoUploader'
@@ -378,7 +378,7 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
 
                             <div className="mt-6 flex items-start gap-4 rounded-[16px] border border-rule bg-blue-wash p-5">
                                 <div className="shrink-0 rounded-[14px] bg-white p-2 shadow-cin-card">
-                                    <AppleEmoji name="bank" className="h-6 w-6" />
+                                    <Icon name="bank" className="h-6 w-6 text-ink" />
                                 </div>
                                 <div className="min-w-0">
                                     <p className="font-display text-[15px] font-bold tracking-[-0.02em] text-ink md:text-[17px]">
@@ -449,17 +449,6 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                         </div>
                                     </div>
                                 )}
-                                {earnings && (
-                                    <p className="mt-4 text-xs text-ink2/70">
-                                        Commission plateforme prélevée à ce jour&nbsp;:{' '}
-                                        <span className="font-display font-semibold text-ink">
-                                            {formatEuros(earnings.totalCommissionCents)}
-                                        </span>
-                                        {earnings.currentCommissionRate != null && (
-                                            <> · Taux actuel&nbsp;: {(earnings.currentCommissionRate * 100).toFixed(1)}%</>
-                                        )}
-                                    </p>
-                                )}
                             </div>
                         </div>
                     ) : (
@@ -517,16 +506,16 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                         </h3>
                                                         <div className="flex flex-wrap items-center gap-3 text-sm text-ink2 sm:gap-4">
                                                             <span className="inline-flex items-center gap-1.5">
-                                                                <AppleEmoji name="car" className="h-4 w-4" />
+                                                                <Icon name="car" className="h-4 w-4" />
                                                                 {mission.car.model}
                                                             </span>
                                                             <span className="inline-flex items-center gap-1.5">
-                                                                <AppleEmoji name="clock" className="h-4 w-4" />
+                                                                <Icon name="clock" className="h-4 w-4" />
                                                                 {mission.service.estimatedDuration} min
                                                             </span>
                                                             {activeTab === 'accepted' && (
                                                                 <span className="inline-flex items-center gap-1.5 text-blue">
-                                                                    <AppleEmoji name="bust_in_silhouette" className="h-4 w-4" />
+                                                                    <Icon name="user" className="h-4 w-4" />
                                                                     {mission.customer.name}
                                                                 </span>
                                                             )}

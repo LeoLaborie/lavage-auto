@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { AppleEmoji } from '@/components/AppleEmoji'
+import { Icon } from '@/components/ui/Icon'
 import VehicleForm from '@/components/features/dashboard/VehicleForm'
 import VehicleList from '@/components/features/dashboard/VehicleList'
 import MissionValidationCard from '@/components/features/dashboard/MissionValidationCard'
@@ -210,7 +210,7 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
                                                         })}
                                                     </p>
                                                     <p className="mt-1 flex items-center gap-1.5 text-sm text-ink2">
-                                                        <AppleEmoji name="car" className="inline h-4 w-4" />
+                                                        <Icon name="car" className="h-4 w-4" />
                                                         {booking.car.make} {booking.car.model}
                                                     </p>
                                                     {booking.assignment && (

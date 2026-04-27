@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
-export const DEFAULT_COMMISSION_RATE = new Prisma.Decimal('0.1500')
+export const DEFAULT_COMMISSION_RATE = new Prisma.Decimal('0.0000')
 
 /**
  * Reads the current platform commission rate from DB.
