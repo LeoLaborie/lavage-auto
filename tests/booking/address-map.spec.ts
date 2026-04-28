@@ -73,6 +73,34 @@ test.describe('Booking address map', () => {
         await expect(page.getByTestId('map-hint')).toBeVisible()
     })
 
+    test('shows escape hatch and proceeds when BAN cannot geocode', async ({ page }) => {
+        // Override the BAN mock for this test: simulate a no-result response.
+        await page.unroute('**/api-adresse.data.gouv.fr/**')
+        await page.route('**/api-adresse.data.gouv.fr/**', async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ type: 'FeatureCollection', features: [] }),
+            })
+        })
+
+        const input = page.getByPlaceholder('Saisissez votre adresse')
+        await input.fill('zzzzzzz 9999 nowhere')
+
+        // No suggestion to pick — wait for the debounced fallback geocode to fail.
+        // Hint text switches to the "Adresse introuvable…" copy and the secondary
+        // button surfaces.
+        const escapeButton = page.getByTestId('continue-without-map')
+        await expect(escapeButton).toBeVisible({ timeout: 8000 })
+
+        await escapeButton.click()
+
+        // Step 3 (schedule) should now be visible.
+        await expect(page.getByText(/créneau|horaire|date/i).first()).toBeVisible({
+            timeout: 5000,
+        })
+    })
+
     test.fixme('drag of marker updates submit payload', async () => {
         // Requires an authenticated CLIENT fixture to reach the submit endpoint.
         // Once that infrastructure exists, drag the marker, complete the wizard,
