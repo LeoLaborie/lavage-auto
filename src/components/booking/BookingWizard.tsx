@@ -16,7 +16,7 @@ import { Service, UserCar, BookingFormData, getServiceById } from './constants';
 
 const CANONICAL_SERVICE_KEY = 'booking_service_id';
 const STORAGE_VERSION_KEY = 'booking_storage_version';
-const STORAGE_VERSION = '2';
+const STORAGE_VERSION = '3';
 const BOOKING_STATE_KEYS = [
   'booking_service',
   CANONICAL_SERVICE_KEY,
@@ -27,6 +27,8 @@ const BOOKING_STATE_KEYS = [
   'booking_step',
   'booking_selected_car_id',
   'booking_is_new_car',
+  'booking_service_lat',
+  'booking_service_lng',
 ];
 
 const createEmptyCustomerInfo = (): BookingFormData => ({
@@ -82,6 +84,22 @@ export default function BookingWizard() {
   const [selectedDate, setSelectedDate] = useState(() => readStoredString('booking_date'));
   const [selectedTime, setSelectedTime] = useState(() => readStoredString('booking_time'));
   const [address, setAddress] = useState(() => readStoredString('booking_address'));
+  const [serviceLat, setServiceLat] = useState<number | null>(() => {
+    if (typeof window === 'undefined' || !isStorageVersionCurrent()) return null;
+    const raw = localStorage.getItem('booking_service_lat');
+    return raw ? Number(raw) : null;
+  });
+  const [serviceLng, setServiceLng] = useState<number | null>(() => {
+    if (typeof window === 'undefined' || !isStorageVersionCurrent()) return null;
+    const raw = localStorage.getItem('booking_service_lng');
+    return raw ? Number(raw) : null;
+  });
+
+  const setCoords = (coords: { lat: number; lng: number } | null) => {
+    setServiceLat(coords?.lat ?? null);
+    setServiceLng(coords?.lng ?? null);
+  };
+
   const { user } = useAuth();
   const { toast } = useToast();
   const [customerInfo, setCustomerInfo] = useState<BookingFormData>(readStoredCustomerInfo);
@@ -225,6 +243,16 @@ export default function BookingWizard() {
     else localStorage.removeItem('booking_address');
   }, [address]);
 
+  useEffect(() => {
+    if (serviceLat != null) localStorage.setItem('booking_service_lat', String(serviceLat));
+    else localStorage.removeItem('booking_service_lat');
+  }, [serviceLat]);
+
+  useEffect(() => {
+    if (serviceLng != null) localStorage.setItem('booking_service_lng', String(serviceLng));
+    else localStorage.removeItem('booking_service_lng');
+  }, [serviceLng]);
+
   useEffect(() => localStorage.setItem('booking_customer_info', JSON.stringify(customerInfo)), [customerInfo]);
 
   useEffect(() => localStorage.setItem('booking_step', currentStep.toString()), [currentStep]);
@@ -324,6 +352,8 @@ export default function BookingWizard() {
         date: selectedDate,
         time: selectedTime,
         address,
+        serviceLat,
+        serviceLng,
         ...customerInfo
       };
 
@@ -447,6 +477,9 @@ export default function BookingWizard() {
           <StepAddress
             address={address}
             setAddress={setAddress}
+            serviceLat={serviceLat}
+            serviceLng={serviceLng}
+            setCoords={setCoords}
             addressError={addressError}
             setAddressError={setAddressError}
             handleBack={handleBack}

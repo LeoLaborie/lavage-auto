@@ -1,17 +1,77 @@
-import AddressAutocomplete from '@/components/AddressAutocomplete';
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
+import AddressAutocomplete from '@/components/AddressAutocomplete'
+import MapSkeleton from '@/components/Map/MapSkeleton'
+import { geocodeAddress } from '@/lib/geocoding'
+
+const AddressMap = dynamic(() => import('@/components/Map/AddressMap'), {
+  ssr: false,
+  loading: () => <MapSkeleton height={240} />,
+})
 
 interface StepAddressProps {
-  address: string;
-  setAddress: (address: string) => void;
-  addressError: string;
-  setAddressError: (error: string) => void;
-  handleBack: () => void;
-  handleNext: () => void;
+  address: string
+  setAddress: (address: string) => void
+  serviceLat: number | null
+  serviceLng: number | null
+  setCoords: (coords: { lat: number; lng: number } | null) => void
+  addressError: string
+  setAddressError: (error: string) => void
+  handleBack: () => void
+  handleNext: () => void
 }
 
 export default function StepAddress({
-  address, setAddress, addressError, setAddressError, handleBack, handleNext
+  address,
+  setAddress,
+  serviceLat,
+  serviceLng,
+  setCoords,
+  addressError,
+  setAddressError,
+  handleBack,
+  handleNext,
 }: StepAddressProps) {
+  const hasCoords = serviceLat != null && serviceLng != null
+  const [isGeocoding, setIsGeocoding] = useState(false)
+  const [geocodeFailed, setGeocodeFailed] = useState(false)
+  const requestIdRef = useRef(0)
+
+  useEffect(() => {
+    setGeocodeFailed(false)
+
+    if (hasCoords || !address.trim() || address.trim().length < 3) {
+      setIsGeocoding(false)
+      return
+    }
+
+    const id = ++requestIdRef.current
+    setIsGeocoding(true)
+
+    const handle = setTimeout(async () => {
+      const coords = await geocodeAddress(address)
+      if (id !== requestIdRef.current) return
+      if (coords) {
+        setCoords(coords)
+        setGeocodeFailed(false)
+      } else {
+        setGeocodeFailed(true)
+      }
+      setIsGeocoding(false)
+    }, 600)
+
+    return () => {
+      clearTimeout(handle)
+    }
+    // setCoords identity changes each render; intentionally excluded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, hasCoords])
+
+  const showMapZone = address.trim().length > 0
+  const continueDisabled = !address || !hasCoords
+
   return (
     <div className="animate-fade-in-up">
       <div className="mb-6 md:mb-8">
@@ -30,10 +90,11 @@ export default function StepAddress({
         <div className={addressError ? 'animate-shake' : ''}>
           <AddressAutocomplete
             value={address}
-            onAddressSelect={(selectedAddress) => {
-              setAddress(selectedAddress);
+            onAddressSelect={(selectedAddress, selectedCoords) => {
+              setAddress(selectedAddress)
+              setCoords(selectedCoords ?? null)
               if (addressError) {
-                setAddressError('');
+                setAddressError('')
               }
             }}
           />
@@ -46,6 +107,35 @@ export default function StepAddress({
         <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.08em] text-ink2/60">
           Numéro · rue · code postal · ville
         </p>
+
+        {showMapZone && (
+          <div className="mt-6">
+            {isGeocoding && !hasCoords ? (
+              <MapSkeleton height={240} />
+            ) : (
+              <AddressMap
+                address={address}
+                lat={serviceLat}
+                lng={serviceLng}
+                draggable
+                height={240}
+                onPositionChange={(coords) => setCoords(coords)}
+              />
+            )}
+            <p
+              data-testid="map-hint"
+              className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-ink2/60"
+            >
+              {hasCoords
+                ? "Glissez le repère si la position n'est pas exacte."
+                : isGeocoding
+                ? 'Recherche de la position…'
+                : geocodeFailed
+                ? "Adresse introuvable. Précisez l'adresse, ou continuez sans carte (le laveur recevra l'adresse seule)."
+                : 'Continuez de saisir votre adresse.'}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mt-10 flex flex-col-reverse items-stretch gap-3 border-t border-rule pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -56,15 +146,27 @@ export default function StepAddress({
         >
           <span aria-hidden>←</span> Retour
         </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!address}
-          className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-ink px-7 py-3.5 font-cinsans text-[14px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-        >
-          Continuer <span aria-hidden>→</span>
-        </button>
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          {address && !hasCoords && geocodeFailed && (
+            <button
+              type="button"
+              onClick={handleNext}
+              data-testid="continue-without-map"
+              className="inline-flex items-center justify-center rounded-[10px] border border-rule bg-transparent px-5 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2 transition-colors hover:border-ink hover:text-ink"
+            >
+              Continuer sans carte
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={continueDisabled}
+            className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-ink px-7 py-3.5 font-cinsans text-[14px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+          >
+            Continuer <span aria-hidden>→</span>
+          </button>
+        </div>
       </div>
     </div>
-  );
+  )
 }

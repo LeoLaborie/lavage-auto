@@ -1,8 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
 
+interface Coords {
+  lat: number
+  lng: number
+}
+
 interface Props {
-  onAddressSelect: (address: string) => void
+  onAddressSelect: (address: string, coords?: Coords) => void
   value?: string
 }
 
@@ -14,6 +19,10 @@ interface AddressFeature {
     postcode?: string
     city?: string
     name?: string
+  }
+  geometry?: {
+    type?: string
+    coordinates?: [number, number] // [lng, lat]
   }
 }
 
@@ -112,13 +121,19 @@ export default function AddressAutocomplete({ onAddressSelect, value = '' }: Pro
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
     setInput(newValue)
-    onAddressSelect(newValue)
+    // Saisie libre : pas de coords. Le call-site doit reset coords à undefined.
+    onAddressSelect(newValue, undefined)
     getSuggestions(newValue)
   }
 
-  const handleSelect = (address: string) => {
-    setInput(address)
-    onAddressSelect(address)
+  const handleSelect = (feature: AddressFeature) => {
+    const label = feature.properties.label
+    const coords =
+      feature.geometry?.coordinates && feature.geometry.coordinates.length === 2
+        ? { lng: feature.geometry.coordinates[0], lat: feature.geometry.coordinates[1] }
+        : undefined
+    setInput(label)
+    onAddressSelect(label, coords)
     setShowSuggestions(false)
   }
 
@@ -169,7 +184,7 @@ export default function AddressAutocomplete({ onAddressSelect, value = '' }: Pro
               aria-selected={false}
             >
               <button
-                onClick={() => handleSelect(suggestion.properties.label)}
+                onClick={() => handleSelect(suggestion)}
                 className="w-full px-4 py-3 hover:bg-blue-wash cursor-pointer text-left border-b border-rule last:border-b-0 focus:outline-none focus:bg-blue-wash"
               >
                 <span className="font-cinsans text-sm text-ink">{suggestion.properties.label}</span>

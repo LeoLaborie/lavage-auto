@@ -3,6 +3,7 @@ import { withWasherGuard } from '@/lib/auth/washerGuard'
 import { prisma } from '@/lib/prisma'
 import { services } from '@/lib/constants/services'
 import { computeCommission, getCurrentCommissionRate } from '@/lib/constants/commission'
+import { geocodeAddressesLimited } from '@/lib/geocoding'
 
 // Static catalog — safe to cache at module level because services.ts is a hardcoded constant.
 // If this ever moves to a DB source, move this Map inside the handler to avoid stale cache.
@@ -38,6 +39,34 @@ export const GET = withWasherGuard(async (_req, _user, profile) => {
             getCurrentCommissionRate(),
         ])
 
+        // Lazy backfill: persist coords for legacy bookings.
+        // Bounded concurrency + try/catch keep the response resilient if BAN/Prisma fail.
+        const needsBackfill = bookings.filter((b) => b.serviceLat == null || b.serviceLng == null)
+        if (needsBackfill.length > 0) {
+            try {
+                const coordsMap = await geocodeAddressesLimited(needsBackfill, 5)
+                if (coordsMap.size > 0) {
+                    await Promise.all(
+                        Array.from(coordsMap, ([id, c]) =>
+                            prisma.booking.update({
+                                where: { id },
+                                data: { serviceLat: c.lat, serviceLng: c.lng },
+                            })
+                        )
+                    )
+                    for (const b of bookings) {
+                        const c = coordsMap.get(b.id)
+                        if (c) {
+                            b.serviceLat = c.lat
+                            b.serviceLng = c.lng
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('[accepted] Backfill failed, serving without coords:', err)
+            }
+        }
+
         const mapped = bookings.map((booking) => {
             const clientProfile = booking.client?.profile
             const { netAmountCents, commissionCents } = computeCommission(booking.amountCents, currentRate)
@@ -47,6 +76,8 @@ export const GET = withWasherGuard(async (_req, _user, profile) => {
                 status: booking.status,
                 scheduledDate: booking.scheduledDate.toISOString(),
                 serviceAddress: booking.serviceAddress,
+                serviceLat: booking.serviceLat ?? null,
+                serviceLng: booking.serviceLng ?? null,
                 // Store amountCents in DB; convert to euros with 2-decimal precision for display.
                 finalPrice: Number((booking.amountCents / 100).toFixed(2)),
                 grossAmountCents: booking.amountCents,

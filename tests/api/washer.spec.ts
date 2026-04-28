@@ -96,6 +96,18 @@ test.describe('Washer API Endpoints Protection', () => {
             // TODO: Authenticate as a VALIDATED laveur, send { isAvailable: false }
             // TODO: Expect 200 OK, success: true, data: { isAvailable: false }
         });
+
+        test.skip('backfills missing serviceLat/serviceLng on missions/available — requires auth fixture', async ({ request }) => {
+            // TODO: Once an authenticated VALIDATED laveur fixture is wired, this test should:
+            //   1. Use prisma to create a Booking with status PENDING and serviceAddress = '8 boulevard du Port, 95000 Cergy',
+            //      explicitly leaving serviceLat/serviceLng as null.
+            //   2. GET /api/washer/missions/available.
+            //   3. Assert the response includes the booking with serviceLat ≈ 49.038 and serviceLng ≈ 2.076.
+            //   4. Assert the DB row has been updated (booking.serviceLat / serviceLng now non-null).
+            //   5. Cleanup: delete the test booking.
+            const response = await request.get('/api/washer/missions/available');
+            expect(response.status()).toBe(200);
+        });
     });
 });
 
