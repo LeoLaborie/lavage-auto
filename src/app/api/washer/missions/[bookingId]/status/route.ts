@@ -5,14 +5,15 @@ import { prisma } from '@/lib/prisma'
 /**
  * Allowed state machine transitions for laveur-initiated status updates.
  * COMPLETED is intentionally excluded: it is triggered by the client via
- * POST /api/booking/[id]/complete (Story 3.4 / Story 5.2).
+ * POST /api/booking/[id]/complete, by the auto-complete cron, or by an admin.
  */
 const ALLOWED_TRANSITIONS: Record<string, string> = {
     ACCEPTED: 'EN_ROUTE',
     EN_ROUTE: 'IN_PROGRESS',
+    IN_PROGRESS: 'AWAITING_REVIEW',
 }
 
-const VALID_LAVEUR_STATUSES = ['EN_ROUTE', 'IN_PROGRESS'] as const
+const VALID_LAVEUR_STATUSES = ['EN_ROUTE', 'IN_PROGRESS', 'AWAITING_REVIEW'] as const
 type ValidLaveurStatus = (typeof VALID_LAVEUR_STATUSES)[number]
 
 /**
@@ -54,9 +55,19 @@ export const PATCH = withWasherGuard(async (req, _user, profile) => {
             )
         }
 
+        if (newStatus === 'AWAITING_REVIEW' && process.env.WASHER_CAN_FINISH !== 'true') {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Fonctionnalité indisponible : la clôture côté laveur n'est pas encore activée.",
+                },
+                { status: 403 }
+            )
+        }
+
         if (!VALID_LAVEUR_STATUSES.includes(newStatus as ValidLaveurStatus)) {
             return NextResponse.json(
-                { success: false, error: 'Statut invalide. Valeurs acceptées : EN_ROUTE, IN_PROGRESS' },
+                { success: false, error: 'Statut invalide. Valeurs acceptées : EN_ROUTE, IN_PROGRESS, AWAITING_REVIEW' },
                 { status: 400 }
             )
         }
@@ -96,6 +107,24 @@ export const PATCH = withWasherGuard(async (req, _user, profile) => {
             )
         }
 
+        // Photo gate for AWAITING_REVIEW: both before/after photos must be uploaded
+        // before the laveur can signal end-of-mission.
+        if (newStatus === 'AWAITING_REVIEW') {
+            const photos = await prisma.booking.findUnique({
+                where: { id: bookingId },
+                select: { beforePhotoUrl: true, afterPhotoUrl: true },
+            })
+            if (!photos?.beforePhotoUrl || !photos?.afterPhotoUrl) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: 'Photos avant et après requises pour terminer la mission.',
+                    },
+                    { status: 409 }
+                )
+            }
+        }
+
         // AC#1 & #2: Atomic conditional update — guards against TOCTOU race conditions.
         // The where clause re-checks laveurId + status so a concurrent request cannot
         // advance the state twice.
@@ -104,6 +133,9 @@ export const PATCH = withWasherGuard(async (req, _user, profile) => {
             // Set startedAt server-side when the wash begins (UTC, stored as-is by Prisma).
             // Only set if not already populated, to avoid overwriting a previous timestamp.
             updateData.startedAt = new Date()
+        }
+        if (newStatus === 'AWAITING_REVIEW') {
+            updateData.awaitingReviewSince = new Date()
         }
 
         const result = await prisma.booking.updateMany({
@@ -133,6 +165,9 @@ export const PATCH = withWasherGuard(async (req, _user, profile) => {
                 status: newStatus,
                 ...(newStatus === 'IN_PROGRESS' && {
                     startedAt: updated?.startedAt?.toISOString(),
+                }),
+                ...(newStatus === 'AWAITING_REVIEW' && {
+                    awaitingReviewSince: updated?.awaitingReviewSince?.toISOString(),
                 }),
             },
         })
