@@ -69,6 +69,7 @@ const MISSION_STATUS: Record<string, { className: string; label: string }> = {
     ACCEPTED: { className: 'bg-blue/10 text-blue', label: 'Accepté' },
     EN_ROUTE: { className: 'bg-blue/10 text-blue', label: 'En route' },
     IN_PROGRESS: { className: 'bg-blue-wash text-blue', label: 'En cours' },
+    AWAITING_REVIEW: { className: 'bg-amber-50 text-amber-700', label: 'À valider' },
     COMPLETED: { className: 'bg-ink text-white', label: 'Terminé' },
     CANCELLED: { className: 'bg-rule text-ink2', label: 'Annulé' },
 }
@@ -202,7 +203,7 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
         }
     }
 
-    const handleUpdateStatus = async (missionId: string, newStatus: 'EN_ROUTE' | 'IN_PROGRESS') => {
+    const handleUpdateStatus = async (missionId: string, newStatus: 'EN_ROUTE' | 'IN_PROGRESS' | 'AWAITING_REVIEW') => {
         setUpdatingStatusId(missionId)
         try {
             const response = await fetch(`/api/washer/missions/${missionId}/status`, {
@@ -564,11 +565,25 @@ export default function WasherDashboardView({ user: initialUser }: WasherDashboa
                                                                     </button>
                                                                 )}
                                                                 {mission.status === 'IN_PROGRESS' && (
-                                                                    <span className={`${PILL_BASE} bg-blue-wash text-blue`}>
-                                                                        En cours
+                                                                    <button
+                                                                        onClick={() => handleUpdateStatus(mission.id, 'AWAITING_REVIEW')}
+                                                                        disabled={updatingStatusId === mission.id || !mission.beforePhotoUrl || !mission.afterPhotoUrl}
+                                                                        title={
+                                                                            !mission.beforePhotoUrl || !mission.afterPhotoUrl
+                                                                                ? 'Photos avant et après requises pour terminer la mission'
+                                                                                : undefined
+                                                                        }
+                                                                        className="rounded-xl bg-ink px-4 py-2 font-cinsans text-xs font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:text-sm"
+                                                                    >
+                                                                        {updatingStatusId === mission.id ? 'Mise à jour…' : 'Mission terminée'}
+                                                                    </button>
+                                                                )}
+                                                                {mission.status === 'AWAITING_REVIEW' && (
+                                                                    <span className={`${PILL_BASE} bg-amber-50 text-amber-700`}>
+                                                                        En attente de validation client
                                                                     </span>
                                                                 )}
-                                                                {!['ACCEPTED', 'EN_ROUTE', 'IN_PROGRESS'].includes(mission.status) && (
+                                                                {!['ACCEPTED', 'EN_ROUTE', 'IN_PROGRESS', 'AWAITING_REVIEW'].includes(mission.status) && (
                                                                     <MissionStatusBadge status={mission.status} />
                                                                 )}
                                                             </div>
