@@ -70,8 +70,9 @@ npx playwright test tests/booking-submit.spec.ts  # Un seul fichier de test
 ### Modèle de données clé
 - **User** : entité unique liée à Supabase Auth via `authId` (UUID). Rôle : CLIENT, LAVEUR, ADMIN
 - **Profile** : 1:1 avec User. Champs communs (`firstName`, `lastName`, `phone`). Pour les laveurs : `siret`, `companyName`, `status` (`VALIDATION_PENDING`/`VALIDATED`/`REJECTED`), `stripeAccountId` (Connect), `stripeAccountReady` (bool synchronisé via webhook `account.updated` — `charges_enabled && payouts_enabled && details_submitted`), `stripeCustomerId` (Customer pour Setup Intent), `workRadius`, `workAddress`, `isAvailable`
-- **Booking** : cycle de vie `PENDING → CONFIRMED → ACCEPTED → EN_ROUTE → IN_PROGRESS → COMPLETED/CANCELLED`. Lie un client + laveur (nullable jusqu'à acceptation). Champs photos `beforePhotoUrl`/`afterPhotoUrl`, `cancellationReason`, horodatages (`startedAt`, `completedAt`, `validatedAt`)
+- **Booking** : cycle de vie `PENDING → CONFIRMED → ACCEPTED → EN_ROUTE → IN_PROGRESS → AWAITING_REVIEW → COMPLETED/CANCELLED`. Le passage en `AWAITING_REVIEW` est déclenché par le laveur (avec photos avant/après obligatoires) ; le client a 24 h pour valider via `POST /api/booking/[id]/complete` ou contester. Sans réponse, un cron `pg_cron` horaire passe le booking en `COMPLETED` automatiquement (cf. `supabase/cron.sql`). Champs photos `beforePhotoUrl`/`afterPhotoUrl`, `cancellationReason`, horodatages (`startedAt`, `completedAt`, `validatedAt`, `awaitingReviewSince`).
 - **Payment** : 1:1 avec Booking. Suit `stripeSessionId`, `stripePaymentIntentId`, `stripeTransferId`. **Snapshot commission** (renseigné au payout) : `commissionCents`, `netAmountCents`, `commissionRate` — nullable pour les lignes antérieures à l'introduction de la commission. Suivi refund (`refundAmountCents`, `refundedAt`, `refundReason`) et payout (`paidOutAt`, `processedAt`)
+- **PayoutAttempt** : audit trail de chaque appel à `triggerPayout()` (succès et échecs). Champs : `bookingId`, `attemptedAt`, `triggeredBy` (`'client' | 'cron' | 'admin'`), `success`, `errorCode`, `errorMessage`. Vue admin via `GET /api/admin/payouts/failures` qui agrège par booking, dernier essai en date.
 - **PlatformSettings** : singleton, `commissionRate` (Decimal 5,4, défaut `0.1500`), `updatedByUserId`. Accédé via `getCurrentCommissionRate()` (seed idempotent)
 - **Car** : véhicule client. Contrainte unique : `(userId, plate)`
 - **ContactMessage** : soumissions du formulaire de contact
@@ -97,6 +98,12 @@ Flux principal actuel (les helpers `createCheckoutSession` / mode `payment` rest
    - `capturePaymentIntent()` si encore en escrow, puis `createTransfer(netAmount, stripeAccountId, chargeId, bookingId)` vers le laveur (idempotency key `booking-{id}-transfer`, `source_transaction` = Charge ID, **pas** PaymentIntent ID)
    - Snapshot persisté sur `Payment` : `commissionCents`, `netAmountCents`, `commissionRate`, `stripeTransferId`, `paidOutAt`
 6. **Commission plateforme** : taux global dans `PlatformSettings`. L'admin peut le modifier via `PATCH /api/admin/settings/commission` (validation 0 ≤ rate ≤ 1). Le taux est **snapshoté** sur chaque Payment au moment du payout, donc les modifications n'impactent que les futures missions.
+
+7. **Auto-complétion et déclenchement payout** :
+   - Le laveur peut signaler la fin de mission via `PATCH /api/washer/missions/[id]/status` avec `{ status: 'AWAITING_REVIEW' }` (photos avant + après obligatoires, flag `WASHER_CAN_FINISH=true` requis). Le booking entre en `AWAITING_REVIEW`, `awaitingReviewSince = NOW()`.
+   - Le client valide ou conteste sous 24 h. Validation client → `POST /api/booking/[id]/complete` → `triggerPayout()`.
+   - Sans validation, le cron Supabase `pg_cron` (`supabase/cron.sql`, fréquence horaire) appelle `POST /api/cron/auto-complete` qui passe les bookings `AWAITING_REVIEW > 24h` en `COMPLETED` et déclenche le payout. Il rattrape aussi les bookings legacy bloqués en `IN_PROGRESS > 7 jours` qui ont une photo après (preuve photo).
+   - Chaque appel à `triggerPayout()` (succès ou échec) écrit une ligne dans `PayoutAttempt`.
 
 ### Onboarding Stripe Connect (laveurs)
 - `startStripeOnboarding()` (`lib/actions/washer-stripe.ts`) : crée un compte Express si absent, gère les comptes orphelins (account IDs stale, clés rotées) via validation préalable auto-récupérative, puis génère un Account Link
@@ -133,7 +140,7 @@ Flux principal actuel (les helpers `createCheckoutSession` / mode `payment` rest
 - `tests/` — Tests Playwright répartis en :
   - Racine : `booking-submit`, `booking-management`, `booking-date-location`
   - `tests/booking/` — `catalog` (cohérence catalogue services)
-  - `tests/api/` — `booking`, `booking-complete`, `customer`, `washer`, `photos`, `payout`, `admin`, `admin-refund`, `stripe-webhooks`
+  - `tests/api/` — `booking`, `booking-complete`, `customer`, `washer`, `photos`, `payout`, `admin`, `admin-refund`, `stripe-webhooks`, `booking-awaiting-review`, `cron-auto-complete`, `payout-attempt`
   - `tests/e2e/` — `home`, `login`, `reserver`
 - `playwright.config.ts` lance `npm run dev` automatiquement (`reuseExistingServer` en local)
 - Pas de framework de test unitaire configuré (vitest a été retiré)
@@ -153,3 +160,5 @@ Configurées dans `.env.local` (pas de `.env.example` committed). Clés principa
 - `DATABASE_URL`, `DIRECT_URL` (Prisma ; `DIRECT_URL` bypasse PgBouncer pour `prisma db push`/migrations)
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (pour `lib/supabase/admin.ts`)
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL` (URLs de callback Stripe)
+- `CRON_SECRET` : secret 256 bits (`openssl rand -hex 32`) partagé avec Supabase Vault sous la clé `cron_secret`. Protège l'endpoint `/api/cron/auto-complete`.
+- `WASHER_CAN_FINISH` : flag de feature (`'true'` pour activer la transition `IN_PROGRESS → AWAITING_REVIEW` côté laveur). Permet de canary la fonctionnalité sans rollback.

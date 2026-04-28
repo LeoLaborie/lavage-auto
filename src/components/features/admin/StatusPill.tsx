@@ -1,4 +1,4 @@
-type BookingStatus = 'PENDING' | 'CONFIRMED' | 'ACCEPTED' | 'EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+type BookingStatus = 'PENDING' | 'CONFIRMED' | 'ACCEPTED' | 'EN_ROUTE' | 'IN_PROGRESS' | 'AWAITING_REVIEW' | 'COMPLETED' | 'CANCELLED'
 type PaymentStatus = 'PENDING' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | 'REFUNDED' | 'PARTIALLY_REFUNDED'
 type ProfileStatus = 'VALIDATION_PENDING' | 'VALIDATED' | 'REJECTED'
 type UserRole = 'CLIENT' | 'LAVEUR' | 'ADMIN'
@@ -26,6 +26,7 @@ const BOOKING: Record<BookingStatus, { tone: Tone; label: string }> = {
     ACCEPTED: { tone: 'active', label: 'Accepté' },
     EN_ROUTE: { tone: 'active', label: 'En route' },
     IN_PROGRESS: { tone: 'active', label: 'En cours' },
+    AWAITING_REVIEW: { tone: 'warning', label: 'À valider' },
     COMPLETED: { tone: 'success', label: 'Terminé' },
     CANCELLED: { tone: 'danger', label: 'Annulé' },
 }

@@ -13,7 +13,7 @@ import {
 
 type ProfileStatus = 'VALIDATION_PENDING' | 'VALIDATED' | 'REJECTED'
 type UserRole = 'CLIENT' | 'LAVEUR' | 'ADMIN'
-type BookingStatus = 'PENDING' | 'CONFIRMED' | 'ACCEPTED' | 'EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+type BookingStatus = 'PENDING' | 'CONFIRMED' | 'ACCEPTED' | 'EN_ROUTE' | 'IN_PROGRESS' | 'AWAITING_REVIEW' | 'COMPLETED' | 'CANCELLED'
 type PaymentStatus = 'PENDING' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | 'REFUNDED' | 'PARTIALLY_REFUNDED'
 
 interface AdminUser {

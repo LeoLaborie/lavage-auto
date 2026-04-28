@@ -74,12 +74,13 @@ export async function POST(
             )
         }
 
-        // Guard: booking must be in IN_PROGRESS to be completed
-        if (booking.status !== 'IN_PROGRESS') {
+        // Guard: booking must be in IN_PROGRESS or AWAITING_REVIEW to be completed
+        const completableStatuses = ['IN_PROGRESS', 'AWAITING_REVIEW'] as const
+        if (!completableStatuses.includes(booking.status as typeof completableStatuses[number])) {
             return NextResponse.json(
                 {
                     success: false,
-                    error: `Impossible de compléter : statut actuel ${booking.status}. Statut attendu : IN_PROGRESS.`,
+                    error: `Impossible de compléter : statut actuel ${booking.status}. Statuts attendus : IN_PROGRESS ou AWAITING_REVIEW.`,
                 },
                 { status: 409 }
             )
@@ -96,7 +97,9 @@ export async function POST(
         })
 
         // Trigger payout (non-blocking: failure does not roll back the COMPLETED status)
-        const payoutResult = await triggerPayout(bookingId)
+        const payoutResult = await triggerPayout(bookingId, {
+            triggeredBy: isAdmin ? 'admin' : 'client',
+        })
 
         if (!payoutResult.success) {
             // Log but do not fail the request — the booking is still COMPLETED

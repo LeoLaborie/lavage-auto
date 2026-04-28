@@ -36,13 +36,14 @@ enum ProfileStatus {
 }
 
 enum BookingStatus {
-  PENDING       // Booking created, awaiting payment or confirmation
-  CONFIRMED     // Payment received, waiting for laveur
-  ACCEPTED      // Laveur has accepted the mission
-  EN_ROUTE      // Laveur is on the way
-  IN_PROGRESS   // Washing in progress
-  COMPLETED     // Service finished and validated by client
-  CANCELLED     // Cancelled by client (>24h before) or system
+  PENDING            // Booking created, awaiting payment or confirmation
+  CONFIRMED          // Payment received, waiting for laveur
+  ACCEPTED           // Laveur has accepted the mission
+  EN_ROUTE           // Laveur is on the way
+  IN_PROGRESS        // Washing in progress
+  AWAITING_REVIEW    // Washer signaled end-of-mission; client has 24h to validate or contest
+  COMPLETED          // Service finished and validated by client
+  CANCELLED          // Cancelled by client (>24h before) or system
 }
 
 enum PaymentStatus {
@@ -149,14 +150,16 @@ model Booking {
   cancellationReason String? @map("cancellation_reason")
 
   // Completion
-  startedAt       DateTime? @map("started_at")
-  completedAt     DateTime? @map("completed_at")
-  validatedAt     DateTime? @map("validated_at")    // When client validated the job
+  startedAt           DateTime? @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  validatedAt         DateTime? @map("validated_at")    // When client validated the job
+  awaitingReviewSince DateTime? @map("awaiting_review_since")  // When laveur signaled end-of-mission
 
   // Relationships
   carId   String?  @map("car_id")
   car     Car?     @relation(fields: [carId], references: [id])
   payment Payment?
+  payoutAttempts PayoutAttempt[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
@@ -165,6 +168,7 @@ model Booking {
   @@index([laveurId, status])
   @@index([status])
   @@index([scheduledDate])
+  @@index([status, awaitingReviewSince])
   @@map("bookings")
 }
 
@@ -260,4 +264,23 @@ model Car {
 
   @@unique([userId, plate])
   @@map("cars")
+}
+
+/// Audit trail for triggerPayout() invocations.
+/// One row per attempt, success or failure. Used by GET /api/admin/payouts/failures
+/// to surface silent payout breakdowns (cf. issue #24, cause B).
+model PayoutAttempt {
+  id           String   @id @default(cuid())
+  bookingId    String   @map("booking_id")
+  attemptedAt  DateTime @default(now()) @map("attempted_at")
+  triggeredBy  String   @map("triggered_by")    // 'client' | 'cron' | 'admin'
+  success      Boolean
+  errorCode    String?  @map("error_code")
+  errorMessage String?  @map("error_message")  @db.Text
+
+  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([success, attemptedAt])
+  @@map("payout_attempts")
 }

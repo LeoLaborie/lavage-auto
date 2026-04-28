@@ -56,6 +56,7 @@ export default async function Dashboard() {
             finalPrice: b.amountCents / 100,
             beforePhotoUrl: b.beforePhotoUrl ?? null,
             afterPhotoUrl: b.afterPhotoUrl ?? null,
+            awaitingReviewSince: b.awaitingReviewSince?.toISOString() ?? null,
             service: { name: b.serviceName },
             car: b.car ? {
                 make: b.car.make,

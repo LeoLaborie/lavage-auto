@@ -69,4 +69,27 @@ test.describe('Story 5.2 — Client Post-Mission Validation', () => {
         // TODO: Requires authenticated session
         void request;
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Issue #24 — AWAITING_REVIEW handling in /complete
+    // ─────────────────────────────────────────────────────────────────────────
+
+    test.skip('POST /api/booking/[id]/complete returns 200 and sets status to COMPLETED for AWAITING_REVIEW booking (client validation)', async ({ request }) => {
+        // TODO: Requires authenticated session as the booking client + seeded AWAITING_REVIEW booking
+        // Expected:
+        //   response.status === 200
+        //   body.data.status === 'COMPLETED'
+        void request;
+    });
+
+    test.skip('POST /api/booking/[id]/complete returns 200 and sets status to COMPLETED for AWAITING_REVIEW booking (admin validation)', async ({ request }) => {
+        // TODO: Requires authenticated session as ADMIN + seeded AWAITING_REVIEW booking owned by another user
+        void request;
+    });
+
+    test.skip('POST /api/booking/[id]/complete returns 409 if booking is in PENDING/CONFIRMED/ACCEPTED', async ({ request }) => {
+        // TODO: Requires authenticated session + seeded booking in any state outside IN_PROGRESS|AWAITING_REVIEW
+        // Expected: response.status === 409 with body.error mentioning the current and expected statuses
+        void request;
+    });
 });
