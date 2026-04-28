@@ -3,7 +3,7 @@ import { withWasherGuard } from '@/lib/auth/washerGuard'
 import { prisma } from '@/lib/prisma'
 import { services } from '@/lib/constants/services'
 import { computeCommission, getCurrentCommissionRate } from '@/lib/constants/commission'
-import { geocodeAddress } from '@/lib/geocoding'
+import { geocodeAddressesLimited } from '@/lib/geocoding'
 
 // Static catalog — safe to cache at module level because services.ts is a hardcoded constant.
 // If this ever moves to a DB source, move this Map inside the handler to avoid stale cache.
@@ -39,27 +39,31 @@ export const GET = withWasherGuard(async (_req, _user, profile) => {
             getCurrentCommissionRate(),
         ])
 
-        // --- Lazy backfill: persist coords for legacy bookings ---
+        // Lazy backfill: persist coords for legacy bookings.
+        // Bounded concurrency + try/catch keep the response resilient if BAN/Prisma fail.
         const needsBackfill = bookings.filter((b) => b.serviceLat == null || b.serviceLng == null)
         if (needsBackfill.length > 0) {
-            const updates = await Promise.all(
-                needsBackfill.map(async (b) => {
-                    const coords = await geocodeAddress(b.serviceAddress)
-                    if (!coords) return null
-                    await prisma.booking.update({
-                        where: { id: b.id },
-                        data: { serviceLat: coords.lat, serviceLng: coords.lng },
-                    })
-                    return { id: b.id, ...coords }
-                })
-            )
-            for (const u of updates) {
-                if (!u) continue
-                const target = bookings.find((b) => b.id === u.id)
-                if (target) {
-                    target.serviceLat = u.lat
-                    target.serviceLng = u.lng
+            try {
+                const coordsMap = await geocodeAddressesLimited(needsBackfill, 5)
+                if (coordsMap.size > 0) {
+                    await Promise.all(
+                        Array.from(coordsMap, ([id, c]) =>
+                            prisma.booking.update({
+                                where: { id },
+                                data: { serviceLat: c.lat, serviceLng: c.lng },
+                            })
+                        )
+                    )
+                    for (const b of bookings) {
+                        const c = coordsMap.get(b.id)
+                        if (c) {
+                            b.serviceLat = c.lat
+                            b.serviceLng = c.lng
+                        }
+                    }
                 }
+            } catch (err) {
+                console.error('[accepted] Backfill failed, serving without coords:', err)
             }
         }
 

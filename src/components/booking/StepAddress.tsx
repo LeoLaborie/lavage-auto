@@ -131,7 +131,7 @@ export default function StepAddress({
                 : isGeocoding
                 ? 'Recherche de la position…'
                 : geocodeFailed
-                ? "Adresse introuvable. Précisez le numéro, la rue, le code postal."
+                ? "Adresse introuvable. Précisez l'adresse, ou continuez sans carte (le laveur recevra l'adresse seule)."
                 : 'Continuez de saisir votre adresse.'}
             </p>
           </div>
@@ -146,14 +146,26 @@ export default function StepAddress({
         >
           <span aria-hidden>←</span> Retour
         </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={continueDisabled}
-          className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-ink px-7 py-3.5 font-cinsans text-[14px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-        >
-          Continuer <span aria-hidden>→</span>
-        </button>
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          {address && !hasCoords && geocodeFailed && (
+            <button
+              type="button"
+              onClick={handleNext}
+              data-testid="continue-without-map"
+              className="inline-flex items-center justify-center rounded-[10px] border border-rule bg-transparent px-5 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2 transition-colors hover:border-ink hover:text-ink"
+            >
+              Continuer sans carte
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={continueDisabled}
+            className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-ink px-7 py-3.5 font-cinsans text-[14px] font-semibold text-white shadow-cin-button transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+          >
+            Continuer <span aria-hidden>→</span>
+          </button>
+        </div>
       </div>
     </div>
   )

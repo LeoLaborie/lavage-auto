@@ -29,3 +29,28 @@ export async function geocodeAddress(
     return null
   }
 }
+
+/**
+ * Géocode plusieurs adresses avec une limite de concurrence.
+ * Retourne une Map id -> coords pour les items géocodés avec succès.
+ * Les échecs individuels sont silencieusement ignorés (best-effort).
+ */
+export async function geocodeAddressesLimited<
+  T extends { id: string; serviceAddress: string }
+>(items: T[], concurrency = 5): Promise<Map<string, { lat: number; lng: number }>> {
+  const out = new Map<string, { lat: number; lng: number }>()
+  if (items.length === 0) return out
+  let i = 0
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    async () => {
+      while (i < items.length) {
+        const item = items[i++]
+        const coords = await geocodeAddress(item.serviceAddress)
+        if (coords) out.set(item.id, coords)
+      }
+    }
+  )
+  await Promise.all(workers)
+  return out
+}
