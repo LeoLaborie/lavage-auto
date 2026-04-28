@@ -96,7 +96,9 @@ export async function POST(
         })
 
         // Trigger payout (non-blocking: failure does not roll back the COMPLETED status)
-        const payoutResult = await triggerPayout(bookingId)
+        const payoutResult = await triggerPayout(bookingId, {
+            triggeredBy: isAdmin ? 'admin' : 'client',
+        })
 
         if (!payoutResult.success) {
             // Log but do not fail the request — the booking is still COMPLETED
