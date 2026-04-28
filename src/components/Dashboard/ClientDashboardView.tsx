@@ -20,6 +20,7 @@ interface Booking {
     finalPrice: number
     beforePhotoUrl: string | null
     afterPhotoUrl: string | null
+    awaitingReviewSince: string | null
     service: {
         name: string
     }
@@ -55,6 +56,7 @@ const STATUS_PILL: Record<string, { className: string; label: string }> = {
     CONFIRMED: { className: 'bg-blue/10 text-blue', label: 'Confirmé' },
     ASSIGNED: { className: 'bg-blue/10 text-blue', label: 'Laveur assigné' },
     IN_PROGRESS: { className: 'bg-blue-wash text-blue', label: 'En cours' },
+    AWAITING_REVIEW: { className: 'bg-amber-50 text-amber-700', label: 'À valider' },
     COMPLETED: { className: 'bg-ink text-white', label: 'Terminé' },
     CANCELLED: { className: 'bg-rule text-ink2', label: 'Annulé' },
 }
@@ -136,7 +138,7 @@ export default function ClientDashboardView({ initialBookings, initialCars }: Cl
 
     if (!user) return null
 
-    const activeBookings = bookings.filter(b => ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status))
+    const activeBookings = bookings.filter(b => ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'AWAITING_REVIEW'].includes(b.status))
     const pastBookings = bookings.filter(b => ['COMPLETED', 'CANCELLED'].includes(b.status))
 
     return (
