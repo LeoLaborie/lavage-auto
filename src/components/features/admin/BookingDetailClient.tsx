@@ -14,6 +14,7 @@ type BookingStatus =
     | 'ACCEPTED'
     | 'EN_ROUTE'
     | 'IN_PROGRESS'
+    | 'AWAITING_REVIEW'
     | 'COMPLETED'
     | 'CANCELLED'
 
